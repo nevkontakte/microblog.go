@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(git reset:*)",
+      "Bash(git stash:*)",
+      "Bash(git merge:*)",
+      "Bash(git restore:*)",
+      "Bash(git clean:*)",
+      "Bash(git push -f:*)",
+      "Bash(git push --force origin:*)",
+      "Bash(git push origin main:*)",
+      "Bash(git push origin HEAD:main:*)",
+      "Bash(git push --force-with-lease origin main:*)",
+      "Bash(go test:*)",
+      "Bash(make:*)",
+      "Edit(reference/microblog.pub/**)",
+      "Write(reference/microblog.pub/**)"
+    ],
+    "allow": [
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(wc:*)",
+      "Bash(go build:*)",
+      "Bash(go vet:*)"
+    ]
+  }
+}
