@@ -1,0 +1,6 @@
+[submodule "migration-kit"]
+	path = migration-kit
+	url = https://github.com/anthropics/code-migration-kit-with-claude-code
+[submodule "reference/microblog.pub"]
+	path = reference/microblog.pub
+	url = https://github.com/tsileo/microblog.pub
