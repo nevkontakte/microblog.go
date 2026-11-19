@@ -32,6 +32,7 @@ func main() {
 		update    = flag.Bool("update-golden", false, "write the golden wire recordings instead of comparing")
 		patch     = flag.String("patch", "", "apply this patch to the Python original's copy, to check the judge catches it")
 	)
+	flag.DurationVar(&judge.Timeout, "timeout", judge.Timeout, "ceiling for each wait; raise it on slow machines")
 	flag.Parse()
 	if *venv == "" {
 		fatalf("-venv is required: run `poetry env info -p` in %s", *reference)

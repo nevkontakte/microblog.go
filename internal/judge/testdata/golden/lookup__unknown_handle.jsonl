@@ -1,0 +1,4 @@
+{"from":"a","method":"GET","url":"http://b.test/.well-known/host-meta","accept":"*/*","status":404,"respType":"application/json","response":{"detail":"Not Found"}}
+{"from":"a","method":"GET","url":"http://b.test/.well-known/webfinger?resource=acct%3Anobody%40b.test","accept":"*/*","status":404,"respType":"application/json","response":{"detail":"Not Found"}}
+{"from":"a","method":"GET","url":"https://b.test/.well-known/host-meta","accept":"*/*","status":404,"respType":"application/json","response":{"detail":"Not Found"}}
+{"from":"a","method":"GET","url":"https://b.test/.well-known/webfinger?resource=acct%3Anobody%40b.test","accept":"*/*","status":404,"respType":"application/json","response":{"detail":"Not Found"}}

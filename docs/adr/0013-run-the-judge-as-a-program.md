@@ -51,11 +51,18 @@ Building the harness also settled several mechanisms that are worth recording:
   encodes them (the kit's rule; fixed after parity).
 - The judge is validated by mutation: `-patch` applies a patch from
   `internal/judge/testdata/mutations` to the judge's copy of the original, and the run must fail.
+- Scenarios wait on state (database rows, recorded deliveries), never on time. Timeouts are
+  ceilings for a stuck run, set by `-timeout`. Before stopping a pair, the judge waits until
+  every delivery is sent and every incoming activity tried, so the wire recording doesn't
+  depend on how fast the workers run.
+- The judge runs on every pull request in GitHub Actions (`.github/workflows/judge.yml`). A pull
+  request is ready for review only once it passes.
 
 ## Consequences
 
 - Running the judge needs the original's Python environment (Python 3.11, `poetry install
-  --no-root` in `reference/microblog.pub`). A full run takes several minutes.
+  --no-root` in `reference/microblog.pub`). A full run takes tens of minutes, mostly
+  instance start-up; CI runs it on every pull request.
 - A Go instance only needs to implement `judge.Impl`, so one harness judges every pairing.
 - Golden recordings are reviewable text. A change to them is a change to the expected wire
   behavior, and needs a reason in review.

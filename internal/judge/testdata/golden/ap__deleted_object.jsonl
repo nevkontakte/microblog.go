@@ -1,0 +1,2 @@
+{"from":"f","method":"GET","url":"https://a.test/o/\u003cid1\u003e","accept":"application/activity+json","date":"http-date","status":404,"respType":"application/json","response":{"detail":"Not Found"}}
+{"from":"f","method":"GET","url":"https://a.test/o/\u003cid1\u003e/activity","accept":"application/activity+json","date":"http-date","status":404,"respType":"application/json","response":{"detail":"Not Found"}}

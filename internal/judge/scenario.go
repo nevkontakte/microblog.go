@@ -13,7 +13,13 @@ type Scenario struct {
 	Name string
 	// Config holds extra profile.toml lines per instance name.
 	Config map[string]string
-	Run    func(t *T)
+	// IncomingErrors is how many incoming activities are expected to fail
+	// processing, across both instances.
+	IncomingErrors int
+	// Unstable reports the wire records left out of the comparison: those
+	// whose content depends on timing in the original. Each use says why.
+	Unstable func(WireRecord) bool
+	Run      func(t *T)
 }
 
 // T is a scenario's handle on the running pair, in the style of testing.T.
@@ -23,6 +29,8 @@ type T struct {
 	Client *Client
 	Proxy  *Proxy
 
+	impls  map[string]Impl // by instance name
+	specs  map[string]Spec
 	fakes  []*Fake
 	failed bool
 	log    []string
@@ -46,14 +54,16 @@ func (t *T) Check(err error) {
 	}
 }
 
-// EventuallyTimeout bounds Eventually. Federation is asynchronous: workers
-// poll their queues every 0.5–2 s.
-var EventuallyTimeout = 30 * time.Second
+// Timeout bounds every wait: Eventually, an instance becoming ready, and
+// each HTTP request the judge makes. It is a ceiling for a stuck run, not an
+// expectation of how fast things are: scenarios wait on state, never on time,
+// and a busy CI machine can be many times slower than a laptop.
+var Timeout = 2 * time.Minute
 
 // Eventually polls check until it returns nil, and fails the scenario with the
 // last error if that doesn't happen in time.
 func (t *T) Eventually(what string, check func() error) {
-	deadline := time.Now().Add(EventuallyTimeout)
+	deadline := time.Now().Add(Timeout)
 	for {
 		err := check()
 		if err == nil {
@@ -90,7 +100,16 @@ func (t *T) run(f func(*T)) bool {
 // All returns every scenario, in a stable order.
 func All() []Scenario {
 	var all []Scenario
-	for _, group := range [][]Scenario{FederationScenarios, InboxScenarios, OutboxScenarios} {
+	for _, group := range [][]Scenario{
+		FollowScenarios,
+		InboxScenarios,
+		OutboxScenarios,
+		FederationScenarios,
+		LookupScenarios,
+		InboxEdgeScenarios,
+		EndpointScenarios,
+		CLIScenarios,
+	} {
 		all = append(all, group...)
 	}
 	return all

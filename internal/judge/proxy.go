@@ -8,8 +8,10 @@ package judge
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -40,14 +42,40 @@ type Exchange struct {
 // forwards plain http with X-Forwarded-Proto: https. Besides the *.test hosts,
 // it serves the JSON-LD contexts that LD signatures need.
 type Proxy struct {
-	ca       *certAuthority
-	contexts map[string]http.Handler // JSON-LD context hosts, fixed at construction
+	ca *certAuthority // issues the certificate each https host is served with
 
-	mu        sync.Mutex
-	hosts     map[string]http.Handler
+	// contexts serves the JSON-LD context hosts (jsonld.go). It is fixed at
+	// construction, so it is read without the lock.
+	contexts map[string]http.Handler
+
+	// ctx is the context of every request served inside a tunnel; Close
+	// cancels it, so a request stuck in a handler ends.
+	ctx    context.Context
+	cancel context.CancelFunc
+
+	mu sync.Mutex // guards the fields below
+
+	// closing is set by Close; a tunnel opened after that is closed at once.
+	closing bool
+
+	// hosts maps a hostname on the fake network (a.test, f.test) to what
+	// serves it: a forwarder to an instance's web server (Route), or a fake
+	// actor (Handle). A host can be routed again, as when an instance
+	// restarts on another address.
+	hosts map[string]http.Handler
+
+	// exchanges records every request the proxy served and its response.
 	exchanges []Exchange
-	servers   []*http.Server
-	tunnels   map[net.Conn]bool // hijacked, so the servers don't close them
+
+	// servers has one HTTP server per sender (Listen). Each sender gets its
+	// own listener because that is how the proxy tells who sent a request:
+	// the instances' outgoing requests carry nothing else that names them.
+	servers []*http.Server
+
+	// tunnels holds the senders' connections to the proxy that a CONNECT
+	// turned into a TLS tunnel. Once hijacked, they no longer belong to an
+	// http.Server, so Close closes them itself and waits on tunneling.
+	tunnels   map[net.Conn]bool
 	tunneling sync.WaitGroup
 }
 
@@ -62,6 +90,7 @@ func NewProxy() (*Proxy, error) {
 		hosts:    make(map[string]http.Handler),
 		tunnels:  make(map[net.Conn]bool),
 	}
+	p.ctx, p.cancel = context.WithCancel(context.Background())
 	for host, paths := range jsonLDContexts {
 		p.contexts[host] = contextServer(paths)
 	}
@@ -90,7 +119,11 @@ func (p *Proxy) Route(host, addr string) {
 	p.Handle(host, forwarder(addr))
 }
 
-// Listen starts a proxy listener for one sender and returns its address.
+// Listen starts a proxy listener for one sender and returns its address,
+// which that sender must use as its HTTP and HTTPS proxy. from names the
+// sender in the recorded exchanges: an instance's name ("a", "b"), a fake
+// actor's ("f"), or "judge" for the judge's own requests. Names are short
+// lowercase words, as they also appear in golden recordings.
 func (p *Proxy) Listen(from string) (string, error) {
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -98,22 +131,31 @@ func (p *Proxy) Listen(from string) (string, error) {
 	}
 	srv := &http.Server{Handler: p.serve(from)}
 	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.closing { // Close wouldn't see this server
+		l.Close()
+		return "", errors.New("proxy is closed")
+	}
 	p.servers = append(p.servers, srv)
-	p.mu.Unlock()
 	go srv.Serve(l)
 	return l.Addr().String(), nil
 }
 
-// Exchanges returns everything recorded so far, in arrival order.
+// Exchanges returns everything recorded so far, in the order the responses
+// completed. A request that causes others (an inbox delivery whose receiver
+// fetches the sender's key) comes after them.
 func (p *Proxy) Exchanges() []Exchange {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return append([]Exchange(nil), p.exchanges...)
 }
 
-// Close stops the listeners, ends open tunnels and waits for them to finish.
+// Close stops the listeners, cancels requests in flight, ends open tunnels
+// and waits for them to finish.
 func (p *Proxy) Close() {
 	p.mu.Lock()
+	p.closing = true
+	p.cancel()
 	for _, s := range p.servers {
 		s.Close()
 	}
@@ -124,10 +166,16 @@ func (p *Proxy) Close() {
 	p.tunneling.Wait()
 }
 
+// serve handles what a sender asks of its proxy listener. Almost everything
+// is https, which arrives as a CONNECT and continues inside a TLS tunnel.
+// Plain http arrives as an ordinary request for an absolute http:// URL: the
+// original falls back to http for WebFinger when https gives no answer
+// (app/webfinger.py:68-77), and tries both for host-meta (:12-40). Both are
+// recorded and must match on the wire like the rest.
 func (p *Proxy) serve(from string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		host := r.URL.Hostname()
-		if r.Method == http.MethodConnect || host == "" {
+		if r.Method == http.MethodConnect {
 			host, _, _ = strings.Cut(r.Host, ":")
 		}
 		h := p.handler(host)
@@ -137,7 +185,7 @@ func (p *Proxy) serve(from string) http.Handler {
 			return
 		}
 		if r.Method == http.MethodConnect {
-			p.tunnel(from, host, w, h)
+			p.tunnel(from, host, w)
 			return
 		}
 		rec := p.exchange(from, r, h)
@@ -158,17 +206,20 @@ func (p *Proxy) handler(host string) http.Handler {
 	return p.hosts[host]
 }
 
-// exchange serves r with h and records both.
+// exchange serves r with h and records both. The recorded request headers
+// include Host, which HTTP signatures cover.
 func (p *Proxy) exchange(from string, r *http.Request, h http.Handler) *httptest.ResponseRecorder {
 	body, _ := io.ReadAll(r.Body)
 	r.Body = io.NopCloser(bytes.NewReader(body))
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, r)
+	header := r.Header.Clone()
+	header.Set("Host", r.Host)
 	p.record(Exchange{
 		From:       from,
 		Method:     r.Method,
 		URL:        r.URL.String(),
-		ReqHeader:  r.Header.Clone(),
+		ReqHeader:  header,
 		ReqBody:    string(body),
 		Status:     rec.Code,
 		RespHeader: rec.Header().Clone(),
@@ -178,13 +229,19 @@ func (p *Proxy) exchange(from string, r *http.Request, h http.Handler) *httptest
 }
 
 // tunnel answers a CONNECT to an https host: it terminates TLS with a
-// certificate from the judge CA and serves the requests inside with h.
-func (p *Proxy) tunnel(from, host string, w http.ResponseWriter, h http.Handler) {
+// certificate from the judge CA and serves each request inside with the
+// host's current handler, which changes when an instance restarts.
+func (p *Proxy) tunnel(from, host string, w http.ResponseWriter) {
 	conn, _, err := http.NewResponseController(w).Hijack()
 	if err != nil {
 		return
 	}
 	p.mu.Lock()
+	if p.closing {
+		p.mu.Unlock()
+		conn.Close()
+		return
+	}
 	p.tunnels[conn] = true
 	p.tunneling.Add(1)
 	p.mu.Unlock()
@@ -205,11 +262,15 @@ func (p *Proxy) tunnel(from, host string, w http.ResponseWriter, h http.Handler)
 		if err != nil {
 			return
 		}
+		r = r.WithContext(p.ctx)
 		r.URL.Scheme, r.URL.Host = "https", host
 		r.Header.Set("X-Forwarded-Proto", "https") // uvicorn trusts it from localhost
-		rec := p.exchange(from, r, h)
+		rec := p.exchange(from, r, p.handler(host))
 		resp := rec.Result()
-		resp.ContentLength = int64(rec.Body.Len())
+		resp.Request = r // so a HEAD response is written without a body
+		if r.Method != http.MethodHead {
+			resp.ContentLength = int64(rec.Body.Len())
+		}
 		if err := resp.Write(tlsConn); err != nil {
 			return
 		}

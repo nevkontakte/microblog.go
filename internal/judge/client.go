@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
-	"time"
 
 	"golang.org/x/net/html"
 )
@@ -33,7 +32,7 @@ func NewClient(proxyAddr string, roots *x509.CertPool) *Client {
 	return &Client{http: &http.Client{
 		Transport: &http.Transport{Proxy: http.ProxyURL(proxy), TLSClientConfig: &tls.Config{RootCAs: roots}},
 		Jar:       jar,
-		Timeout:   30 * time.Second,
+		Timeout:   Timeout,
 		CheckRedirect: func(*http.Request, []*http.Request) error {
 			return http.ErrUseLastResponse // redirects carry results, e.g. a new object's URL
 		},

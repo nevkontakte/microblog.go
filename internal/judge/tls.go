@@ -7,10 +7,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"embed"
 	"encoding/pem"
 	"math/big"
-	"net/http"
 	"os"
 	"sync"
 	"time"
@@ -79,31 +77,4 @@ func (ca *certAuthority) leaf(host string) (*tls.Certificate, error) {
 	c := &tls.Certificate{Certificate: [][]byte{der}, PrivateKey: key}
 	ca.leaves[host] = c
 	return c, nil
-}
-
-//go:embed testdata/jsonld/*.jsonld
-var jsonld embed.FS
-
-// jsonLDContexts maps host and path to a captured context document
-// (testdata/jsonld/README.md).
-var jsonLDContexts = map[string]map[string]string{
-	"www.w3.org": {"/ns/activitystreams": "activitystreams.jsonld"},
-	"w3id.org":   {"/security/v1": "security-v1.jsonld", "/identity/v1": "identity-v1.jsonld"},
-	"raw.githubusercontent.com": {
-		"/web-payments/web-payments.org/master/contexts/identity-v1.jsonld": "identity-v1.jsonld",
-	},
-}
-
-// contextServer serves the captured documents of one host.
-func contextServer(paths map[string]string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		name, ok := paths[r.URL.Path]
-		if !ok {
-			http.NotFound(w, r)
-			return
-		}
-		b, _ := jsonld.ReadFile("testdata/jsonld/" + name)
-		w.Header().Set("Content-Type", "application/ld+json")
-		w.Write(b)
-	})
 }

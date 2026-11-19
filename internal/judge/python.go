@@ -3,10 +3,10 @@ package judge
 import (
 	"context"
 	"fmt"
-	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 // Python starts instances of the reference implementation.
@@ -21,8 +21,12 @@ type Python struct {
 // reference expects to find in app/. The reference checkout itself stays
 // untouched.
 func PreparePython(src, dst, venv string, patches ...string) (*Python, error) {
+	// Both are used from child processes running in other directories.
 	dst, err := filepath.Abs(dst)
 	if err != nil {
+		return nil, err
+	}
+	if venv, err = filepath.Abs(venv); err != nil {
 		return nil, err
 	}
 	if err := os.RemoveAll(dst); err != nil {
@@ -31,7 +35,7 @@ func PreparePython(src, dst, venv string, patches ...string) (*Python, error) {
 	if err := os.MkdirAll(filepath.Join(dst, "data"), 0o755); err != nil {
 		return nil, err
 	}
-	for _, f := range []string{"app", "alembic", "alembic.ini", "boussole.json"} {
+	for _, f := range []string{"app", "alembic", "alembic.ini", "boussole.json", "tasks.py"} {
 		if out, err := exec.Command("cp", "-r", filepath.Join(src, f), dst).CombinedOutput(); err != nil {
 			return nil, fmt.Errorf("copying %s: %v: %s", f, err, out)
 		}
@@ -58,13 +62,22 @@ func PreparePython(src, dst, venv string, patches ...string) (*Python, error) {
 }
 
 type pythonInstance struct {
-	name, data, addr string
-	procs            []*process
+	name, dir, data, addr string
+	env                   []string
+	inv                   string // the original's command-line tool
+	procs                 []*process
 }
 
 func (i *pythonInstance) Name() string    { return i.name }
 func (i *pythonInstance) DataDir() string { return i.data }
 func (i *pythonInstance) Addr() string    { return i.addr }
+
+func (i *pythonInstance) Command(ctx context.Context, stdin string, args ...string) (string, error) {
+	cmd := exec.CommandContext(ctx, i.inv, args...)
+	cmd.Dir, cmd.Env, cmd.Stdin = i.dir, i.env, strings.NewReader(stdin)
+	out, err := cmd.CombinedOutput()
+	return string(out), err
+}
 
 func (i *pythonInstance) Stop() error {
 	for _, p := range i.procs {
@@ -74,14 +87,16 @@ func (i *pythonInstance) Stop() error {
 }
 
 // Start runs one instance the way misc/supervisord.conf does: a web server
-// plus the incoming and outgoing activity workers.
+// plus the incoming and outgoing activity workers. Starting again on the same
+// directory restarts the instance on its existing data.
 func (py *Python) Start(ctx context.Context, s Spec) (Instance, error) {
 	data, err := writeData(s)
 	if err != nil {
 		return nil, err
 	}
-	for _, f := range []string{"app", "alembic", "alembic.ini"} {
-		if err := os.Symlink(filepath.Join(py.App, f), filepath.Join(s.Dir, f)); err != nil {
+	for _, f := range []string{"app", "alembic", "alembic.ini", "tasks.py"} {
+		err := os.Symlink(filepath.Join(py.App, f), filepath.Join(s.Dir, f))
+		if err != nil && !os.IsExist(err) {
 			return nil, err
 		}
 	}
@@ -96,14 +111,14 @@ func (py *Python) Start(ctx context.Context, s Spec) (Instance, error) {
 		return nil, fmt.Errorf("migrating %s: %v: %s", s.Name, err, out)
 	}
 
-	addr, err := freeAddr()
+	socket, addr, err := listen()
 	if err != nil {
 		return nil, err
 	}
-	host, port, _ := net.SplitHostPort(addr)
-	inst := &pythonInstance{name: s.Name, data: data, addr: addr}
-	start := func(log string, name string, args ...string) error {
-		p, err := startProcess(s.Dir, filepath.Join(s.Dir, log), env, name, args...)
+	defer socket.Close() // uvicorn has its own copy
+	inst := &pythonInstance{name: s.Name, dir: s.Dir, data: data, addr: addr, env: env, inv: bin("inv")}
+	start := func(log string, files []*os.File, name string, args ...string) error {
+		p, err := startProcess(s.Dir, filepath.Join(s.Dir, log), env, files, name, args...)
 		if err == nil {
 			inst.procs = append(inst.procs, p)
 		}
@@ -112,14 +127,14 @@ func (py *Python) Start(ctx context.Context, s Spec) (Instance, error) {
 	worker := func(module string) string {
 		return fmt.Sprintf("import asyncio; from app.%s import loop; asyncio.run(loop())", module)
 	}
-	if err := start("web.log", bin("uvicorn"), "app.main:app", "--no-server-header", "--host", host, "--port", port); err != nil {
+	if err := start("web.log", []*os.File{socket}, bin("uvicorn"), "app.main:app", "--no-server-header", "--fd", "3"); err != nil {
 		return nil, err
 	}
-	if err := start("incoming.log", bin("python"), "-c", worker("incoming_activities")); err != nil {
+	if err := start("incoming.log", nil, bin("python"), "-c", worker("incoming_activities")); err != nil {
 		inst.Stop()
 		return nil, err
 	}
-	if err := start("outgoing.log", bin("python"), "-c", worker("outgoing_activities")); err != nil {
+	if err := start("outgoing.log", nil, bin("python"), "-c", worker("outgoing_activities")); err != nil {
 		inst.Stop()
 		return nil, err
 	}

@@ -1,0 +1,60 @@
+# Runs the federation judge (docs/adr/0013-run-the-judge-as-a-program.md)
+# against the Python original on every pull request. A pull request is
+# ready for review only once this passes.
+name: judge
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  judge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/setup-python@v5
+        id: python
+        with:
+          python-version: "3.11"
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry/virtualenvs
+          key: poetry-${{ steps.python.outputs.python-version }}-${{ hashFiles('reference/microblog.pub/poetry.lock') }}
+
+      - name: Install the original's dependencies
+        working-directory: reference/microblog.pub
+        run: |
+          pipx install poetry==2.4.3
+          poetry env use "${{ steps.python.outputs.python-path }}"
+          poetry install --no-root
+          echo "MICROBLOGPUB_VENV=$(poetry env info -p)" >> "$GITHUB_ENV"
+
+      - run: go vet ./...
+
+      # Shared runners are slower than a laptop; the timeout is only a ceiling.
+      - name: Run the judge
+        run: go run ./cmd/judge -timeout 5m
+
+      - name: Keep the recordings and logs of a failed run
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: judge
+          path: |
+            _judge/py-py/*/wire.jsonl
+            _judge/py-py/*/exchanges.json
+            _judge/py-py/*/*/*.log
+          retention-days: 14

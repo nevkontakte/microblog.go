@@ -1,0 +1,1 @@
+{"from":"a","method":"GET","url":"https://f.test/note/1","accept":"application/activity+json","date":"http-date","signature":"keyId=https://a.test#main-key rsa-sha256 (request-target) user-agent host date accept ok","status":410,"respType":"text/plain; charset=utf-8"}

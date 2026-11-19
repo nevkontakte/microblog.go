@@ -25,7 +25,7 @@ var InboxScenarios = []Scenario{
 		followAct := f.Activity("Follow", BaseURL(t.A))
 		send(t, f, t.A, followAct)
 
-		t.waitRows(t.A, 1, `SELECT 1 FROM follower`)
+		t.waitProcessed(t.A, followAct["id"])
 		actor := t.one(t.A, `SELECT id, ap_id FROM actor`)
 		t.equal("saved actor", actor["ap_id"], f.ID())
 		inbox := t.one(t.A, `SELECT id, ap_object FROM inbox`)

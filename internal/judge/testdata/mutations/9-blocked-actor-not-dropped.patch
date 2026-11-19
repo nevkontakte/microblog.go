@@ -1,0 +1,13 @@
+Mutation: activities from a blocked actor are processed.
+
+--- a/app/boxes.py	2026-11-19 11:47:53.567065668 +0000
++++ b/app/boxes.py	2026-11-19 11:47:53.569519002 +0000
+@@ -2325,7 +2325,7 @@
+ 
+     # If we just blocked an actor, we want to process any undo sent as side
+     # effects
+-    if actor.is_blocked and ap.as_list(raw_object["type"])[0] != "Undo":
++    if False and ap.as_list(raw_object["type"])[0] != "Undo":
+         logger.warning(f"Actor {actor.ap_id} is blocked, ignoring object")
+         return None
+ 

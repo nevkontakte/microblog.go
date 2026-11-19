@@ -1,0 +1,13 @@
+Mutation: a note can be updated by an actor other than its author.
+
+--- a/app/boxes.py	2026-11-19 11:47:53.573727906 +0000
++++ b/app/boxes.py	2026-11-19 11:47:53.576063654 +0000
+@@ -1793,7 +1793,7 @@
+         )
+         if not existing_object:
+             logger.info(f"{ap_type} not found in the inbox")
+-        elif existing_object.actor.ap_id != from_actor.ap_id:
++        elif False:
+             logger.warning(
+                 f"Update actor does not match the {ap_type} actor {from_actor.ap_id}"
+                 f"/{existing_object.actor.ap_id}"

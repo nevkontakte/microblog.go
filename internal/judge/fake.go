@@ -36,11 +36,13 @@ type Fake struct {
 	key     *rsa.PrivateKey
 	client  *http.Client
 	sending atomic.Int32 // Accepts being sent in the background
+	accepts atomic.Int32 // Accepts started, ever
 
 	mu      sync.Mutex
 	seq     int // numbers activity ids, so they are the same on every run
 	inbox   []map[string]any
 	objects map[string]map[string]any
+	pages   map[string]string // HTML by URL
 }
 
 // NewFake creates a fake actor and puts it on t's network.
@@ -55,9 +57,10 @@ func (t *T) NewFake(name string) *Fake {
 		key:  key,
 		client: &http.Client{
 			Transport: &http.Transport{Proxy: http.ProxyURL(proxy), TLSClientConfig: &tls.Config{RootCAs: t.Proxy.CertPool()}},
-			Timeout:   30 * time.Second,
+			Timeout:   Timeout,
 		},
 		objects: make(map[string]map[string]any),
+		pages:   make(map[string]string),
 	}
 	t.Proxy.Handle(name+".test", f)
 	t.fakes = append(t.fakes, f)
@@ -81,17 +84,89 @@ func (f *Fake) Publish(obj map[string]any) {
 	f.objects[obj["id"].(string)] = obj
 }
 
+// PublishPage serves html at url, as a web page about an object.
+func (f *Fake) PublishPage(url, html string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.pages[url] = html
+}
+
 // Send delivers activity to inst's inbox, signed like Mastodon signs.
 func (f *Fake) Send(ctx context.Context, inst Instance, activity map[string]any) (*Response, error) {
-	return f.post(ctx, BaseURL(inst)+"/inbox", activity, true)
+	return f.post(ctx, BaseURL(inst)+"/inbox", activity, signing{key: f.key})
 }
 
 // SendUnsigned delivers activity without an HTTP signature.
 func (f *Fake) SendUnsigned(ctx context.Context, inst Instance, activity map[string]any) (*Response, error) {
-	return f.post(ctx, BaseURL(inst)+"/inbox", activity, false)
+	return f.post(ctx, BaseURL(inst)+"/inbox", activity, signing{})
 }
 
-func (f *Fake) post(ctx context.Context, inbox string, activity map[string]any, sign bool) (*Response, error) {
+// SendBadDigest delivers activity with a validly signed Digest header that
+// doesn't match the body.
+func (f *Fake) SendBadDigest(ctx context.Context, inst Instance, activity map[string]any) (*Response, error) {
+	return f.post(ctx, BaseURL(inst)+"/inbox", activity, signing{key: f.key, signedDigest: zeroDigest})
+}
+
+// SendWrongDigestHeader delivers activity signed over the body's real
+// digest, with a Digest header that doesn't match it.
+func (f *Fake) SendWrongDigestHeader(ctx context.Context, inst Instance, activity map[string]any) (*Response, error) {
+	return f.post(ctx, BaseURL(inst)+"/inbox", activity, signing{key: f.key, sentDigest: zeroDigest})
+}
+
+var zeroDigest = "SHA-256=" + base64.StdEncoding.EncodeToString(make([]byte, 32))
+
+// SendWrongKey delivers activity signed by a key that isn't the fake's.
+func (f *Fake) SendWrongKey(ctx context.Context, inst Instance, activity map[string]any) (*Response, error) {
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return nil, err
+	}
+	return f.post(ctx, BaseURL(inst)+"/inbox", activity, signing{key: key})
+}
+
+// Fetch GETs an ActivityPub object as the fake, with an HTTP signature if
+// signed, the way servers fetch objects whose visibility is restricted.
+func (f *Fake) Fetch(ctx context.Context, url string, signed bool) (*Response, error) {
+	var key *rsa.PrivateKey
+	if signed {
+		key = f.key
+	}
+	return f.fetch(ctx, url, key)
+}
+
+// FetchWrongKey GETs url signed by a key that isn't the fake's.
+func (f *Fake) FetchWrongKey(ctx context.Context, url string) (*Response, error) {
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return nil, err
+	}
+	return f.fetch(ctx, url, key)
+}
+
+func (f *Fake) fetch(ctx context.Context, url string, key *rsa.PrivateKey) (*Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/activity+json")
+	req.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
+	if key != nil {
+		if err := f.sign(req, key, "(request-target) host date"); err != nil {
+			return nil, err
+		}
+	}
+	return f.do(req)
+}
+
+// signing says how post signs a request: not at all without a key, and
+// with the body's digest unless signedDigest replaces it. A sentDigest
+// replaces the Digest header after signing.
+type signing struct {
+	key                      *rsa.PrivateKey
+	signedDigest, sentDigest string
+}
+
+func (f *Fake) post(ctx context.Context, inbox string, activity map[string]any, s signing) (*Response, error) {
 	body, err := json.Marshal(activity)
 	if err != nil {
 		return nil, err
@@ -102,24 +177,34 @@ func (f *Fake) post(ctx context.Context, inbox string, activity map[string]any, 
 	}
 	req.Header.Set("Content-Type", "application/activity+json")
 	req.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
-	if sign {
+	if s.key != nil {
 		digest := sha256.Sum256(body)
 		req.Header.Set("Digest", "SHA-256="+base64.StdEncoding.EncodeToString(digest[:]))
-		if err := f.sign(req, "(request-target) host date digest content-type"); err != nil {
+		if s.signedDigest != "" {
+			req.Header.Set("Digest", s.signedDigest)
+		}
+		if err := f.sign(req, s.key, "(request-target) host date digest content-type"); err != nil {
 			return nil, err
 		}
+		if s.sentDigest != "" {
+			req.Header.Set("Digest", s.sentDigest)
+		}
 	}
+	return f.do(req)
+}
+
+func (f *Fake) do(req *http.Request) (*Response, error) {
 	resp, err := f.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	respBody, err := io.ReadAll(resp.Body)
-	return &Response{Status: resp.StatusCode, Header: resp.Header, Body: respBody}, err
+	body, err := io.ReadAll(resp.Body)
+	return &Response{Status: resp.StatusCode, Header: resp.Header, Body: body}, err
 }
 
-// sign adds a draft-cavage HTTP signature over the given headers.
-func (f *Fake) sign(req *http.Request, headers string) error {
+// sign adds a draft-cavage HTTP signature with key over the given headers.
+func (f *Fake) sign(req *http.Request, key *rsa.PrivateKey, headers string) error {
 	var lines []string
 	for _, h := range strings.Fields(headers) {
 		switch h {
@@ -132,7 +217,7 @@ func (f *Fake) sign(req *http.Request, headers string) error {
 		}
 	}
 	sum := sha256.Sum256([]byte(strings.Join(lines, "\n")))
-	sig, err := rsa.SignPKCS1v15(rand.Reader, f.key, crypto.SHA256, sum[:])
+	sig, err := rsa.SignPKCS1v15(rand.Reader, key, crypto.SHA256, sum[:])
 	if err != nil {
 		return err
 	}
@@ -181,6 +266,7 @@ func (f *Fake) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
 		if f.AutoAccept && activity["type"] == "Follow" {
 			f.sending.Add(1) // before the Follow is answered, see settle
+			f.accepts.Add(1)
 			go func() {
 				defer f.sending.Add(-1)
 				f.accept(activity)
@@ -201,8 +287,13 @@ func (f *Fake) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		})
 	default:
 		f.mu.Lock()
-		obj := f.objects[id]
+		obj, page := f.objects[id], f.pages[id]
 		f.mu.Unlock()
+		if page != "" {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			io.WriteString(w, page)
+			return
+		}
 		if obj == nil {
 			http.NotFound(w, r)
 			return
@@ -215,7 +306,7 @@ func (f *Fake) accept(follow map[string]any) {
 	actor, _ := follow["actor"].(string)
 	accept := f.Activity("Accept", follow["id"])
 	accept["to"] = []any{actor}
-	f.post(context.Background(), actor+"/inbox", accept, true)
+	f.post(context.Background(), actor+"/inbox", accept, signing{key: f.key})
 }
 
 // Activity builds an activity from the fake, shaped like the original test
@@ -233,6 +324,9 @@ func (f *Fake) Activity(typ string, object any) map[string]any {
 		"object":   object,
 	}
 }
+
+// asPublic is the public collection, for addressing objects to everyone.
+const asPublic = "https://www.w3.org/ns/activitystreams#Public"
 
 // Note builds a Note by the fake, published now, addressed to to.
 func (f *Fake) Note(content string, to ...string) map[string]any {

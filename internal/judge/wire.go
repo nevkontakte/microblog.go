@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -60,18 +61,18 @@ var (
 // shows up as a different number.
 type masker struct{ ids map[string]int }
 
-// newMasker numbers the ids in exchanges in the order they appear. The
-// judge's own admin actions run one at a time, so the ids they create keep
-// their numbers from run to run; only their URLs and Locations (a new
-// object's id) count, because admin pages and forms may differ in the port.
+// newMasker numbers the ids in exchanges in an order that doesn't depend on
+// timing. First come the judge's own requests, which run one at a time: the
+// URLs and Locations (a new object's id) of its admin actions, but not their
+// bodies, because admin pages and forms may differ in the port. Then the
+// instances' and fakes' exchanges, sorted by their content with ids and
+// timestamps masked alike: they run concurrently with the judge and each
+// other, and an id an instance makes up (a post's conversation, say) first
+// shows in whichever exchange happens to finish first.
 func newMasker(exchanges []Exchange) *masker {
 	m := &masker{ids: map[string]int{}}
-	for _, e := range exchanges {
-		seen := []string{e.URL, e.RespHeader.Get("Location")}
-		if e.From != "judge" {
-			seen = append(seen, e.ReqBody, e.RespBody)
-		}
-		for _, s := range seen {
+	number := func(texts ...string) {
+		for _, s := range texts {
 			for _, id := range hexID.FindAllString(s, -1) {
 				if m.ids[id] == 0 {
 					m.ids[id] = len(m.ids) + 1
@@ -79,8 +80,45 @@ func newMasker(exchanges []Exchange) *masker {
 			}
 		}
 	}
+	var others []Exchange
+	for _, e := range exchanges {
+		if e.From == "judge" {
+			number(e.URL, e.RespHeader.Get("Location"))
+		} else {
+			others = append(others, e)
+		}
+	}
+	slices.SortStableFunc(others, func(a, b Exchange) int { return strings.Compare(orderKey(a), orderKey(b)) })
+	for _, e := range others {
+		number(e.URL, e.RespHeader.Get("Location"), canonicalJSON(e.ReqBody), canonicalJSON(e.RespBody))
+	}
 	return m
 }
+
+// canonicalJSON re-encodes a JSON text with its object members sorted, so
+// that how ids are numbered doesn't depend on the order in which a
+// serializer writes members; the port's may differ from the original's.
+// Text that isn't JSON is returned as it is.
+func canonicalJSON(s string) string {
+	var v any
+	if json.Unmarshal([]byte(s), &v) != nil {
+		return s
+	}
+	b, _ := json.Marshal(v) // maps marshal with sorted keys
+	return string(b)
+}
+
+// orderKey is an exchange's content, with JSON in canonical form and
+// everything that varies between runs masked alike: ids, timestamps, keys and
+// signatures.
+func orderKey(e Exchange) string {
+	s := strings.Join([]string{e.From, e.Method, e.URL, canonicalJSON(e.ReqBody), fmt.Sprint(e.Status), canonicalJSON(e.RespBody)}, "\n")
+	s = volatileField.ReplaceAllString(s, `"$1":""`)
+	s = hexID.ReplaceAllString(s, "<id>")
+	return timestamp.ReplaceAllStringFunc(s, func(ts string) string { return digit.ReplaceAllString(ts, "9") })
+}
+
+var volatileField = regexp.MustCompile(`"(publicKeyPem|signatureValue|nonce)":\s*"[^"]*"`)
 
 // normalize turns recorded exchanges into wire records. keys maps a host to
 // the public key of the instance serving it, for checking signatures.
@@ -210,9 +248,7 @@ func checkSignature(e Exchange, header string, keys map[string]*rsa.PublicKey) s
 		switch h {
 		case "(request-target)":
 			lines = append(lines, h+": "+strings.ToLower(e.Method)+" "+u.RequestURI())
-		case "host":
-			lines = append(lines, "host: "+u.Host)
-		default:
+		default: // including host, as the proxy recorded it
 			lines = append(lines, h+": "+e.ReqHeader.Get(h))
 		}
 	}
@@ -245,12 +281,25 @@ func instanceKeys(dir string, names ...string) map[string]*rsa.PublicKey {
 // canonical renders records as sorted JSON lines, so that two recordings
 // compare as multisets regardless of how deliveries from different senders
 // interleave. One more line per sender and receiver lists the activities
-// POSTed in order, since each sender delivers one at a time.
-func canonical(records []WireRecord) []string {
+// POSTed in order, since each sender delivers one at a time. instances names
+// the senders that are instances, whose retries count once.
+func canonical(records []WireRecord, instances ...string) []string {
 	var lines []string
 	sequences := map[string][]string{}
+	delivered := map[string]bool{}
 	for _, r := range records {
 		b, _ := json.Marshal(r)
+		if r.Method == http.MethodPost && slices.Contains(instances, r.From) {
+			// A delivery an instance sends again, identical, counts once:
+			// the original gives up on a slow receiver after httpx's default
+			// 5 s (app/activitypub.py:397) and retries, so on a loaded
+			// machine the receiver's late answer leaves two recorded
+			// attempts. Fakes never retry; a duplicate from one is meant.
+			if delivered[string(b)] {
+				continue
+			}
+			delivered[string(b)] = true
+		}
 		lines = append(lines, string(b))
 		if body, ok := r.Body.(map[string]any); ok && r.Method == http.MethodPost {
 			u, _ := url.Parse(r.URL)

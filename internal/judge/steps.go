@@ -44,15 +44,21 @@ func (t *T) waitRows(i Instance, n int, query string, args ...any) {
 	t.Eventually(fmt.Sprintf("%d rows on %s", n, i.Name()), t.rowCount(i, n, query, args...))
 }
 
+// waitRow waits until query yields exactly one row on i, and returns it.
+func (t *T) waitRow(i Instance, query string, args ...any) map[string]any {
+	t.waitRows(i, 1, query, args...)
+	return t.one(i, query, args...)
+}
+
 // expectRows checks once that query yields exactly n rows on i.
 func (t *T) expectRows(i Instance, n int, query string, args ...any) {
 	t.Check(t.rowCount(i, n, query, args...)())
 }
 
 // waitProcessed waits until i's incoming worker has processed the activity
-// apID without error.
+// apID. A failed try that a retry fixed keeps its error; settle counts those.
 func (t *T) waitProcessed(i Instance, apID any) {
-	t.waitRows(i, 1, `SELECT 1 FROM incoming_activity WHERE ap_id = ? AND is_processed = 1 AND error IS NULL`, apID)
+	t.waitRows(i, 1, `SELECT 1 FROM incoming_activity WHERE ap_id = ? AND is_processed = 1`, apID)
 }
 
 // equal fails the scenario if got != want.
