@@ -1,0 +1,27 @@
+# Checks the federation judge (docs/adr/0013-run-the-judge-as-a-program.md)
+# on every pull request. It runs the judge once there is one to run. A pull
+# request is ready for review only once this passes.
+name: judge
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  judge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - run: go vet ./...
