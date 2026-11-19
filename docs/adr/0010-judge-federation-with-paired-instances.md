@@ -4,7 +4,8 @@ Date: 2026-11-19
 
 ## Status
 
-Accepted
+Accepted. The `https = false` detail of point 5 is superseded by
+[0013](0013-run-the-judge-as-a-program.md): instances run over https.
 
 ## Context
 
