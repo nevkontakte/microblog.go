@@ -1,0 +1,2 @@
+{"from":"f","method":"POST","url":"https://a.test/inbox","contentType":"application/activity+json","date":"http-date","body":{},"status":401,"respType":"application/json","response":{"detail":"Invalid HTTP sig"}}
+{"posts":["\u003cnil\u003e \u003cnil\u003e"],"sequence":"f -\u003e a.test"}

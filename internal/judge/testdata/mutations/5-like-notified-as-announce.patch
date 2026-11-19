@@ -1,0 +1,16 @@
+Mutation: incoming likes create ANNOUNCE notifications.
+
+--- a/app/boxes.py	2026-11-19 01:25:29.748399280 +0000
++++ b/app/boxes.py	2026-11-19 01:25:29.751422542 +0000
+@@ -2230,9 +2230,9 @@
+             relates_to_outbox_object,
+         )
+ 
+-        if is_notification_enabled(models.NotificationType.LIKE):
++        if is_notification_enabled(models.NotificationType.ANNOUNCE):
+             notif = models.Notification(
+-                notification_type=models.NotificationType.LIKE,
++                notification_type=models.NotificationType.ANNOUNCE,
+                 actor_id=actor.id,
+                 outbox_object_id=relates_to_outbox_object.id,
+                 inbox_object_id=like_activity.id,

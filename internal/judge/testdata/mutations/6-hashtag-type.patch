@@ -1,0 +1,13 @@
+Mutation: hashtags are tagged with type Tag instead of Hashtag.
+
+--- a/app/source.py	2026-11-19 01:25:29.762600396 +0000
++++ b/app/source.py	2026-11-19 01:25:29.764966084 +0000
+@@ -99,7 +99,7 @@
+             dict(
+                 href=f"{BASE_URL}/t/{tag.lower()}",
+                 name=token.target.lower(),
+-                type="Hashtag",
++                type="Tag",
+             )
+         )
+         return link

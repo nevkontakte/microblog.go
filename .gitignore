@@ -3,3 +3,4 @@
 *.db
 *.test
 .DS_Store
+/_judge/

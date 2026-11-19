@@ -1,0 +1,75 @@
+// Command judge runs the parity scenarios against a pair of microblog.pub
+// implementations and reports which pass.
+//
+// Usage:
+//
+//	go run ./cmd/judge -venv $(cd reference/microblog.pub && poetry env info -p)
+//
+// It is a program rather than a `go test` suite because it drives long-lived
+// external processes chosen by flags, and because `go test` is reserved for
+// the port's unit tests (see docs/adr/0013-run-the-judge-as-a-program.md).
+package main
+
+import (
+	"context"
+	"flag"
+	"fmt"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"regexp"
+
+	"github.com/nevkontakte/microblog.go/internal/judge"
+)
+
+func main() {
+	var (
+		reference = flag.String("reference", "reference/microblog.pub", "checkout of the Python original")
+		venv      = flag.String("venv", os.Getenv("MICROBLOGPUB_VENV"), "virtualenv with the original's dependencies (default $MICROBLOGPUB_VENV)")
+		work      = flag.String("work", "_judge", "directory for instances, logs and recordings")
+		run       = flag.String("run", "", "run only scenarios matching this regexp")
+		golden    = flag.String("golden", "internal/judge/testdata/golden", "directory of golden wire recordings")
+		update    = flag.Bool("update-golden", false, "write the golden wire recordings instead of comparing")
+		patch     = flag.String("patch", "", "apply this patch to the Python original's copy, to check the judge catches it")
+	)
+	flag.Parse()
+	if *venv == "" {
+		fatalf("-venv is required: run `poetry env info -p` in %s", *reference)
+	}
+	filter, err := regexp.Compile(*run)
+	if err != nil {
+		fatalf("-run: %v", err)
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
+	var patches []string
+	if *patch != "" {
+		patches = append(patches, *patch)
+	}
+	py, err := judge.PreparePython(*reference, filepath.Join(*work, "python-app"), *venv, patches...)
+	if err != nil {
+		fatalf("preparing the Python original: %v", err)
+	}
+	var scenarios []judge.Scenario
+	for _, s := range judge.All() {
+		if filter.MatchString(s.Name) {
+			scenarios = append(scenarios, s)
+		}
+	}
+	results := judge.Run(ctx, judge.Options{
+		A: py, B: py, Work: filepath.Join(*work, "py-py"),
+		Golden: *golden, UpdateGolden: *update,
+	}, scenarios)
+	summary, ok := judge.Summary(results)
+	fmt.Print(summary)
+	if !ok {
+		os.Exit(1)
+	}
+}
+
+func fatalf(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, "judge: "+format+"\n", args...)
+	os.Exit(2)
+}

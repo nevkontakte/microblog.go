@@ -1,0 +1,13 @@
+Mutation: fixes the double decrement on Undo Like (the judge expects the original's -1).
+
+--- a/app/boxes.py	2026-11-19 01:25:29.732742419 +0000
++++ b/app/boxes.py	2026-11-19 01:25:29.735909906 +0000
+@@ -1641,7 +1641,7 @@
+                 db_session,
+                 liked_obj,
+             )
+-            - 1
++            - 0
+         )
+         if is_notification_enabled(models.NotificationType.UNDO_LIKE):
+             notif = models.Notification(
