@@ -19,3 +19,4 @@ To add one, copy [template.md](template.md) to the next number and add it to thi
 | [0011](0011-replace-scss-with-plain-css.md) | Replace SCSS with plain CSS | Accepted |
 | [0012](0012-write-code-for-human-readers.md) | Write code for human readers | Accepted |
 | [0013](0013-run-the-judge-as-a-program.md) | Run the judge as a program | Accepted |
+| [0014](0014-record-the-mastodon-replay-set-from-a-real-server.md) | Record the Mastodon replay set from a real server | Accepted |
