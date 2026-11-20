@@ -26,15 +26,21 @@ var LookupScenarios = []Scenario{
 	}},
 
 	{Name: "lookup__note", Run: func(t *T) {
-		lookupObject(t, newPost(t, t.B, url.Values{"content": {"Hello"}}))
+		note := newPost(t, t.B, url.Values{"content": {"Hello"}})
+		t.equal("status", lookup(t, t.A, note).Status, 200)
+		expectLookedUp(t, t.A, note, BaseURL(t.B))
 	}},
 
 	{Name: "lookup__article", Run: func(t *T) {
-		lookupObject(t, newPost(t, t.B, url.Values{"content": {"Hello"}, "name": {"Article"}}))
+		article := newPost(t, t.B, url.Values{"content": {"Hello"}, "name": {"Article"}})
+		t.equal("status", lookup(t, t.A, article).Status, 200)
+		expectLookedUp(t, t.A, article, BaseURL(t.B))
 	}},
 
 	{Name: "lookup__question", Run: func(t *T) {
-		lookupObject(t, postQuestion(t, t.B, "oneOf", 5, "A", "B"))
+		poll := postQuestion(t, t.B, "oneOf", 5, "A", "B")
+		t.equal("status", lookup(t, t.A, poll).Status, 200)
+		expectLookedUp(t, t.A, poll, BaseURL(t.B))
 	}},
 
 	// Some servers serve an object wrapped in its Create (app/lookup.py:44-47).
@@ -68,7 +74,9 @@ var LookupScenarios = []Scenario{
 	}},
 
 	{Name: "lookup__known_object", Run: func(t *T) {
-		note := remoteNote(t)
+		follow(t, t.A, t.B)
+		note := newPost(t, t.B, url.Values{"content": {"Hello"}})
+		t.waitRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ?`, note)
 		resp := lookup(t, t.A, note)
 		t.equal("status", resp.Status, 302)
 		loc, _, _ := strings.Cut(resp.Header.Get("Location"), "#")

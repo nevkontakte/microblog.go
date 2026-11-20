@@ -229,23 +229,13 @@ func follow(t *T, from, to Instance) {
 	t.waitRows(to, 1, `SELECT 1 FROM follower WHERE ap_actor_id = ?`, BaseURL(from))
 }
 
-// pendingFollow makes a follow b, which approves followers manually, and
-// returns the id of b's pending-follower notification.
-func pendingFollow(t *T) string {
-	act(t, t.A, "follow", url.Values{"ap_actor_id": {BaseURL(t.B)}})
-	t.waitProcessed(t.B, t.one(t.A, `SELECT ap_id FROM outbox WHERE ap_type = 'Follow'`)["ap_id"])
-	t.expectRows(t.B, 0, `SELECT 1 FROM follower`)
-	n := t.one(t.B, `SELECT id FROM notifications WHERE notification_type = 'PENDING_INCOMING_FOLLOWER'`)
+// pendingFollower waits until i has processed follower's Follow without
+// accepting it, and returns the id of i's pending-follower notification.
+func pendingFollower(t *T, i, follower Instance) string {
+	t.waitProcessed(i, t.one(follower, `SELECT ap_id FROM outbox WHERE ap_type = 'Follow'`)["ap_id"])
+	t.expectRows(i, 0, `SELECT 1 FROM follower WHERE ap_actor_id = ?`, BaseURL(follower))
+	n := t.one(i, `SELECT id FROM notifications WHERE notification_type = 'PENDING_INCOMING_FOLLOWER'`)
 	return fmt.Sprint(n["id"])
-}
-
-// remoteNote makes a follow b, posts a note on b, and returns its id once a
-// has received it.
-func remoteNote(t *T) string {
-	follow(t, t.A, t.B)
-	note := newPost(t, t.B, url.Values{"content": {"Hello"}})
-	t.waitRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ?`, note)
-	return note
 }
 
 // blockedBy makes blocker block i, and waits until i is told.
@@ -255,43 +245,49 @@ func blockedBy(t *T, i, blocker Instance) {
 	t.waitRows(i, 1, `SELECT 1 FROM notifications WHERE notification_type = 'BLOCKED'`)
 }
 
-// pollCounted waits until b counts a's vote for answers in its poll, and a
-// applies the poll's Update (app/boxes.py:2035-2110). votersCount counts
-// voters, not answers.
-//
-// BUG(port): b sends one Update per answer, with an id made of the poll's id
-// and the time to the second (app/boxes.py:2098-2099, 839-866). Two Updates
-// in the same second share an id, and a drops the second as a duplicate
-// (app/boxes.py:2362-2374), so a may show only the first answer counted.
-// The wire is the same either way; a's final count depends on timing, so it
-// is only required to have applied an Update.
-func pollCounted(t *T, poll, pollType string, answers ...string) {
-	// counted lists, sorted, the answers with one vote in a box's copy.
-	counted := func(i Instance, box string) ([]string, error) {
-		rows, err := Query(i, `SELECT json_extract(answer.value, '$.name') AS name
-			FROM `+box+`, json_each(`+box+`.ap_object, '$.`+pollType+`') AS answer
-			WHERE ap_id = ? AND json_extract(answer.value, '$.replies.totalItems') = 1 ORDER BY name`, poll)
-		var names []string
-		for _, r := range rows {
-			names = append(names, fmt.Sprint(r["name"]))
-		}
-		return names, err
-	}
-	t.Eventually("b counts the vote for "+strings.Join(answers, ", "), func() error {
-		names, err := counted(t.B, "outbox")
+// expectVotesCounted waits until author, whose poll it is, counts one vote
+// for exactly answers and one voter (app/boxes.py:2035-2110).
+func expectVotesCounted(t *T, author Instance, poll, pollType string, answers ...string) {
+	t.Eventually(author.Name()+" counts the vote for "+strings.Join(answers, ", "), func() error {
+		names, err := votedAnswers(author, "outbox", poll, pollType)
 		if err == nil && !slices.Equal(names, answers) {
-			err = fmt.Errorf("b counts %v", names)
+			err = fmt.Errorf("%s counts %v", author.Name(), names)
 		}
 		return err
 	})
-	t.waitRows(t.B, 1, `SELECT 1 FROM outbox WHERE ap_id = ? AND json_extract(ap_object, '$.votersCount') = 1`, poll)
-	t.waitRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ? AND json_extract(ap_object, '$.votersCount') = 1`, poll)
-	t.waitRows(t.A, len(answers), `SELECT 1 FROM incoming_activity WHERE ap_object ->> '$.type' = 'Update' AND is_processed = 1`)
-	names, err := counted(t.A, "inbox")
+	t.waitRows(author, 1, `SELECT 1 FROM outbox WHERE ap_id = ? AND json_extract(ap_object, '$.votersCount') = 1`, poll)
+}
+
+// expectPollUpdated waits until voter has applied the Updates of poll that
+// its vote for answers caused, one per answer.
+//
+// BUG(port): the author sends one Update per answer, with an id made of the
+// poll's id and the time to the second (app/boxes.py:2098-2099, 839-866).
+// Two Updates in the same second share an id, and the voter drops the second
+// as a duplicate (app/boxes.py:2362-2374), so it may show only the first
+// answer counted. The wire is the same either way; the voter's final count
+// depends on timing, so it need only count some of answers.
+func expectPollUpdated(t *T, voter Instance, poll, pollType string, answers ...string) {
+	t.waitRows(voter, 1, `SELECT 1 FROM inbox WHERE ap_id = ? AND json_extract(ap_object, '$.votersCount') = 1`, poll)
+	t.waitRows(voter, len(answers), `SELECT 1 FROM incoming_activity WHERE ap_object ->> '$.type' = 'Update' AND is_processed = 1`)
+	names, err := votedAnswers(voter, "inbox", poll, pollType)
 	t.Check(err)
 	if len(names) == 0 || slices.ContainsFunc(names, func(n string) bool { return !slices.Contains(answers, n) }) {
-		t.Fatalf("a counts %v of a vote for %v", names, answers)
+		t.Fatalf("%s counts %v of a vote for %v", voter.Name(), names, answers)
 	}
+}
+
+// votedAnswers lists, sorted, the answers with one vote in i's copy of poll,
+// which is in box: "outbox" on its author, "inbox" elsewhere.
+func votedAnswers(i Instance, box, poll, pollType string) ([]string, error) {
+	rows, err := Query(i, `SELECT json_extract(answer.value, '$.name') AS name
+		FROM `+box+`, json_each(`+box+`.ap_object, '$.`+pollType+`') AS answer
+		WHERE ap_id = ? AND json_extract(answer.value, '$.replies.totalItems') = 1 ORDER BY name`, poll)
+	var names []string
+	for _, r := range rows {
+		names = append(names, fmt.Sprint(r["name"]))
+	}
+	return names, err
 }
 
 // postQuestion publishes a poll on i through the admin form and returns its
@@ -374,12 +370,12 @@ func lookup(t *T, i Instance, query string) *Response {
 	return resp
 }
 
-// lookupObject looks up b's object id from a, which doesn't follow b, and
-// checks that a fetched and parsed it without storing it.
-func lookupObject(t *T, id string) {
-	t.equal("status", lookup(t, t.A, id).Status, 200)
-	t.sawInOrder("a", "GET", 200, id, BaseURL(t.B)+"/")
-	t.expectRows(t.A, 0, `SELECT 1 FROM inbox WHERE ap_id = ?`, id)
+// expectLookedUp checks that i's lookup of object id fetched it and then,
+// once it parsed, its author at authorID (app/ap_object.py:332-335), and
+// stored neither.
+func expectLookedUp(t *T, i Instance, id, authorID string) {
+	t.sawInOrder(i.Name(), "GET", 200, id, authorID+"/")
+	t.expectRows(i, 0, `SELECT 1 FROM inbox WHERE ap_id = ?`, id)
 }
 
 // finger is the WebFinger URL for user on i, as the original requests it.
@@ -387,12 +383,13 @@ func finger(i Instance, user string) string {
 	return BaseURL(i) + "/.well-known/webfinger?resource=" + url.QueryEscape("acct:"+user+"@"+Host(i))
 }
 
-// remoteRedirect checks that a looked up b's subscribe template and sent the
-// visitor to it with a's id, by the Refresh header (app/main.py:272-282).
-func remoteRedirect(t *T, resp *Response) {
+// remoteRedirect checks that from looked up to's subscribe template and sent
+// the visitor to it with from's id, by the Refresh header
+// (app/main.py:272-282).
+func remoteRedirect(t *T, from, to Instance, resp *Response) {
 	t.equal("status", resp.Status, 200)
-	t.sawExchange("a", "GET", finger(t.B, "b"), 200)
-	t.equal("Refresh", resp.Header.Get("Refresh"), "0;url="+BaseURL(t.B)+"/admin/lookup?query="+BaseURL(t.A))
+	t.sawExchange(from.Name(), "GET", finger(to, to.Name()), 200)
+	t.equal("Refresh", resp.Header.Get("Refresh"), "0;url="+BaseURL(to)+"/admin/lookup?query="+BaseURL(from))
 }
 
 // restart lets the pair settle, stops i, and starts it again on its data
@@ -453,18 +450,6 @@ func send(t *T, f *Fake, i Instance, activity map[string]any) {
 // actorRowID returns the id of the actor row for apID on i.
 func (t *T) actorRowID(i Instance, apID string) any {
 	return t.one(i, `SELECT id FROM actor WHERE ap_id = ?`, apID)["id"]
-}
-
-// followedNote makes a follow a fake, which then posts a note to a; it
-// returns the fake and the note once a has stored it.
-func followedNote(t *T) (*Fake, map[string]any) {
-	f := t.NewFake("f")
-	followFake(t, t.A, f)
-	note := f.Note("Hello", BaseURL(t.A))
-	create := f.Create(note)
-	send(t, f, t.A, create)
-	t.waitProcessed(t.A, create["id"])
-	return f, note
 }
 
 // withContent returns a copy of note, without its context, with new content.

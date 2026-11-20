@@ -57,7 +57,7 @@ Status: **covered** (by the scenarios named), **2c** (client protocols, part 2c)
 | Create whose object has another actor | `inbox__create_actor_mismatch` | covered |
 | Reply to my note, poll vote | `post__reply`, `poll__vote` | covered |
 | Read (Honk: fetch the object) | `inbox__read_activity` | covered |
-| Update of an actor, of a note, of a note by someone else | `inbox__update_actor`, `inbox__update_note`, `inbox__update_note_wrong_actor` | covered |
+| Update of an actor, of a note, of a note by someone else, of an unknown note, of an unsupported type | `inbox__update_actor`, `inbox__update_note`, `inbox__update_note_wrong_actor`, `inbox__update_unknown_note`, `inbox__update_unsupported_type` | covered |
 | Move | `inbox__move_activity`, `move__to_other_account` | covered |
 | Delete of a note, of a known actor | `delete__note`, `inbox__incoming_delete_for_known_actor` | covered |
 | Follow: automatic, manual | `inbox_incoming_follow_request*` | covered |

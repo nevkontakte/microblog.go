@@ -58,7 +58,7 @@ Totals: 55 tests. 37 are portable, 27 of them ported here (26 scenarios) and 10 
 18 are internal-bound. The feasibility report counted 38 and 17: on a closer read,
 `test_emoji_are_loaded` asserts on a Python global, so it moves to internal-bound.
 
-The original suite covers only part of what federates. The other 65 scenarios come from an
+The original suite covers only part of what federates. The other 67 scenarios come from an
 inventory of every ActivityPub interaction in the original's code
 ([00b-federation-coverage.md](00b-federation-coverage.md)), each mapped to the scenario that
 covers it:
@@ -69,11 +69,11 @@ covers it:
 | `scenarios_inbox.go` | 1 | beyond its ports: an unknown actor deleting itself, dropped before its key is fetched |
 | `scenarios_federation.go` | 18 | posting, replies, likes and boosts (also of objects the instance doesn't have, and of a third party's note), the reply form for an unknown object, deletes, polls, blocks (also following or messaging a peer that blocked me), bookmarks, pins, hiding boosts, remote follow and interaction |
 | `scenarios_lookup.go` | 14 | lookup of every kind of query (handle, actor, Note, Article, Question, wrapped object, HTML alternate) and every failure (unknown handle, missing, gone and private objects, unreachable host) |
-| `scenarios_inbox_edge.go` | 17 | the rest of the inbox dispatch, and what it rejects or drops (including a Digest header that doesn't match, which the original accepts) |
+| `scenarios_inbox_edge.go` | 19 | the rest of the inbox dispatch, and what it rejects or drops (including a Digest header that doesn't match, which the original accepts) |
 | `scenarios_endpoints.go` | 7 | the served documents: actor, WebFinger, collections (also hidden), object visibility by signature, deleted objects |
 | `scenarios_cli.go` | 4 | moving the account, self-destructing, importing a Mastodon following list, and the Update sent after a profile change |
 
-With the 26 ports, that makes 91 scenarios, the suite `judge.All()` runs.
+With the 26 ports, that makes 93 scenarios, the suite `judge.All()` runs.
 
 ## 2. Rewrite for portability
 
@@ -260,7 +260,7 @@ scenario): 2 blocking, 8 should-fix, 5 nits. All accepted except where noted.
 |---|---|---|
 | 1 | Too large to review. | Split into a stack of pull requests, one per layer or scenario group. |
 | 2 | The judge should run on every pull request. | `.github/workflows/judge.yml` runs `go vet` and the judge; a pull request is ready for review only once it passes (ADR 0013). |
-| 3 | Coverage: every ActivityPub interaction, lookups of each object type, and error cases. | The coverage inventory and 65 scenarios beyond the ported suite (section 1). |
+| 3 | Coverage: every ActivityPub interaction, lookups of each object type, and error cases. | The coverage inventory and 67 scenarios beyond the ported suite (section 1). |
 | 4 | No scenario may assume that work completes in a fixed time. | Audit below. |
 | 5 | Part 2 should be three parts. | 2a, 2b, 2c (top of this report). |
 | 6 | Proxy fields, `from` and the plain http path were undocumented; JSON-LD code sat in `tls.go`; `Listen` could register a server after `Close`. | Documented; `jsonld.go`; `Listen` refuses once closing. |
@@ -269,6 +269,8 @@ scenario): 2 blocking, 8 should-fix, 5 nits. All accepted except where noted.
 | 9 | Assertion failures printed both values whole. | `equal` prints a `go-cmp` diff. The wire comparison stays a multiset diff of normalized lines, since its order is not meaningful. |
 | 10 | Errors were ignored throughout the judge. | Every error is handled. Those only a judge bug can cause panic (`must`). The proxy collects errors from its goroutines, including a handler's panic, and the scenario fails; a sender hanging up is the one quiet case. Stopping an instance reports a process that exited by itself. |
 | 11 | The poll helper bundled following, posting and checking, with fixed roles. | `postQuestion`, `expectQuestion` and `expectDelivered` take the instances as arguments; the vote and lookup scenarios reuse `postQuestion`. Voting itself is `poll__vote` and `poll__vote_any_of`. |
+| 12 | Other helpers also folded several actions, or fixed which instance plays which role. | Every helper is now one action or one check, taking the instances as arguments: `remoteNote` and `followedNote` are spelled out in their scenarios, `pendingFollow` became `pendingFollower`, `pollCounted` became `expectVotesCounted` and `expectPollUpdated`, `lookupObject` became `expectLookedUp`, and `remoteRedirect` takes both instances. |
+| 13 | Receiving edits must be judged. | `inbox__update_note` also checks `updated_at`; `inbox__update_unknown_note` and `inbox__update_unsupported_type` cover the two branches of the Update handler no scenario reached. |
 
 The timing audit went through every wait in the judge:
 

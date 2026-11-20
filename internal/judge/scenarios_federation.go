@@ -32,7 +32,9 @@ var FederationScenarios = []Scenario{
 	}},
 
 	{Name: "like__and_undo", Run: func(t *T) {
-		note := remoteNote(t)
+		follow(t, t.A, t.B)
+		note := newPost(t, t.B, url.Values{"content": {"Hello"}})
+		t.waitRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ?`, note)
 		act(t, t.A, "like", url.Values{"ap_object_id": {note}})
 		t.waitRows(t.B, 1, `SELECT 1 FROM outbox WHERE ap_id = ? AND likes_count = 1`, note)
 		t.waitRows(t.B, 1, `SELECT 1 FROM notifications WHERE notification_type = 'LIKE'`)
@@ -50,7 +52,9 @@ var FederationScenarios = []Scenario{
 	}},
 
 	{Name: "announce__and_undo", Run: func(t *T) {
-		note := remoteNote(t)
+		follow(t, t.A, t.B)
+		note := newPost(t, t.B, url.Values{"content": {"Hello"}})
+		t.waitRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ?`, note)
 		act(t, t.A, "announce", url.Values{"ap_object_id": {note}})
 		t.waitRows(t.B, 1, `SELECT 1 FROM outbox WHERE ap_id = ? AND announces_count = 1`, note)
 		t.waitRows(t.B, 1, `SELECT 1 FROM notifications WHERE notification_type = 'ANNOUNCE'`)
@@ -62,7 +66,9 @@ var FederationScenarios = []Scenario{
 	}},
 
 	{Name: "delete__note", Run: func(t *T) {
-		note := remoteNote(t)
+		follow(t, t.A, t.B)
+		note := newPost(t, t.B, url.Values{"content": {"Hello"}})
+		t.waitRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ?`, note)
 		act(t, t.B, "delete", url.Values{"ap_object_id": {note}})
 		t.waitRows(t.B, 1, `SELECT 1 FROM outbox WHERE ap_id = ? AND is_deleted = 1`, note)
 		t.waitRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ? AND is_deleted = 1`, note)
@@ -75,7 +81,8 @@ var FederationScenarios = []Scenario{
 		act(t, t.A, "vote", url.Values{"in_reply_to": {poll}, "name": {"A"}})
 		t.waitRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ? AND json(voted_for_answers) = json('["A"]')`, poll)
 		t.waitRows(t.B, 1, `SELECT 1 FROM poll_answer WHERE name = 'A' AND poll_type = 'oneOf'`)
-		pollCounted(t, poll, "oneOf", "A")
+		expectVotesCounted(t, t.B, poll, "oneOf", "A")
+		expectPollUpdated(t, t.A, poll, "oneOf", "A")
 	}},
 
 	{Name: "block__and_unblock", Run: func(t *T) {
@@ -128,8 +135,8 @@ var FederationScenarios = []Scenario{
 	// The original builds an Update's body when it sends it, not when it
 	// queues it, so whether b's first Update to a counts one answer or both
 	// depends on whether b processed the second vote before sending. Those
-	// two deliveries are left out of the comparison; pollCounted checks
-	// that a applied them.
+	// two deliveries are left out of the comparison; expectPollUpdated
+	// checks that a applied them.
 	{Name: "poll__vote_any_of", Unstable: isUpdateTo("a"), Run: func(t *T) {
 		follow(t, t.A, t.B)
 		poll := postQuestion(t, t.B, "anyOf", 5, "A", "B", "C")
@@ -137,7 +144,8 @@ var FederationScenarios = []Scenario{
 		act(t, t.A, "vote", url.Values{"in_reply_to": {poll}, "name": {"A", "C"}})
 		t.waitRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ? AND json(voted_for_answers) = json('["A","C"]')`, poll)
 		t.waitRows(t.B, 2, `SELECT 1 FROM poll_answer WHERE poll_type = 'anyOf'`)
-		pollCounted(t, poll, "anyOf", "A", "C")
+		expectVotesCounted(t, t.B, poll, "anyOf", "A", "C")
+		expectPollUpdated(t, t.A, poll, "anyOf", "A", "C")
 	}},
 
 	// Bookmarking an object a doesn't have fetches and stores it
@@ -201,7 +209,7 @@ var FederationScenarios = []Scenario{
 	{Name: "remote_follow", Run: func(t *T) {
 		resp, err := t.Client.Post(t.Ctx, t.A, "/remote_follow", url.Values{"profile": {"b@b.test"}})
 		t.Check(err)
-		remoteRedirect(t, resp)
+		remoteRedirect(t, t.A, t.B, resp)
 	}},
 
 	// BUG(port): the original sends the visitor to a's profile, not to the
@@ -211,6 +219,6 @@ var FederationScenarios = []Scenario{
 		note := newPost(t, t.A, url.Values{"content": {"Hello"}})
 		resp, err := t.Client.Post(t.Ctx, t.A, "/remote_interaction", url.Values{"profile": {"@b@b.test"}, "ap_id": {note}})
 		t.Check(err)
-		remoteRedirect(t, resp)
+		remoteRedirect(t, t.A, t.B, resp)
 	}},
 }

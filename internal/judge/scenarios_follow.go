@@ -24,7 +24,8 @@ var FollowScenarios = []Scenario{
 	{Name: "follow__manually_approved",
 		Config: map[string]string{"b": "manually_approves_followers = true"},
 		Run: func(t *T) {
-			id := pendingFollow(t)
+			act(t, t.A, "follow", url.Values{"ap_actor_id": {BaseURL(t.B)}})
+			id := pendingFollower(t, t.B, t.A)
 			act(t, t.B, "accept_incoming_follow", url.Values{"notification_id": {id}})
 			t.waitRows(t.B, 1, `SELECT 1 FROM follower WHERE ap_actor_id = ?`, BaseURL(t.A))
 			t.waitRows(t.A, 1, `SELECT 1 FROM following WHERE ap_actor_id = ?`, BaseURL(t.B))
@@ -34,7 +35,8 @@ var FollowScenarios = []Scenario{
 	{Name: "follow__manually_rejected",
 		Config: map[string]string{"b": "manually_approves_followers = true"},
 		Run: func(t *T) {
-			id := pendingFollow(t)
+			act(t, t.A, "follow", url.Values{"ap_actor_id": {BaseURL(t.B)}})
+			id := pendingFollower(t, t.B, t.A)
 			act(t, t.B, "reject_incoming_follow", url.Values{"notification_id": {id}})
 			reject := t.one(t.B, `SELECT ap_id FROM outbox WHERE ap_type = 'Reject'`)["ap_id"]
 			t.waitProcessed(t.A, reject)
