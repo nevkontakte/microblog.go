@@ -462,3 +462,36 @@ scenarios) still passes against its goldens.
 | 28 | Micropub returns a post's HTML as its source | `micropub__query` |
 
 4 of 4 caught.
+
+## Part 2c: client protocols — Webmention
+
+`scenarios_webmention.go` judges Webmention both ways (`app/webmentions.py`,
+`app/utils/webmentions.py`). Incoming mentions are sent by the visitor, about pages a fake
+serves; outgoing ones reach a fake's new endpoint, `/webmention`, which records each mention's
+source and target.
+
+| Scenario | Judges |
+|---|---|
+| `webmention__incoming` | A plain mention, a reply, a like and a repost: each fetched and verified, counted by kind, shown on the post's page |
+| `webmention__update` | A source that stops linking withdraws its mention and its like; linking again restores both |
+| `webmention__article` | An article mentioned by its page's URL |
+| `webmention__invalid` | Source equal to target, an unknown target, a source that doesn't link, URLs that aren't: each 400, nothing stored |
+| `webmention__gone_source` | See below |
+| `webmention__outgoing` | A public post sends one mention to the page it links to, found from the page's `<link rel="webmention">`; a followers-only post sends none |
+
+**Found in the original,** marked `BUG(port)`: a mention whose source is gone (404 or 410)
+fails with a 500, not a withdrawal: the handler reads the fetch's result, which the 404 left
+unset (`app/webmentions.py:97-104`).
+
+**Clean run:** 6/6 pass, recording the goldens, and again against them.
+
+**Mutations,** run on the Webmention scenarios:
+
+| # | Mutation | Caught by |
+|---|---|---|
+| 29 | A mention is accepted whether or not its source links to the target | `webmention__update`, `webmention__invalid` |
+| 30 | Followers-only posts send webmentions | `webmention__outgoing` |
+| 31 | A withdrawn mention stays | `webmention__update` |
+| 32 | A like is counted as a plain mention | `webmention__incoming`, `webmention__update` |
+
+4 of 4 caught.

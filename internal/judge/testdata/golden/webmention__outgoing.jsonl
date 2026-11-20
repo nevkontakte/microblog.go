@@ -1,0 +1,4 @@
+{"from":"a","method":"GET","url":"https://f.test/page","accept":"*/*","status":200,"respType":"text/html; charset=utf-8"}
+{"from":"a","method":"GET","url":"https://f.test/page","accept":"*/*","status":200,"respType":"text/html; charset=utf-8"}
+{"from":"a","method":"GET","url":"https://f.test/page","accept":"*/*","status":200,"respType":"text/html; charset=utf-8"}
+{"from":"a","method":"POST","url":"https://f.test/webmention","accept":"*/*","contentType":"application/x-www-form-urlencoded","body":"\u003c101 bytes\u003e","status":202}

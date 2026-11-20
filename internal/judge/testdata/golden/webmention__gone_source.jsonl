@@ -1,0 +1,2 @@
+{"from":"a","method":"GET","url":"https://f.test/missing","accept":"*/*","status":404,"respType":"text/plain; charset=utf-8"}
+{"from":"visitor","method":"POST","url":"https://a.test/webmentions","contentType":"application/x-www-form-urlencoded","body":"\u003c104 bytes\u003e","status":500,"respType":"text/plain; charset=utf-8","response":"Internal Server Error"}

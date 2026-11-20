@@ -764,3 +764,18 @@ func grantToken(t *T, i Instance, scopes ...string) string {
 	t.equal("token status", resp.Status, 200)
 	return stringField(t, decode(t, resp), "access_token")
 }
+
+// sendWebmention tells i, as a site would, that source mentions target.
+func sendWebmention(t *T, i Instance, source, target string) *Response {
+	return postForm(t, BaseURL(i)+"/webmentions", url.Values{"source": {source}, "target": {target}}, "")
+}
+
+// mentionPage is the HTML of an h-entry at source, by an author with a name
+// and a photo, that links to target with class kind: u-in-reply-to,
+// u-like-of, u-repost-of, or none for a plain mention.
+func mentionPage(source, target, kind string) string {
+	return `<html><body><div class="h-entry">` +
+		`<div class="p-author h-card"><img class="u-photo" src="/photo.png" alt=""><span class="p-name">Judge site</span></div>` +
+		`<p class="e-content">About <a class="` + kind + `" href="` + target + `">this post</a></p>` +
+		`<a class="u-url" href="` + source + `">Permalink</a></div></body></html>`
+}

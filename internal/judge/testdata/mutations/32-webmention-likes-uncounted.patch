@@ -1,0 +1,13 @@
+Mutation: a like webmention is counted as a plain mention.
+
+--- a/app/webmentions.py	2026-11-20 22:43:42.559571094 +0000
++++ b/app/webmentions.py	2026-11-20 22:43:42.572759737 +0000
+@@ -181,7 +181,7 @@
+             webmention_type = models.WebmentionType.REPLY
+             break
+         elif target in item.get("properties", {}).get(
+-            "like-of", []
++            "like-of-x", []
+         ) and Face.from_webmention(webmention):
+             webmention_type = models.WebmentionType.LIKE
+             break

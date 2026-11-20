@@ -1,0 +1,6 @@
+{"from":"a","method":"GET","url":"https://f.test/mention","accept":"*/*","status":200,"respType":"text/html; charset=utf-8"}
+{"from":"a","method":"GET","url":"https://f.test/mention","accept":"*/*","status":200,"respType":"text/html; charset=utf-8"}
+{"from":"a","method":"GET","url":"https://f.test/mention","accept":"*/*","status":200,"respType":"text/html; charset=utf-8"}
+{"from":"visitor","method":"POST","url":"https://a.test/webmentions","contentType":"application/x-www-form-urlencoded","body":"\u003c104 bytes\u003e","status":200,"respType":"application/json","response":{}}
+{"from":"visitor","method":"POST","url":"https://a.test/webmentions","contentType":"application/x-www-form-urlencoded","body":"\u003c104 bytes\u003e","status":200,"respType":"application/json","response":{}}
+{"from":"visitor","method":"POST","url":"https://a.test/webmentions","contentType":"application/x-www-form-urlencoded","body":"\u003c104 bytes\u003e","status":400,"respType":"application/json","response":{"detail":"target not found in source"}}

@@ -145,6 +145,7 @@ func All() []Scenario {
 		PublicScenarios,
 		IndieAuthScenarios,
 		MicropubScenarios,
+		WebmentionScenarios,
 	} {
 		all = append(all, group...)
 	}
