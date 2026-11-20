@@ -104,8 +104,7 @@ func canonicalJSON(s string) string {
 	if json.Unmarshal([]byte(s), &v) != nil {
 		return s
 	}
-	b, _ := json.Marshal(v) // maps marshal with sorted keys
-	return string(b)
+	return string(must(json.Marshal(v))) // maps marshal with sorted keys
 }
 
 // orderKey is an exchange's content, with JSON in canonical form and
@@ -234,7 +233,10 @@ func checkDigest(header, body string) string {
 func checkSignature(e Exchange, header string, keys map[string]*rsa.PublicKey) string {
 	params := map[string]string{}
 	for _, part := range strings.Split(header, ",") {
-		k, v, _ := strings.Cut(part, "=")
+		k, v, ok := strings.Cut(part, "=")
+		if !ok {
+			return "malformed: " + header
+		}
 		params[strings.TrimSpace(k)] = strings.Trim(v, `"`)
 	}
 	desc := "keyId=" + params["keyId"] + " " + params["algorithm"] + " " + params["headers"]
@@ -242,7 +244,7 @@ func checkSignature(e Exchange, header string, keys map[string]*rsa.PublicKey) s
 	if err != nil || keys[keyURL.Host] == nil {
 		return desc + " unverified"
 	}
-	u, _ := url.Parse(e.URL)
+	u := must(url.Parse(e.URL)) // the proxy recorded it from a parsed request
 	var lines []string
 	for _, h := range strings.Fields(params["headers"]) {
 		switch h {
@@ -252,9 +254,9 @@ func checkSignature(e Exchange, header string, keys map[string]*rsa.PublicKey) s
 			lines = append(lines, h+": "+e.ReqHeader.Get(h))
 		}
 	}
-	sig, _ := base64.StdEncoding.DecodeString(params["signature"])
+	sig, err := base64.StdEncoding.DecodeString(params["signature"])
 	sum := sha256.Sum256([]byte(strings.Join(lines, "\n")))
-	if rsa.VerifyPKCS1v15(keys[keyURL.Host], crypto.SHA256, sum[:], sig) != nil {
+	if err != nil || rsa.VerifyPKCS1v15(keys[keyURL.Host], crypto.SHA256, sum[:], sig) != nil {
 		return desc + " bad"
 	}
 	return desc + " ok"
@@ -262,20 +264,25 @@ func checkSignature(e Exchange, header string, keys map[string]*rsa.PublicKey) s
 
 // instanceKeys reads the public keys of the instances in a scenario
 // directory, keyed by host.
-func instanceKeys(dir string, names ...string) map[string]*rsa.PublicKey {
+func instanceKeys(dir string, names ...string) (map[string]*rsa.PublicKey, error) {
 	keys := map[string]*rsa.PublicKey{}
 	for _, n := range names {
-		b, err := os.ReadFile(filepath.Join(dir, n, "data", "key.pem"))
+		path := filepath.Join(dir, n, "data", "key.pem")
+		b, err := os.ReadFile(path)
 		if err != nil {
-			continue
+			return nil, err
 		}
-		if block, _ := pem.Decode(b); block != nil {
-			if k, err := x509.ParsePKCS1PrivateKey(block.Bytes); err == nil {
-				keys[n+".test"] = &k.PublicKey
-			}
+		block, _ := pem.Decode(b)
+		if block == nil {
+			return nil, fmt.Errorf("%s: not PEM", path)
 		}
+		k, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", path, err)
+		}
+		keys[n+".test"] = &k.PublicKey
 	}
-	return keys
+	return keys, nil
 }
 
 // canonical renders records as sorted JSON lines, so that two recordings
@@ -288,7 +295,7 @@ func canonical(records []WireRecord, instances ...string) []string {
 	sequences := map[string][]string{}
 	delivered := map[string]bool{}
 	for _, r := range records {
-		b, _ := json.Marshal(r)
+		b := must(json.Marshal(r))
 		if r.Method == http.MethodPost && slices.Contains(instances, r.From) {
 			// A delivery an instance sends again, identical, counts once:
 			// the original gives up on a slow receiver after httpx's default
@@ -302,14 +309,13 @@ func canonical(records []WireRecord, instances ...string) []string {
 		}
 		lines = append(lines, string(b))
 		if body, ok := r.Body.(map[string]any); ok && r.Method == http.MethodPost {
-			u, _ := url.Parse(r.URL)
+			u := must(url.Parse(r.URL))
 			key := r.From + " -> " + u.Host
 			sequences[key] = append(sequences[key], fmt.Sprintf("%v %v", body["type"], body["id"]))
 		}
 	}
 	for key, seq := range sequences {
-		b, _ := json.Marshal(map[string]any{"sequence": key, "posts": seq})
-		lines = append(lines, string(b))
+		lines = append(lines, string(must(json.Marshal(map[string]any{"sequence": key, "posts": seq}))))
 	}
 	sort.Strings(lines)
 	return lines

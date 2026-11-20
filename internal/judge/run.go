@@ -3,6 +3,7 @@ package judge
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -47,21 +48,23 @@ func Run(ctx context.Context, opts Options, scenarios []Scenario) []Result {
 			continue
 		}
 		passed := t.run(sc.Run) && t.run(func(t *T) { t.settle(sc.IncomingErrors) })
-		t.A.Stop()
-		t.B.Stop()
-		t.Proxy.Close()
+		if err := errors.Join(t.A.Stop(), t.B.Stop(), t.Proxy.Close()); err != nil {
+			t.Errorf("stopping the pair: %v", err)
+		}
 		exchanges := t.Proxy.Exchanges()
 		if err := writeJSON(filepath.Join(dir, "exchanges.json"), exchanges); err != nil {
-			t.Logf("writing exchanges: %v", err)
+			t.Errorf("writing exchanges: %v", err)
 		}
-		wire := canonical(normalize(exchanges, instanceKeys(dir, "a", "b")), "a", "b")
+		keys, err := instanceKeys(dir, "a", "b")
+		if err != nil {
+			t.Errorf("reading the instances' keys: %v", err)
+		}
+		wire := canonical(normalize(exchanges, keys), "a", "b")
 		if err := writeLines(filepath.Join(dir, "wire.jsonl"), wire); err != nil {
-			t.Logf("writing wire recording: %v", err)
+			t.Errorf("writing wire recording: %v", err)
 		}
-		if passed {
-			passed = t.checkWire(opts, sc.Name, wire)
-		}
-		results = append(results, Result{Name: sc.Name, Passed: passed, Log: t.log, Duration: time.Since(start)})
+		passed = passed && !t.Failed() && t.checkWire(opts, sc.Name, wire)
+		results = append(results, Result{Name: sc.Name, Passed: passed, Log: t.Log(), Duration: time.Since(start)})
 	}
 	return results
 }
@@ -127,10 +130,10 @@ func setUp(ctx context.Context, implA, implB Impl, dir string, sc Scenario) (_ *
 		if err != nil {
 			for _, i := range []Instance{t.A, t.B} {
 				if i != nil {
-					i.Stop()
+					err = errors.Join(err, i.Stop())
 				}
 			}
-			proxy.Close()
+			err = errors.Join(err, proxy.Close())
 		}
 	}()
 	caFile := filepath.Join(dir, "ca.pem")
