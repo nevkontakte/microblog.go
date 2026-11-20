@@ -427,3 +427,38 @@ the judge's logged-in client.
 | 24 | A code is redeemed for any redirect URI | `indieauth__rejected_codes` |
 
 4 of 4 caught.
+
+## Part 2c: client protocols — Micropub
+
+`scenarios_micropub.go` judges the Micropub endpoint (`app/micropub.py`) as a client app uses
+it, with a token it was granted through IndieAuth (`grantToken`, the flow
+`indieauth__authorization_code` judges step by step, as setup).
+
+| Scenario | Judges |
+|---|---|
+| `micropub__create` | A post from a form, from JSON, and with the token in the form: 201, served at its `Location`, delivered to followers |
+| `micropub__query` | `q=config`, `q=source` (the Markdown source), and the source of an unknown post |
+| `micropub__delete` | A deleted post is gone and its deletion reaches followers |
+| `micropub__update` | See below |
+| `micropub__unauthorized` | Create, delete and update each need their scope; no token, or an unknown one, is refused |
+| `micropub__invalid` | An `h-card`, an unsupported action, an unknown post |
+
+**Found in the original,** marked `BUG(port)`: an update answers 200 and changes nothing
+(`app/micropub.py:104-112`).
+
+**Judge fix on the way:** the masker missed ids inside URL-encoded query values
+(`q=source&url=…`), which made those goldens differ from run to run. The full suite (118
+scenarios) still passes against its goldens.
+
+**Clean run:** 6/6 pass, recording the goldens, and again against them.
+
+**Mutations,** run on the Micropub scenarios:
+
+| # | Mutation | Caught by |
+|---|---|---|
+| 25 | Micropub creates posts without the `create` scope | `micropub__unauthorized` |
+| 26 | A post deleted through Micropub isn't deleted for followers | `micropub__delete` |
+| 27 | Micropub reads JSON content as a form | `micropub__create` |
+| 28 | Micropub returns a post's HTML as its source | `micropub__query` |
+
+4 of 4 caught.

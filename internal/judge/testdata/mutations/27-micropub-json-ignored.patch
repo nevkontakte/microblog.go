@@ -1,0 +1,13 @@
+Mutation: Micropub reads JSON content as a form.
+
+--- a/app/micropub.py	2026-11-20 21:16:33.434323179 +0000
++++ b/app/micropub.py	2026-11-20 21:16:33.501035787 +0000
+@@ -146,7 +146,7 @@
+     # TODO(ts): support creating Article (with a name)
+ 
+     if is_json:
+-        content = _prop_get(form_data["properties"], "content")  # type: ignore
++        content = str(form_data["properties"])
+     else:
+         content = form_data["content"]
+ 

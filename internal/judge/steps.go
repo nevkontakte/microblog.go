@@ -639,10 +639,22 @@ func postForm(t *T, url string, form url.Values, authorization string) *Response
 	return request(t, http.MethodPost, url, header, []byte(form.Encode()))
 }
 
+// postJSON sends v as JSON to url as a client app, with authorization if set.
+func postJSON(t *T, url string, v any, authorization string) *Response {
+	header := http.Header{"Content-Type": {"application/json"}}
+	if authorization != "" {
+		header.Set("Authorization", authorization)
+	}
+	return request(t, http.MethodPost, url, header, must(json.Marshal(v)))
+}
+
+// bearer is the Authorization header carrying an access token.
+func bearer(token string) string { return "Bearer " + token }
+
 // fetchWithToken fetches an ActivityPub document from url as the holder of
 // an access token.
 func fetchWithToken(t *T, url, token string) *Response {
-	return request(t, http.MethodGet, url, http.Header{"Accept": {acceptAP}, "Authorization": {"Bearer " + token}}, nil)
+	return request(t, http.MethodGet, url, http.Header{"Accept": {acceptAP}, "Authorization": {bearer(token)}}, nil)
 }
 
 // decode parses resp's JSON body, failing the scenario if it isn't JSON.
@@ -728,4 +740,27 @@ func basicAuth(user, password string) string {
 // revoke revokes token at i (RFC 7009).
 func revoke(t *T, i Instance, token string) {
 	t.equal("revocation", postForm(t, BaseURL(i)+"/revoke_token", url.Values{"token": {token}}, "").Status, 200)
+}
+
+// objectField returns v's field key, failing the scenario if it isn't a
+// JSON object.
+func objectField(t *T, v map[string]any, key string) map[string]any {
+	o, ok := v[key].(map[string]any)
+	if !ok {
+		t.Fatalf("%s is %#v, not an object", key, v[key])
+	}
+	return o
+}
+
+// grantToken has a client app registered on i get an access token with
+// scopes: the IndieAuth flow that indieauth__authorization_code judges step
+// by step, as the setup of a scenario that uses the token.
+func grantToken(t *T, i Instance, scopes ...string) string {
+	const redirectURI = "https://app.test/callback"
+	clientID, _ := registerClient(t, i, redirectURI)
+	verifier, challenge := pkce("judge-code-verifier-0123456789abcdef0123456789")
+	code := approve(t, i, clientID, redirectURI, challenge, scopes...).Query().Get("code")
+	resp := redeemCode(t, i, clientID, redirectURI, code, verifier)
+	t.equal("token status", resp.Status, 200)
+	return stringField(t, decode(t, resp), "access_token")
 }

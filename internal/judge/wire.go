@@ -55,7 +55,7 @@ type WireRecord struct {
 }
 
 var (
-	hexID     = regexp.MustCompile(`\b[0-9a-f]{32}\b`)
+	hexID     = regexp.MustCompile(`(\b|%2F)([0-9a-f]{32})\b`) // also in a URL-encoded URL, as a query value
 	shortID   = regexp.MustCompile(`/articles/([0-9a-f]{7})/`) // the first 7 characters of a public id
 	timestamp = regexp.MustCompile(`\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?(Z|[+-]\d\d:\d\d)?`)
 	digit     = regexp.MustCompile(`\d`)
@@ -88,8 +88,8 @@ func newMasker(exchanges []Exchange) *masker {
 	m := &masker{ids: map[string]int{}}
 	number := func(texts ...string) {
 		for _, s := range texts {
-			for _, id := range hexID.FindAllString(s, -1) {
-				if m.ids[id] == 0 {
+			for _, match := range hexID.FindAllStringSubmatch(s, -1) {
+				if id := match[2]; m.ids[id] == 0 {
 					m.ids[id] = len(m.ids) + 1
 				}
 			}
@@ -128,7 +128,7 @@ func canonicalJSON(s string) string {
 func orderKey(e Exchange) string {
 	s := strings.Join([]string{e.From, e.Method, e.URL, canonicalJSON(e.ReqBody), fmt.Sprint(e.Status), canonicalJSON(e.RespBody)}, "\n")
 	s = volatileField.ReplaceAllString(s, `"$1":""`)
-	s = hexID.ReplaceAllString(s, "<id>")
+	s = hexID.ReplaceAllString(s, "${1}<id>")
 	return maskTimes(s)
 }
 
@@ -191,7 +191,10 @@ func isContext(rawURL string) bool {
 }
 
 func (m *masker) str(s string) string {
-	s = hexID.ReplaceAllStringFunc(s, func(id string) string { return fmt.Sprintf("<id%d>", m.ids[id]) })
+	s = hexID.ReplaceAllStringFunc(s, func(match string) string {
+		sub := hexID.FindStringSubmatch(match)
+		return fmt.Sprintf("%s<id%d>", sub[1], m.ids[sub[2]])
+	})
 	s = shortID.ReplaceAllStringFunc(s, func(path string) string {
 		short := shortID.FindStringSubmatch(path)[1]
 		for id, n := range m.ids {
