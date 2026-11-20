@@ -95,7 +95,8 @@ With the 26 ports, that makes 93 scenarios, the suite `judge.All()` runs.
 **Determinism:** a second run against the fresh goldens passes 91/91 with no wire differences, while three
 mutation runs shared the machine (four judges on four cores). After the numbering fix (judge bug 6
 below), the goldens were re-recorded (91/91) and a rerun again passed 91/91, with a mutation run
-sharing the machine. CI runs the whole suite on every pull request.
+sharing the machine. After the owner's later review rounds (error handling, single-step helpers, two
+more Update scenarios), the full suite passes 93/93. CI runs the whole suite on every pull request.
 
 **Mutations** (`internal/judge/testdata/mutations/`, each applied to the judge's copy of the
 original, full suite run each time):
