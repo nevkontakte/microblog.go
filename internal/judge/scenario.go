@@ -37,12 +37,23 @@ func (t *T) Logf(format string, args ...any) {
 	t.log = append(t.log, fmt.Sprintf(format, args...))
 }
 
-// Fatalf records a failure and ends the scenario.
-func (t *T) Fatalf(format string, args ...any) {
+// Errorf records a failure and lets the scenario go on.
+func (t *T) Errorf(format string, args ...any) {
 	t.Logf("FAIL: "+format, args...)
 	t.failed = true
+}
+
+// Fatalf records a failure and ends the scenario.
+func (t *T) Fatalf(format string, args ...any) {
+	t.Errorf(format, args...)
 	runtime.Goexit()
 }
+
+// Log returns what the scenario logged.
+func (t *T) Log() []string { return t.log }
+
+// Failed reports whether the scenario has failed.
+func (t *T) Failed() bool { return t.failed }
 
 // Check ends the scenario if err is not nil.
 func (t *T) Check(err error) {
@@ -84,14 +95,13 @@ func (t *T) run(f func(*T)) bool {
 	wg.Go(func() {
 		defer func() {
 			if r := recover(); r != nil {
-				t.Logf("PANIC: %v", r)
-				t.failed = true
+				t.Errorf("panic: %v", r)
 			}
 		}()
 		f(t)
 	})
 	wg.Wait()
-	return !t.failed
+	return !t.Failed()
 }
 
 // All returns every scenario, in a stable order.

@@ -31,8 +31,9 @@ func contextServer(paths map[string]string) http.Handler {
 			http.NotFound(w, r)
 			return
 		}
-		b, _ := jsonld.ReadFile("testdata/jsonld/" + name)
 		w.Header().Set("Content-Type", "application/ld+json")
-		w.Write(b)
+		if _, err := w.Write(must(jsonld.ReadFile("testdata/jsonld/" + name))); err != nil {
+			panic(err) // fails the run, see Proxy.exchange
+		}
 	})
 }
