@@ -34,8 +34,7 @@ var LookupScenarios = []Scenario{
 	}},
 
 	{Name: "lookup__question", Run: func(t *T) {
-		lookupObject(t, newPost(t, t.B, url.Values{"content": {"Which?"}, "poll_type": {"oneOf"},
-			"poll_duration": {"5"}, "poll_answer_1": {"A"}, "poll_answer_2": {"B"}}))
+		lookupObject(t, postQuestion(t, t.B, "oneOf", 5, "A", "B"))
 	}},
 
 	// Some servers serve an object wrapped in its Create (app/lookup.py:44-47).

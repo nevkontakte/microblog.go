@@ -70,8 +70,7 @@ var FederationScenarios = []Scenario{
 
 	{Name: "poll__vote", Run: func(t *T) {
 		follow(t, t.A, t.B)
-		poll := newPost(t, t.B, url.Values{"content": {"Which?"}, "poll_type": {"oneOf"},
-			"poll_duration": {"5"}, "poll_answer_1": {"A"}, "poll_answer_2": {"B"}})
+		poll := postQuestion(t, t.B, "oneOf", 5, "A", "B")
 		t.waitRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ?`, poll)
 		act(t, t.A, "vote", url.Values{"in_reply_to": {poll}, "name": {"A"}})
 		t.waitRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ? AND json(voted_for_answers) = json('["A"]')`, poll)
@@ -133,8 +132,7 @@ var FederationScenarios = []Scenario{
 	// that a applied them.
 	{Name: "poll__vote_any_of", Unstable: isUpdateTo("a"), Run: func(t *T) {
 		follow(t, t.A, t.B)
-		poll := newPost(t, t.B, url.Values{"content": {"Which?"}, "poll_type": {"anyOf"},
-			"poll_duration": {"5"}, "poll_answer_1": {"A"}, "poll_answer_2": {"B"}, "poll_answer_3": {"C"}})
+		poll := postQuestion(t, t.B, "anyOf", 5, "A", "B", "C")
 		t.waitRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ?`, poll)
 		act(t, t.A, "vote", url.Values{"in_reply_to": {poll}, "name": {"A", "C"}})
 		t.waitRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ? AND json(voted_for_answers) = json('["A","C"]')`, poll)

@@ -267,6 +267,8 @@ scenario): 2 blocking, 8 should-fix, 5 nits. All accepted except where noted.
 | 7 | Helpers were spread over scenario files and `run.go`. | Every helper lives in `steps.go`, grouped by kind: waits, assertions, admin actions, fake-actor steps. Scenario files hold only scenarios. |
 | 8 | `T.run` hand-rolled a goroutine join. | `sync.WaitGroup.Go`. |
 | 9 | Assertion failures printed both values whole. | `equal` prints a `go-cmp` diff. The wire comparison stays a multiset diff of normalized lines, since its order is not meaningful. |
+| 10 | Errors were ignored throughout the judge. | Every error is handled. Those only a judge bug can cause panic (`must`). The proxy collects errors from its goroutines, including a handler's panic, and the scenario fails; a sender hanging up is the one quiet case. Stopping an instance reports a process that exited by itself. |
+| 11 | The poll helper bundled following, posting and checking, with fixed roles. | `postQuestion`, `expectQuestion` and `expectDelivered` take the instances as arguments; the vote and lookup scenarios reuse `postQuestion`. Voting itself is `poll__vote` and `poll__vote_any_of`. |
 
 The timing audit went through every wait in the judge:
 

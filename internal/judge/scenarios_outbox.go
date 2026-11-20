@@ -112,17 +112,22 @@ var OutboxScenarios = []Scenario{
 		follow(t, t.B, t.A)
 		id := newPost(t, t.A, url.Values{"content": {"hi followers"}})
 		t.equal("outbox", outboxTypes(t, t.A), []any{"Accept", "Note"}) // the Accept is b's follow
-		note := t.one(t.A, `SELECT id, ap_type FROM outbox WHERE ap_id = ?`, id)
-		t.equal("outgoing recipient", t.one(t.A, `SELECT recipient FROM outgoing_activity WHERE outbox_object_id = ?`,
-			note["id"])["recipient"], BaseURL(t.B)+"/inbox")
-		t.waitRows(t.B, 1, `SELECT 1 FROM inbox WHERE ap_id = ? AND ap_type = 'Note'`, id)
+		expectDelivered(t, t.A, t.B, id, "Note")
 	}},
 
 	{Name: "send_create_activity__question__one_of", Run: func(t *T) {
-		question(t, "oneOf", 5, []string{"A", "B"})
+		follow(t, t.B, t.A)
+		id := postQuestion(t, t.A, "oneOf", 5, "A", "B")
+		t.equal("outbox", outboxTypes(t, t.A), []any{"Accept", "Question"})
+		expectQuestion(t, t.A, id, "oneOf", 5, "A", "B")
+		expectDelivered(t, t.A, t.B, id, "Question")
 	}},
 	{Name: "send_create_activity__question__any_of", Run: func(t *T) {
-		question(t, "anyOf", 10, []string{"A", "B", "C", "D"})
+		follow(t, t.B, t.A)
+		id := postQuestion(t, t.A, "anyOf", 10, "A", "B", "C", "D")
+		t.equal("outbox", outboxTypes(t, t.A), []any{"Accept", "Question"})
+		expectQuestion(t, t.A, id, "anyOf", 10, "A", "B", "C", "D")
+		expectDelivered(t, t.A, t.B, id, "Question")
 	}},
 
 	{Name: "send_create_activity__article", Run: func(t *T) {
