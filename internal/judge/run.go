@@ -185,6 +185,11 @@ func setUp(ctx context.Context, implA, implB Impl, dir string, sc Scenario) (_ *
 		return nil, err
 	}
 	t.Client = NewClient(judgeAddr, proxy.CertPool())
+	visitorAddr, err := proxy.Listen("visitor")
+	if err != nil {
+		return nil, err
+	}
+	t.Visitor = NewClient(visitorAddr, proxy.CertPool())
 
 	start := func(impl Impl, name string) (Instance, error) {
 		addr, err := proxy.Listen(name)

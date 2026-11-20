@@ -1,0 +1,13 @@
+Mutation: the media proxy serves URLs whose signature has expired.
+
+--- a/app/media.py	2026-11-20 18:53:55.127711413 +0000
++++ b/app/media.py	2026-11-20 18:53:55.140412268 +0000
+@@ -24,7 +24,7 @@
+ def verify_proxied_media_sig(expires: int, url: str, sig: str) -> None:
+     now = int(time.time() / EXPIRY_PERIOD)
+     expected = proxied_media_sig(expires, url)
+-    if now > expires or sig != expected:
++    if sig != expected:
+         raise InvalidProxySignatureError("invalid or expired media")
+ 
+ 

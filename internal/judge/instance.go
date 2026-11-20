@@ -96,7 +96,7 @@ func profile(s Spec, passwordHash []byte) string {
 		{"name", fmt.Sprintf("%q", "Instance "+s.Name)},
 		{"summary", fmt.Sprintf("%q", "<p>Judge instance "+s.Name+"</p>")},
 		{"https", "true"},
-		{"secret", fmt.Sprintf("%q", "judge-secret-"+s.Name+"-0123456789abcdef")},
+		{"secret", fmt.Sprintf("%q", configSecret(s.Name))},
 		{"debug", "true"},
 	}
 	lines := strings.Split(s.Config, "\n")
@@ -120,6 +120,10 @@ func profile(s Spec, passwordHash []byte) string {
 	}
 	return b.String()
 }
+
+// configSecret is the secret in instance name's profile.toml, which signs
+// sessions and media proxy URLs.
+func configSecret(name string) string { return "judge-secret-" + name + "-0123456789abcdef" }
 
 // proxyEnv returns the environment for an instance process: the parent's,
 // with every proxy variable pointing at the judge proxy and https trusting

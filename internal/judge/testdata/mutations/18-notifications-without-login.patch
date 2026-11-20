@@ -1,0 +1,13 @@
+Mutation: the admin notifications page is served without a session.
+
+--- a/app/admin.py	2026-11-20 18:53:55.101354849 +0000
++++ b/app/admin.py	2026-11-20 18:53:55.114587122 +0000
+@@ -49,6 +49,8 @@
+     request: Request,
+     session: str | None = Cookie(default=None),
+ ) -> None:
++    if request.url.path.endswith("/notifications"):
++        return None
+     if request.method == "POST":
+         form_data = await request.form()
+         if "redirect_url" in form_data:

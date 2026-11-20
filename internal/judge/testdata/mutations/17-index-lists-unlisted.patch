@@ -1,0 +1,15 @@
+Mutation: the home page lists unlisted posts.
+
+--- a/app/main.py	2026-11-20 18:54:04.312422063 +0000
++++ b/app/main.py	2026-11-20 18:54:04.327486813 +0000
+@@ -294,7 +294,9 @@
+ 
+     page = page or 1
+     where = (
+-        models.OutboxObject.visibility == ap.VisibilityEnum.PUBLIC,
++        models.OutboxObject.visibility.in_(
++            [ap.VisibilityEnum.PUBLIC, ap.VisibilityEnum.UNLISTED]
++        ),
+         models.OutboxObject.is_deleted.is_(False),
+         models.OutboxObject.is_hidden_from_homepage.is_(False),
+         models.OutboxObject.ap_type.in_(["Announce", "Note", "Video", "Question"]),

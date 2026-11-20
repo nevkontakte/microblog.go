@@ -2,6 +2,7 @@ package judge
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -12,6 +13,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/cookiejar"
+	"net/textproto"
 	"net/url"
 
 	"golang.org/x/net/html"
@@ -100,6 +102,7 @@ func (c *Client) Login(ctx context.Context, i Instance) error {
 // A File is a file upload in a form.
 type File struct {
 	Field, Name string
+	ContentType string // application/octet-stream if empty
 	Data        []byte
 }
 
@@ -167,7 +170,9 @@ func (c *Client) Post(ctx context.Context, i Instance, path string, form url.Val
 func (c *Client) post(ctx context.Context, i Instance, path, token string, form url.Values, files ...File) (*Response, error) {
 	var body bytes.Buffer
 	w := multipart.NewWriter(&body)
-	w.WriteField("csrf_token", token)
+	if err := w.WriteField("csrf_token", token); err != nil {
+		return nil, err
+	}
 	for k, vs := range form {
 		for _, v := range vs {
 			if err := w.WriteField(k, v); err != nil {
@@ -176,7 +181,10 @@ func (c *Client) post(ctx context.Context, i Instance, path, token string, form 
 		}
 	}
 	for _, f := range files {
-		fw, err := w.CreateFormFile(f.Field, f.Name)
+		h := textproto.MIMEHeader{}
+		h.Set("Content-Disposition", fmt.Sprintf(`form-data; name=%q; filename=%q`, f.Field, f.Name))
+		h.Set("Content-Type", cmp.Or(f.ContentType, "application/octet-stream"))
+		fw, err := w.CreatePart(h)
 		if err != nil {
 			return nil, err
 		}

@@ -1,0 +1,13 @@
+Mutation: tag pages list followers-only posts.
+
+--- a/app/main.py	2026-11-20 18:53:55.153498886 +0000
++++ b/app/main.py	2026-11-20 18:53:55.170900267 +0000
+@@ -1016,7 +1016,7 @@
+ ) -> ActivityPubResponse | templates.TemplateResponse:
+     where = [
+         models.TaggedOutboxObject.tag == tag.lower(),
+-        models.OutboxObject.visibility == ap.VisibilityEnum.PUBLIC,
++        models.OutboxObject.visibility != ap.VisibilityEnum.DIRECT,
+         models.OutboxObject.is_deleted.is_(False),
+     ]
+     tagged_count = await db_session.scalar(
