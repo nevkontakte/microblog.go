@@ -150,6 +150,13 @@ func (t *T) sameJSON(what string, stored any, want map[string]any) {
 	t.equal(what, got, norm)
 }
 
+// hasSuffix fails the scenario unless s ends with suffix.
+func (t *T) hasSuffix(what, s, suffix string) {
+	if !strings.HasSuffix(s, suffix) {
+		t.Fatalf("%s: %q does not end with %q", what, s, suffix)
+	}
+}
+
 // sawExchange fails unless the proxy recorded a request from sender for
 // exactly url, answered with status.
 func (t *T) sawExchange(from, method, url string, status int) {
@@ -337,6 +344,21 @@ func itemIDs(items any) []any {
 		ids = append(ids, it)
 	}
 	return ids
+}
+
+// lookup queries i's admin lookup page.
+func lookup(t *T, i Instance, query string) *Response {
+	resp, err := t.Client.Get(t.Ctx, BaseURL(i)+"/admin/lookup?query="+url.QueryEscape(query), "")
+	t.Check(err)
+	return resp
+}
+
+// expectLookedUp checks that i's lookup of object id fetched it and then,
+// once it parsed, its author at authorID (app/ap_object.py:332-335), and
+// stored neither.
+func expectLookedUp(t *T, i Instance, id, authorID string) {
+	t.sawInOrder(i.Name(), "GET", 200, id, authorID+"/")
+	t.expectRows(i, 0, `SELECT 1 FROM inbox WHERE ap_id = ?`, id)
 }
 
 // finger is the WebFinger URL for user on i, as the original requests it.
