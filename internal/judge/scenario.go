@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"runtime"
+	"slices"
 	"sync"
 	"time"
 )
@@ -27,19 +28,27 @@ type T struct {
 	Client *Client
 	Proxy  *Proxy
 
-	impls  map[string]Impl // by instance name
-	specs  map[string]Spec
+	impls map[string]Impl // by instance name
+	specs map[string]Spec
+	fakes []*Fake
+
+	mu     sync.Mutex // guards failed and log, which fakes also write from their goroutines
 	failed bool
 	log    []string
 }
 
 func (t *T) Logf(format string, args ...any) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
 	t.log = append(t.log, fmt.Sprintf(format, args...))
 }
 
-// Errorf records a failure and lets the scenario go on.
+// Errorf records a failure and lets the scenario go on. Unlike Fatalf, any
+// goroutine may call it.
 func (t *T) Errorf(format string, args ...any) {
 	t.Logf("FAIL: "+format, args...)
+	t.mu.Lock()
+	defer t.mu.Unlock()
 	t.failed = true
 }
 
@@ -50,10 +59,18 @@ func (t *T) Fatalf(format string, args ...any) {
 }
 
 // Log returns what the scenario logged.
-func (t *T) Log() []string { return t.log }
+func (t *T) Log() []string {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return slices.Clone(t.log)
+}
 
 // Failed reports whether the scenario has failed.
-func (t *T) Failed() bool { return t.failed }
+func (t *T) Failed() bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.failed
+}
 
 // Check ends the scenario if err is not nil.
 func (t *T) Check(err error) {
@@ -109,6 +126,7 @@ func All() []Scenario {
 	var all []Scenario
 	for _, group := range [][]Scenario{
 		FollowScenarios,
+		InboxScenarios,
 	} {
 		all = append(all, group...)
 	}

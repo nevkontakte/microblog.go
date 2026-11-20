@@ -3,6 +3,7 @@ module github.com/nevkontakte/microblog.go
 go 1.26.0
 
 require (
+	github.com/google/go-cmp v0.7.0
 	golang.org/x/crypto v0.59.0
 	golang.org/x/net v0.63.0
 	modernc.org/sqlite v1.62.0
