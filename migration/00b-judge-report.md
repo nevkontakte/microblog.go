@@ -236,7 +236,7 @@ scenario): 2 blocking, 8 should-fix, 5 nits. All accepted except where noted.
 | 2 | The profile Update after a restart was never waited for, so its delivery depended on timing. | Waited for, and for b to process it. |
 | 3, 4 | Any failed incoming activity counted as done; `waitProcessed` required no error, which a successful retry doesn't clear. | `Scenario.IncomingErrors` states the failures a scenario expects; settle fails on any other. `waitProcessed` waits for processing only. |
 | 5 | `self_destruct` zero-row check (same as batch 3, #4). | Fixed there. |
-| 6 | A follower signing with the wrong key still gets followers-only and direct objects: the original takes the keyId's owner as the signer even when the signature is invalid (`app/httpsig.py:256-273`). | Encoded as `BUG(port)` in `ap__object_acl`. **It's a security bug: flagged for the owner.** |
+| 6 | A follower signing with the wrong key still gets followers-only and direct objects: the original takes the keyId's owner as the signer even when the signature is invalid (`app/httpsig.py:256-273`). | Encoded as `BUG(port)` in `ap__object_acl`. It's a security bug; the owner decided the port keeps it until parity (ADR 0009). |
 | 7 | The served `publicKeyPem` was never compared with the key on disk. | Compared with `data/key.pem`. |
 | 8, 9 | Unknown Undo/Accept: storage unchecked. Blocked actor's Undo: only the counter checked. | Storage, the undone Like, the notification, and a dropped non-Undo now checked. |
 | 10 | One follower and one followee can't show ordering. | Two of each, newest first. |
