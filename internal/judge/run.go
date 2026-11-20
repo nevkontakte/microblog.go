@@ -31,13 +31,23 @@ type Options struct {
 }
 
 // Run plays each scenario on a fresh pair. A scenario passes if its body
-// does and its wire recording matches the golden one. Each scenario gets a
-// directory under Work holding both instances, their logs, every recorded
-// exchange (exchanges.json) and the normalized wire recording (wire.jsonl).
+// does and its wire recording matches the golden one. Each scenario gets its
+// own directory under Work, named after it and emptied before it starts,
+// holding both instances, their logs, every recorded exchange
+// (exchanges.json) and the normalized wire recording (wire.jsonl). Only a
+// restart reuses an instance's directory, within its scenario. The directory
+// is deleted once the scenario passes, and kept if it fails, for debugging.
 func Run(ctx context.Context, opts Options, scenarios []Scenario) []Result {
 	work, err := filepath.Abs(opts.Work) // instances run in their own directories
 	if err != nil {
 		return []Result{{Name: "setup", Log: []string{err.Error()}}}
+	}
+	named := map[string]bool{}
+	for _, sc := range scenarios {
+		if named[sc.Name] {
+			panic("two scenarios named " + sc.Name + " would share a directory and a golden recording")
+		}
+		named[sc.Name] = true
 	}
 	var results []Result
 	for _, sc := range scenarios {
@@ -69,6 +79,12 @@ func Run(ctx context.Context, opts Options, scenarios []Scenario) []Result {
 			t.Errorf("writing wire recording: %v", err)
 		}
 		passed = passed && !t.Failed() && t.checkWire(opts, sc.Name, wire)
+		if passed {
+			if err := os.RemoveAll(dir); err != nil {
+				t.Errorf("deleting the scenario's directory: %v", err)
+				passed = false
+			}
+		}
 		results = append(results, Result{Name: sc.Name, Passed: passed, Log: t.Log(), Duration: time.Since(start)})
 	}
 	return results
