@@ -159,6 +159,13 @@ believing it):
    default 5 s (`app/activitypub.py:397`) and sends again; on a loaded runner the receiver's
    answer came later than that. The wire comparison now counts an identical re-sent delivery
    once.
+9. A CI run failed `poll__vote_any_of` on an incoming activity that hit `database is locked`.
+   That's a race in the original: the incoming worker reads, then writes in the same
+   transaction, and SQLite refuses the upgrade at once, without waiting out the 15 s timeout,
+   while the web process is writing (`app/incoming_activities.py:110-133`). The worker tried
+   again 2 s later and succeeded, but the judge counted every activity that ever had an error,
+   and didn't wait for the retry. A lost lock race now counts as pending until it's retried,
+   and not as a failure. The port needn't reproduce the race.
 
 ## 4. Reviewer findings
 

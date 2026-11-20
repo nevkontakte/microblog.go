@@ -67,7 +67,8 @@ func (t *T) expectRows(i Instance, n int, query string, args ...any) {
 }
 
 // waitProcessed waits until i's incoming worker has processed the activity
-// apID. A failed try that a retry fixed keeps its error; settle counts those.
+// apID. A failed try that a retry fixed keeps its error; settle counts those,
+// except lost lock races (lockRace).
 func (t *T) waitProcessed(i Instance, apID any) {
 	t.waitRows(i, 1, `SELECT 1 FROM incoming_activity WHERE ap_id = ? AND is_processed = 1`, apID)
 }
@@ -75,8 +76,15 @@ func (t *T) waitProcessed(i Instance, apID any) {
 // waitAllProcessed waits until n incoming activities have been processed
 // without error on i, for activities without an id of their own.
 func (t *T) waitAllProcessed(i Instance, n int) {
-	t.waitRows(i, n, `SELECT 1 FROM incoming_activity WHERE is_processed = 1 AND error IS NULL`)
+	t.waitRows(i, n, `SELECT 1 FROM incoming_activity WHERE is_processed = 1 AND (error IS NULL OR `+lockRace+`)`)
 }
+
+// lockRace matches the error an incoming activity keeps when its try lost a
+// lock race in the original: the worker reads, then writes in the same
+// transaction, and SQLite refuses that upgrade at once, without waiting,
+// while another connection is writing. The worker tries again; it isn't a
+// processing failure.
+const lockRace = `error LIKE '%database is locked%'`
 
 // settle waits until the pair is quiet, so the wire recording holds
 // everything the scenario caused, however fast the workers run: every
@@ -98,7 +106,7 @@ func (t *T) settle(expectedErrors int) {
 		for _, i := range []Instance{t.A, t.B} {
 			row, err := Query(i, `SELECT
 				(SELECT count(*) FROM outgoing_activity WHERE NOT is_sent AND NOT is_errored) AS outgoing,
-				(SELECT count(*) FROM incoming_activity WHERE NOT is_processed AND NOT is_errored AND error IS NULL) AS incoming,
+				(SELECT count(*) FROM incoming_activity WHERE NOT is_processed AND NOT is_errored AND (error IS NULL OR `+lockRace+`)) AS incoming,
 				(SELECT coalesce(max(id), 0) FROM outgoing_activity) AS last_outgoing,
 				(SELECT coalesce(max(id), 0) FROM incoming_activity) AS last_incoming,
 				(SELECT count(*) FROM outgoing_activity WHERE is_sent OR is_errored) AS sent,
@@ -128,7 +136,7 @@ func (t *T) settle(expectedErrors int) {
 	})
 	var errors int
 	for _, i := range []Instance{t.A, t.B} {
-		errors += len(t.rows(i, `SELECT 1 FROM incoming_activity WHERE error IS NOT NULL`))
+		errors += len(t.rows(i, `SELECT 1 FROM incoming_activity WHERE error IS NOT NULL AND NOT `+lockRace))
 	}
 	if errors != expectedErrors {
 		t.Fatalf("%d incoming activities failed, want %d (see the instances' incoming.log)", errors, expectedErrors)
