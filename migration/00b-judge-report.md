@@ -495,3 +495,36 @@ unset (`app/webmentions.py:97-104`).
 | 32 | A like is counted as a plain mention | `webmention__incoming`, `webmention__update` |
 
 4 of 4 caught.
+
+## Part 2c: client protocols — C2S posting
+
+`scenarios_c2s.go` judges ActivityPub client-to-server posting (`POST /outbox`,
+`app/main.py:635-675`) as a client app uses it, with an IndieAuth token.
+
+| Scenario | Judges |
+|---|---|
+| `c2s__create` | A Create addressed publicly, unlisted, to followers, and to one actor: 201 with the object and its URL, the visibility each audience implies, and who it is delivered to |
+| `c2s__reply` | A reply with a content warning, marked sensitive, delivered as such |
+| `c2s__unauthorized` | No token, or an unknown one: 401, nothing posted |
+| `c2s__unsupported` | See below |
+
+**Found in the original,** marked `BUG(port)`:
+
+- A followers-only Create is posted as direct (`app/main.py:651-656`).
+- The client's addressing is ignored past the visibility it implies: recipients come from the
+  content's @-mentions, so a Create addressed to one actor reaches no one.
+- Anything but a Create raises `ValueError("TODO")`, and a Create by another actor fails an
+  `assert`: both a 500, not a 4xx (`app/main.py:646-669`).
+
+**Clean run:** 4/4 pass, recording the goldens, and again against them. The full suite, now 128
+scenarios, passes against its goldens.
+
+**Mutations,** run on the C2S scenarios:
+
+| # | Mutation | Caught by |
+|---|---|---|
+| 33 | The outbox accepts posts without an access token | `c2s__unauthorized` |
+| 34 | An unlisted Create is posted as public | `c2s__create` |
+| 35 | A posted Create loses its content warning | `c2s__reply` |
+
+3 of 3 caught.

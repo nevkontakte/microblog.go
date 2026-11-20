@@ -1,0 +1,13 @@
+Mutation: a posted Create loses its content warning.
+
+--- a/app/main.py	2026-11-20 22:52:09.630412813 +0000
++++ b/app/main.py	2026-11-20 22:52:09.647630825 +0000
+@@ -662,7 +662,7 @@
+             uploads=[],
+             in_reply_to=obj.get("inReplyTo"),
+             visibility=visibility,
+-            content_warning=obj.get("summary"),
++            content_warning=None,
+             is_sensitive=obj.get("sensitive", False),
+         )
+     else:

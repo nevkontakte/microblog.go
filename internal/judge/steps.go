@@ -779,3 +779,20 @@ func mentionPage(source, target, kind string) string {
 		`<p class="e-content">About <a class="` + kind + `" href="` + target + `">this post</a></p>` +
 		`<a class="u-url" href="` + source + `">Permalink</a></div></body></html>`
 }
+
+// c2sNote is a Note as a client app posts it, addressed to to and cc
+// (left out if empty).
+func c2sNote(content string, to, cc []string) map[string]any {
+	note := map[string]any{"type": "Note", "content": content, "to": to}
+	if len(cc) > 0 {
+		note["cc"] = cc
+	}
+	return note
+}
+
+// c2sCreate is a Create of note by i's actor, as a client app posts it to
+// i's outbox.
+func c2sCreate(i Instance, note map[string]any) map[string]any {
+	return map[string]any{"@context": "https://www.w3.org/ns/activitystreams", "type": "Create",
+		"actor": BaseURL(i), "object": note}
+}
