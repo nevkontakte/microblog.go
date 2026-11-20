@@ -128,6 +128,40 @@ func (f *Fake) SendWrongKey(ctx context.Context, inst Instance, activity map[str
 	return f.post(ctx, BaseURL(inst)+"/inbox", activity, signing{key: key})
 }
 
+// Fetch GETs an ActivityPub object as the fake, with an HTTP signature if
+// signed, the way servers fetch objects whose visibility is restricted.
+func (f *Fake) Fetch(ctx context.Context, url string, signed bool) (*Response, error) {
+	var key *rsa.PrivateKey
+	if signed {
+		key = f.key
+	}
+	return f.fetch(ctx, url, key)
+}
+
+// FetchWrongKey GETs url signed by a key that isn't the fake's.
+func (f *Fake) FetchWrongKey(ctx context.Context, url string) (*Response, error) {
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return nil, err
+	}
+	return f.fetch(ctx, url, key)
+}
+
+func (f *Fake) fetch(ctx context.Context, url string, key *rsa.PrivateKey) (*Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/activity+json")
+	req.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
+	if key != nil {
+		if err := f.sign(req, key, "(request-target) host date"); err != nil {
+			return nil, err
+		}
+	}
+	return f.do(req)
+}
+
 // signing says how post signs a request: not at all without a key, and
 // with the body's digest unless signedDigest replaces it. A sentDigest
 // replaces the Digest header after signing.
