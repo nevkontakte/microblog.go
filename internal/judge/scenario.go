@@ -136,6 +136,7 @@ func All() []Scenario {
 		InboxEdgeScenarios,
 		EndpointScenarios,
 		CLIScenarios,
+		SwapScenarios,
 	} {
 		all = append(all, group...)
 	}

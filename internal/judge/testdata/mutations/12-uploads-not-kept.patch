@@ -1,0 +1,14 @@
+Mutation: uploads are stored in a temporary directory, not data/uploads, and are lost when the server stops.
+
+--- a/app/uploads.py	2026-11-20 17:59:39.764000969 +0000
++++ b/app/uploads.py	2026-11-20 17:59:54.770902017 +0000
+@@ -14,7 +14,8 @@
+ from app.config import ROOT_DIR
+ from app.database import AsyncSession
+ 
+-UPLOAD_DIR = ROOT_DIR / "data" / "uploads"
++import tempfile  # noqa
++UPLOAD_DIR = ROOT_DIR / tempfile.mkdtemp()  # an absolute path replaces ROOT_DIR
+ 
+ 
+ async def save_upload(db_session: AsyncSession, f: UploadFile) -> models.Upload:
