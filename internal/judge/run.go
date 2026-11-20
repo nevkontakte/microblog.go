@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 )
@@ -59,7 +60,11 @@ func Run(ctx context.Context, opts Options, scenarios []Scenario) []Result {
 		if err != nil {
 			t.Errorf("reading the instances' keys: %v", err)
 		}
-		wire := canonical(normalize(exchanges, keys), "a", "b")
+		records := normalize(exchanges, keys)
+		if sc.Unstable != nil {
+			records = slices.DeleteFunc(records, sc.Unstable)
+		}
+		wire := canonical(records, "a", "b")
 		if err := writeLines(filepath.Join(dir, "wire.jsonl"), wire); err != nil {
 			t.Errorf("writing wire recording: %v", err)
 		}
