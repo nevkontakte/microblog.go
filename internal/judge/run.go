@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -28,6 +29,9 @@ type Options struct {
 	// the run writes them instead of comparing against them.
 	Golden       string
 	UpdateGolden bool
+	// Parallel is how many scenarios play at once; 1 if not set. Each has
+	// its own pair, proxy and directory, so they don't share state.
+	Parallel int
 }
 
 // Run plays each scenario on a fresh pair. A scenario passes if its body
@@ -49,45 +53,60 @@ func Run(ctx context.Context, opts Options, scenarios []Scenario) []Result {
 		}
 		named[sc.Name] = true
 	}
-	var results []Result
-	for _, sc := range scenarios {
-		start := time.Now()
-		dir := filepath.Join(work, sc.Name)
-		t, err := setUp(ctx, opts.A, opts.B, dir, sc)
-		if err != nil {
-			results = append(results, Result{Name: sc.Name, Log: []string{"SETUP: " + err.Error()}})
-			continue
-		}
-		passed := t.run(sc.Run) && t.run(func(t *T) { t.settle(sc.IncomingErrors) })
-		if err := errors.Join(t.A.Stop(), t.B.Stop(), t.Proxy.Close()); err != nil {
-			t.Errorf("stopping the pair: %v", err)
-		}
-		exchanges := t.Proxy.Exchanges()
-		if err := writeJSON(filepath.Join(dir, "exchanges.json"), exchanges); err != nil {
-			t.Errorf("writing exchanges: %v", err)
-		}
-		keys, err := instanceKeys(dir, "a", "b")
-		if err != nil {
-			t.Errorf("reading the instances' keys: %v", err)
-		}
-		records := normalize(exchanges, keys)
-		if sc.Unstable != nil {
-			records = slices.DeleteFunc(records, sc.Unstable)
-		}
-		wire := canonical(records, "a", "b")
-		if err := writeLines(filepath.Join(dir, "wire.jsonl"), wire); err != nil {
-			t.Errorf("writing wire recording: %v", err)
-		}
-		passed = passed && !t.Failed() && t.checkWire(opts, sc.Name, wire)
-		if passed {
-			if err := os.RemoveAll(dir); err != nil {
-				t.Errorf("deleting the scenario's directory: %v", err)
-				passed = false
-			}
-		}
-		results = append(results, Result{Name: sc.Name, Passed: passed, Log: t.Log(), Duration: time.Since(start)})
+	results := make([]Result, len(scenarios))
+	slots := make(chan struct{}, max(opts.Parallel, 1))
+	var wg sync.WaitGroup
+	for n, sc := range scenarios {
+		wg.Go(func() {
+			slots <- struct{}{}
+			defer func() { <-slots }()
+			results[n] = play(ctx, opts, filepath.Join(work, sc.Name), sc)
+		})
 	}
+	wg.Wait()
 	return results
+}
+
+// play runs one scenario on a fresh pair in dir and judges it.
+func play(ctx context.Context, opts Options, dir string, sc Scenario) Result {
+	start := time.Now()
+	t, err := setUp(ctx, opts.A, opts.B, dir, sc)
+	if err != nil {
+		return Result{Name: sc.Name, Log: []string{"SETUP: " + err.Error()}}
+	}
+	passed := t.run(sc.Run) && t.run(func(t *T) { t.settle(sc.IncomingErrors) })
+	var ea, eb error
+	var stopping sync.WaitGroup
+	stopping.Go(func() { ea = t.A.Stop() })
+	stopping.Go(func() { eb = t.B.Stop() })
+	stopping.Wait()
+	if err := errors.Join(ea, eb, t.Proxy.Close()); err != nil {
+		t.Errorf("stopping the pair: %v", err)
+	}
+	exchanges := t.Proxy.Exchanges()
+	if err := writeJSON(filepath.Join(dir, "exchanges.json"), exchanges); err != nil {
+		t.Errorf("writing exchanges: %v", err)
+	}
+	keys, err := instanceKeys(dir, "a", "b")
+	if err != nil {
+		t.Errorf("reading the instances' keys: %v", err)
+	}
+	records := normalize(exchanges, keys)
+	if sc.Unstable != nil {
+		records = slices.DeleteFunc(records, sc.Unstable)
+	}
+	wire := canonical(records, "a", "b")
+	if err := writeLines(filepath.Join(dir, "wire.jsonl"), wire); err != nil {
+		t.Errorf("writing wire recording: %v", err)
+	}
+	passed = passed && !t.Failed() && t.checkWire(opts, sc.Name, wire)
+	if passed {
+		if err := os.RemoveAll(dir); err != nil {
+			t.Errorf("deleting the scenario's directory: %v", err)
+			passed = false
+		}
+	}
+	return Result{Name: sc.Name, Passed: passed, Log: t.Log(), Duration: time.Since(start)}
 }
 
 // checkWire compares a scenario's wire recording to the golden one, or

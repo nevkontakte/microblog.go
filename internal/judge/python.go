@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +15,11 @@ import (
 type Python struct {
 	Venv string // virtualenv holding the reference's dependencies
 	App  string // runnable copy of the reference, made by PreparePython
+
+	// baselineDB is a database migrated once by PreparePython. Fresh
+	// instances start from a copy: migrating takes about a second per
+	// instance, and every freshly migrated database is the same.
+	baselineDB string
 }
 
 // PreparePython copies the reference implementation from src into dst,
@@ -59,7 +65,44 @@ func PreparePython(src, dst, venv string, patches ...string) (*Python, error) {
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return nil, fmt.Errorf("compiling CSS: %v: %s", err, out)
 	}
-	return &Python{Venv: venv, App: dst}, nil
+	py := &Python{Venv: venv, App: dst}
+	baseline := filepath.Join(dst, "baseline")
+	if err := os.MkdirAll(baseline, 0o755); err != nil {
+		return nil, err
+	}
+	if err := py.link(baseline); err != nil {
+		return nil, err
+	}
+	if _, err := writeData(Spec{Name: "baseline", Dir: baseline}); err != nil {
+		return nil, err
+	}
+	if err := py.migrate(context.Background(), baseline, os.Environ()); err != nil {
+		return nil, err
+	}
+	py.baselineDB = filepath.Join(baseline, "data", "microblogpub.db")
+	return py, nil
+}
+
+// link makes dir runnable as an instance of the copy: the code is shared,
+// the data is dir's own.
+func (py *Python) link(dir string) error {
+	for _, f := range []string{"app", "alembic", "alembic.ini", "tasks.py"} {
+		err := os.Symlink(filepath.Join(py.App, f), filepath.Join(dir, f))
+		if err != nil && !os.IsExist(err) {
+			return err
+		}
+	}
+	return nil
+}
+
+// migrate brings the database in dir/data up to the latest migration.
+func (py *Python) migrate(ctx context.Context, dir string, env []string) error {
+	cmd := exec.CommandContext(ctx, filepath.Join(py.Venv, "bin", "alembic"), "upgrade", "head")
+	cmd.Dir, cmd.Env = dir, env
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("migrating %s: %v: %s", dir, err, out)
+	}
+	return nil
 }
 
 type pythonInstance struct {
@@ -96,21 +139,27 @@ func (py *Python) Start(ctx context.Context, s Spec) (_ Instance, err error) {
 	if err != nil {
 		return nil, err
 	}
-	for _, f := range []string{"app", "alembic", "alembic.ini", "tasks.py"} {
-		err := os.Symlink(filepath.Join(py.App, f), filepath.Join(s.Dir, f))
-		if err != nil && !os.IsExist(err) {
-			return nil, err
-		}
+	if err := py.link(s.Dir); err != nil {
+		return nil, err
 	}
 	// A fixed hash seed: app/actor.py iterates over a set of URLs, and the
 	// order of requests on the wire must not change from run to run.
 	env := proxyEnv(s, "PYTHONHASHSEED=0")
 	bin := func(name string) string { return filepath.Join(py.Venv, "bin", name) }
 
-	migrate := exec.CommandContext(ctx, bin("alembic"), "upgrade", "head")
-	migrate.Dir, migrate.Env = s.Dir, env
-	if out, err := migrate.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("migrating %s: %v: %s", s.Name, err, out)
+	// A fresh instance's database is a copy of the baseline; a restarted
+	// one's is migrated, as an upgrade would.
+	db := filepath.Join(data, "microblogpub.db")
+	if _, err := os.Stat(db); errors.Is(err, fs.ErrNotExist) {
+		baseline, err := os.ReadFile(py.baselineDB)
+		if err != nil {
+			return nil, err
+		}
+		if err := os.WriteFile(db, baseline, 0o644); err != nil {
+			return nil, err
+		}
+	} else if err := py.migrate(ctx, s.Dir, env); err != nil {
+		return nil, err
 	}
 
 	socket, addr, err := listen()
