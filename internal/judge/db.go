@@ -49,3 +49,17 @@ func Query(i Instance, query string, args ...any) (_ []map[string]any, err error
 	}
 	return out, rows.Err()
 }
+
+// Exec writes to an instance's database while it runs. Scenarios use it only
+// to seed state the original tests seeded directly and that no interaction
+// can produce, such as a counter that has drifted.
+func Exec(i Instance, query string, args ...any) (err error) {
+	path := filepath.Join(i.DataDir(), "microblogpub.db")
+	db, err := sql.Open("sqlite", "file:"+path+"?_pragma=busy_timeout(5000)")
+	if err != nil {
+		return err
+	}
+	defer func() { err = errors.Join(err, db.Close()) }()
+	_, err = db.Exec(query, args...)
+	return err
+}

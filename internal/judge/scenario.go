@@ -127,6 +127,7 @@ func All() []Scenario {
 	for _, group := range [][]Scenario{
 		FollowScenarios,
 		InboxScenarios,
+		OutboxScenarios,
 	} {
 		all = append(all, group...)
 	}

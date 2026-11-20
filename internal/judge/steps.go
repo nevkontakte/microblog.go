@@ -157,6 +157,17 @@ func act(t *T, i Instance, action string, form url.Values) {
 	t.Check(err)
 }
 
+// newPost publishes a post on i through the admin form and returns its id.
+// The form defaults to public visibility.
+func newPost(t *T, i Instance, form url.Values, files ...File) string {
+	if form.Get("visibility") == "" {
+		form.Set("visibility", "PUBLIC")
+	}
+	id, err := t.Client.Act(t.Ctx, i, "new", form, files...)
+	t.Check(err)
+	return id // the redirect goes to the new object, whose URL is its id
+}
+
 // follow makes from follow to, which accepts automatically, and waits until
 // both sides record the relationship.
 func follow(t *T, from, to Instance) {
@@ -172,6 +183,67 @@ func pendingFollower(t *T, i, follower Instance) string {
 	t.expectRows(i, 0, `SELECT 1 FROM follower WHERE ap_actor_id = ?`, BaseURL(follower))
 	n := t.one(i, `SELECT id FROM notifications WHERE notification_type = 'PENDING_INCOMING_FOLLOWER'`)
 	return fmt.Sprint(n["id"])
+}
+
+// postQuestion publishes a poll on i through the admin form and returns its
+// id.
+func postQuestion(t *T, i Instance, pollType string, minutes int, answers ...string) string {
+	form := url.Values{"content": {"Which?"}, "poll_type": {pollType}, "poll_duration": {fmt.Sprint(minutes)}}
+	for n, a := range answers {
+		form.Set(fmt.Sprintf("poll_answer_%d", n+1), a)
+	}
+	return newPost(t, i, form)
+}
+
+// expectQuestion checks the poll id as its author i stored it: open, lasting
+// minutes, and offering answers as pollType ("oneOf" or "anyOf") alone.
+func expectQuestion(t *T, i Instance, id, pollType string, minutes int, answers ...string) {
+	other := map[string]string{"oneOf": "anyOf", "anyOf": "oneOf"}[pollType]
+	q := t.one(i, `SELECT ap_type,
+		json_extract(ap_object, '$.endTime') > strftime('%Y-%m-%dT%H:%M:%SZ', 'now') AS open,
+		round((julianday(json_extract(ap_object, '$.endTime')) - julianday(json_extract(ap_object, '$.published'))) * 1440) AS minutes,
+		json_extract(ap_object, '$.`+other+`') IS NULL AS single
+		FROM outbox WHERE ap_id = ?`, id)
+	t.equal("question", []any{q["ap_type"], q["open"], q["minutes"], q["single"]},
+		[]any{"Question", int64(1), float64(minutes), int64(1)})
+	var names, want []any
+	for _, r := range t.rows(i, `SELECT json_extract(value, '$.name') AS name
+		FROM outbox, json_each(outbox.ap_object, '$.`+pollType+`') WHERE ap_id = ? ORDER BY name`, id) {
+		names = append(names, r["name"])
+	}
+	for _, a := range answers {
+		want = append(want, a)
+	}
+	t.equal(pollType+" answers", names, want)
+}
+
+// page fetches an HTML page and fails unless it is 200.
+func page(t *T, url string) string {
+	resp, err := t.Client.Get(t.Ctx, url, "text/html")
+	t.Check(err)
+	if resp.Status != 200 {
+		t.Fatalf("GET %s: status %d", url, resp.Status)
+	}
+	return string(resp.Body)
+}
+
+// expectDelivered checks that from queued its object id for to's inbox, and
+// that to received it as an apType.
+func expectDelivered(t *T, from, to Instance, id, apType string) {
+	obj := t.one(from, `SELECT id FROM outbox WHERE ap_id = ?`, id)
+	t.equal("recipient", t.one(from, `SELECT recipient FROM outgoing_activity WHERE outbox_object_id = ?`,
+		obj["id"])["recipient"], BaseURL(to)+"/inbox")
+	t.waitRows(to, 1, `SELECT 1 FROM inbox WHERE ap_id = ? AND ap_type = ?`, id, apType)
+}
+
+// outboxTypes returns the types of everything in i's outbox, sorted. The
+// original tests asserted on an otherwise empty outbox.
+func outboxTypes(t *T, i Instance) []any {
+	var types []any
+	for _, r := range t.rows(i, `SELECT ap_type FROM outbox ORDER BY ap_type`) {
+		types = append(types, r["ap_type"])
+	}
+	return types
 }
 
 // Steps with fake actors.
