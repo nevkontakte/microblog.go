@@ -26,8 +26,10 @@ func main() {
 	var (
 		reference = flag.String("reference", "reference/microblog.pub", "checkout of the Python original")
 		venv      = flag.String("venv", os.Getenv("MICROBLOGPUB_VENV"), "virtualenv with the original's dependencies (default $MICROBLOGPUB_VENV)")
-		work      = flag.String("work", "_judge", "directory for instances and their logs")
+		work      = flag.String("work", "_judge", "directory for instances, logs and recordings")
 		run       = flag.String("run", "", "run only scenarios matching this regexp")
+		golden    = flag.String("golden", "internal/judge/testdata/golden", "directory of golden wire recordings")
+		update    = flag.Bool("update-golden", false, "write the golden wire recordings instead of comparing")
 	)
 	flag.DurationVar(&judge.Timeout, "timeout", judge.Timeout, "ceiling for each wait; raise it on slow machines")
 	flag.Parse()
@@ -52,7 +54,10 @@ func main() {
 			scenarios = append(scenarios, s)
 		}
 	}
-	results := judge.Run(ctx, judge.Options{A: py, B: py, Work: filepath.Join(*work, "py-py")}, scenarios)
+	results := judge.Run(ctx, judge.Options{
+		A: py, B: py, Work: filepath.Join(*work, "py-py"),
+		Golden: *golden, UpdateGolden: *update,
+	}, scenarios)
 	summary, ok := judge.Summary(results)
 	fmt.Print(summary)
 	if !ok {

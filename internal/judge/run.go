@@ -2,6 +2,7 @@ package judge
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -20,11 +21,17 @@ type Result struct {
 // Options configure a run.
 type Options struct {
 	A, B Impl   // implementations for instances "a" and "b"
-	Work string // scratch directory for instances and their logs
+	Work string // scratch directory for instances, logs and recordings
+	// Golden is the directory of golden wire recordings. With UpdateGolden,
+	// the run writes them instead of comparing against them.
+	Golden       string
+	UpdateGolden bool
 }
 
-// Run plays each scenario on a fresh pair. Each scenario gets a directory
-// under Work holding both instances and their logs.
+// Run plays each scenario on a fresh pair. A scenario passes if its body
+// does and its wire recording matches the golden one. Each scenario gets a
+// directory under Work holding both instances, their logs, every recorded
+// exchange (exchanges.json) and the normalized wire recording (wire.jsonl).
 func Run(ctx context.Context, opts Options, scenarios []Scenario) []Result {
 	work, err := filepath.Abs(opts.Work) // instances run in their own directories
 	if err != nil {
@@ -39,15 +46,71 @@ func Run(ctx context.Context, opts Options, scenarios []Scenario) []Result {
 			results = append(results, Result{Name: sc.Name, Log: []string{"SETUP: " + err.Error()}})
 			continue
 		}
-		passed := t.run(sc.Run)
+		passed := t.run(sc.Run) && t.run(func(t *T) { t.settle(sc.IncomingErrors) })
 		t.A.Stop()
 		t.B.Stop()
 		t.Proxy.Close()
+		exchanges := t.Proxy.Exchanges()
+		if err := writeJSON(filepath.Join(dir, "exchanges.json"), exchanges); err != nil {
+			t.Logf("writing exchanges: %v", err)
+		}
+		wire := canonical(normalize(exchanges, instanceKeys(dir, "a", "b")), "a", "b")
+		if err := writeLines(filepath.Join(dir, "wire.jsonl"), wire); err != nil {
+			t.Logf("writing wire recording: %v", err)
+		}
+		if passed {
+			passed = t.checkWire(opts, sc.Name, wire)
+		}
 		results = append(results, Result{Name: sc.Name, Passed: passed, Log: t.log, Duration: time.Since(start)})
 	}
 	return results
 }
 
+// checkWire compares a scenario's wire recording to the golden one, or
+// replaces the golden one when updating.
+func (t *T) checkWire(opts Options, name string, wire []string) bool {
+	golden := filepath.Join(opts.Golden, name+".jsonl")
+	if opts.UpdateGolden {
+		if err := writeLines(golden, wire); err != nil {
+			t.Logf("FAIL: writing golden recording: %v", err)
+			return false
+		}
+		return true
+	}
+	b, err := os.ReadFile(golden)
+	if err != nil {
+		t.Logf("FAIL: no golden wire recording: %v", err)
+		return false
+	}
+	var want []string
+	for _, l := range strings.Split(string(b), "\n") {
+		if l != "" {
+			want = append(want, l)
+		}
+	}
+	missing, extra := diffWire(want, wire)
+	if len(missing) == 0 && len(extra) == 0 {
+		return true
+	}
+	t.Logf("FAIL: wire differs from %s (full recording: wire.jsonl)", golden)
+	for _, l := range missing {
+		t.Logf("  - %s", truncate(l))
+	}
+	for _, l := range extra {
+		t.Logf("  + %s", truncate(l))
+	}
+	return false
+}
+
+func truncate(s string) string {
+	if len(s) > 300 {
+		return s[:300] + "…"
+	}
+	return s
+}
+
+// setUp starts a fresh pair for sc in dir. If anything fails, it stops what
+// it started.
 func setUp(ctx context.Context, implA, implB Impl, dir string, sc Scenario) (_ *T, err error) {
 	if err := os.RemoveAll(dir); err != nil {
 		return nil, err
@@ -133,6 +196,25 @@ func (t *T) waitReady(i Instance) error {
 		}
 	}
 	return fmt.Errorf("%s did not become ready", BaseURL(i))
+}
+
+func writeJSON(path string, v any) error {
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, b, 0o644)
+}
+
+func writeLines(path string, lines []string) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	var b strings.Builder
+	for _, l := range lines {
+		b.WriteString(l + "\n")
+	}
+	return os.WriteFile(path, []byte(b.String()), 0o644)
 }
 
 // Summary formats results for the terminal.
