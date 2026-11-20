@@ -105,9 +105,35 @@ func (f *Fake) SendUnsigned(ctx context.Context, inst Instance, activity map[str
 	return f.post(ctx, BaseURL(inst)+"/inbox", activity, signing{})
 }
 
-// signing says how post signs a request: not at all without a key.
+// SendBadDigest delivers activity with a validly signed Digest header that
+// doesn't match the body.
+func (f *Fake) SendBadDigest(ctx context.Context, inst Instance, activity map[string]any) (*Response, error) {
+	return f.post(ctx, BaseURL(inst)+"/inbox", activity, signing{key: f.key, signedDigest: zeroDigest})
+}
+
+// SendWrongDigestHeader delivers activity signed over the body's real
+// digest, with a Digest header that doesn't match it.
+func (f *Fake) SendWrongDigestHeader(ctx context.Context, inst Instance, activity map[string]any) (*Response, error) {
+	return f.post(ctx, BaseURL(inst)+"/inbox", activity, signing{key: f.key, sentDigest: zeroDigest})
+}
+
+var zeroDigest = "SHA-256=" + base64.StdEncoding.EncodeToString(make([]byte, 32))
+
+// SendWrongKey delivers activity signed by a key that isn't the fake's.
+func (f *Fake) SendWrongKey(ctx context.Context, inst Instance, activity map[string]any) (*Response, error) {
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return nil, err
+	}
+	return f.post(ctx, BaseURL(inst)+"/inbox", activity, signing{key: key})
+}
+
+// signing says how post signs a request: not at all without a key, and
+// with the body's digest unless signedDigest replaces it. A sentDigest
+// replaces the Digest header after signing.
 type signing struct {
-	key *rsa.PrivateKey
+	key                      *rsa.PrivateKey
+	signedDigest, sentDigest string
 }
 
 func (f *Fake) post(ctx context.Context, inbox string, activity map[string]any, s signing) (*Response, error) {
@@ -124,8 +150,14 @@ func (f *Fake) post(ctx context.Context, inbox string, activity map[string]any, 
 	if s.key != nil {
 		digest := sha256.Sum256(body)
 		req.Header.Set("Digest", "SHA-256="+base64.StdEncoding.EncodeToString(digest[:]))
+		if s.signedDigest != "" {
+			req.Header.Set("Digest", s.signedDigest)
+		}
 		if err := f.sign(req, s.key, "(request-target) host date digest content-type"); err != nil {
 			return nil, err
+		}
+		if s.sentDigest != "" {
+			req.Header.Set("Digest", s.sentDigest)
 		}
 	}
 	return f.do(req)

@@ -62,6 +62,12 @@ func (t *T) waitProcessed(i Instance, apID any) {
 	t.waitRows(i, 1, `SELECT 1 FROM incoming_activity WHERE ap_id = ? AND is_processed = 1`, apID)
 }
 
+// waitAllProcessed waits until n incoming activities have been processed
+// without error on i, for activities without an id of their own.
+func (t *T) waitAllProcessed(i Instance, n int) {
+	t.waitRows(i, n, `SELECT 1 FROM incoming_activity WHERE is_processed = 1 AND (error IS NULL OR `+lockRace+`)`)
+}
+
 // lockRace matches the error an incoming activity keeps when its try lost a
 // lock race in the original: the worker reads, then writes in the same
 // transaction, and SQLite refuses that upgrade at once, without waiting,
@@ -409,4 +415,16 @@ func send(t *T, f *Fake, i Instance, activity map[string]any) {
 // actorRowID returns the id of the actor row for apID on i.
 func (t *T) actorRowID(i Instance, apID string) any {
 	return t.one(i, `SELECT id FROM actor WHERE ap_id = ?`, apID)["id"]
+}
+
+// withContent returns a copy of note, without its context, with new content.
+func withContent(note map[string]any, content string) map[string]any {
+	edited := map[string]any{}
+	for k, v := range note {
+		if k != "@context" {
+			edited[k] = v
+		}
+	}
+	edited["content"] = content
+	return edited
 }
