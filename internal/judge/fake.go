@@ -44,6 +44,7 @@ type Fake struct {
 	seq     int // numbers activity ids, so they are the same on every run
 	inbox   []map[string]any
 	objects map[string]map[string]any
+	pages   map[string]string // HTML by URL
 }
 
 // NewFake creates a fake actor and puts it on t's network.
@@ -63,6 +64,7 @@ func (t *T) NewFake(name string) *Fake {
 			Timeout:   Timeout,
 		},
 		objects: make(map[string]map[string]any),
+		pages:   make(map[string]string),
 	}
 	t.Proxy.Handle(name+".test", f)
 	t.fakes = append(t.fakes, f)
@@ -84,6 +86,13 @@ func (f *Fake) Publish(obj map[string]any) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.objects[obj["id"].(string)] = obj
+}
+
+// PublishPage serves html at url, as a web page about an object.
+func (f *Fake) PublishPage(url, html string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.pages[url] = html
 }
 
 // Send delivers activity to inst's inbox, signed like Mastodon signs.
@@ -219,8 +228,15 @@ func (f *Fake) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		})
 	default:
 		f.mu.Lock()
-		obj := f.objects[id]
+		obj, page := f.objects[id], f.pages[id]
 		f.mu.Unlock()
+		if page != "" {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			if _, err := io.WriteString(w, page); err != nil {
+				panic(err) // fails the run, see Proxy.exchange
+			}
+			return
+		}
 		if obj == nil {
 			http.NotFound(w, r)
 			return
