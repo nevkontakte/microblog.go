@@ -110,25 +110,3 @@ var LookupScenarios = []Scenario{
 		t.expectRows(t.A, 0, `SELECT 1 FROM actor`)
 	}},
 }
-
-// lookup queries i's admin lookup page.
-func lookup(t *T, i Instance, query string) *Response {
-	resp, err := t.Client.Get(t.Ctx, BaseURL(i)+"/admin/lookup?query="+url.QueryEscape(query), "")
-	t.Check(err)
-	return resp
-}
-
-// lookupObject looks up b's object id from a, which doesn't follow b, and
-// checks that a fetched and parsed it without storing it.
-func lookupObject(t *T, id string) {
-	t.equal("status", lookup(t, t.A, id).Status, 200)
-	t.sawInOrder("a", "GET", 200, id, BaseURL(t.B)+"/")
-	t.expectRows(t.A, 0, `SELECT 1 FROM inbox WHERE ap_id = ?`, id)
-}
-
-// hasSuffix fails the scenario unless s ends with suffix.
-func (t *T) hasSuffix(what, s, suffix string) {
-	if !strings.HasSuffix(s, suffix) {
-		t.Fatalf("%s: %q does not end with %q", what, s, suffix)
-	}
-}

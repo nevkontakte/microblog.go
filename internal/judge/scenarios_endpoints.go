@@ -1,13 +1,8 @@
 package judge
 
 import (
-	"crypto/rsa"
-	"crypto/x509"
 	"encoding/json"
-	"encoding/pem"
 	"net/url"
-	"os"
-	"path/filepath"
 )
 
 // EndpointScenarios cover the ActivityPub documents an instance serves
@@ -149,47 +144,4 @@ var EndpointScenarios = []Scenario{
 		t.equal("activity", []any{create["type"], create["id"], create["object"].(map[string]any)["id"]},
 			[]any{"Create", note + "/activity", note})
 	}},
-}
-
-// fetchAP fetches url as f, expects status, and returns the decoded body
-// when it is 200.
-func fetchAP(t *T, f *Fake, url string, signed bool, status int) map[string]any {
-	resp, err := f.Fetch(t.Ctx, url, signed)
-	t.Check(err)
-	if resp.Status != status {
-		t.Fatalf("GET %s as %s (signed: %v): status %d, want %d", url, f.Name, signed, resp.Status, status)
-	}
-	var obj map[string]any
-	if status == 200 {
-		t.Check(json.Unmarshal(resp.Body, &obj))
-	}
-	return obj
-}
-
-// publicKey parses a PEM-encoded RSA public key.
-func publicKey(t *T, pemText string) *rsa.PublicKey {
-	block, _ := pem.Decode([]byte(pemText))
-	if block == nil {
-		t.Fatalf("not a PEM key: %q", pemText)
-	}
-	key, err := x509.ParsePKIXPublicKey(block.Bytes)
-	t.Check(err)
-	rsaKey, ok := key.(*rsa.PublicKey)
-	if !ok {
-		t.Fatalf("not an RSA key: %T", key)
-	}
-	return rsaKey
-}
-
-// instanceKey returns the public half of the key in i's data/key.pem.
-func instanceKey(t *T, i Instance) *rsa.PublicKey {
-	b, err := os.ReadFile(filepath.Join(i.DataDir(), "key.pem"))
-	t.Check(err)
-	block, _ := pem.Decode(b)
-	if block == nil {
-		t.Fatalf("data/key.pem is not PEM")
-	}
-	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
-	t.Check(err)
-	return &key.PublicKey
 }

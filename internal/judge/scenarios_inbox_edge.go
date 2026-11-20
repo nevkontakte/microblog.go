@@ -212,33 +212,3 @@ var InboxEdgeScenarios = []Scenario{
 		t.expectRows(t.A, 0, `SELECT 1 FROM inbox`)
 	}},
 }
-
-// followedNote makes a follow a fake, which then posts a note to a; it
-// returns the fake and the note once a has stored it.
-func followedNote(t *T) (*Fake, map[string]any) {
-	f := t.NewFake("f")
-	followFake(t, t.A, f)
-	note := f.Note("Hello", BaseURL(t.A))
-	create := f.Create(note)
-	send(t, f, t.A, create)
-	t.waitProcessed(t.A, create["id"])
-	return f, note
-}
-
-// withContent returns a copy of note, without its context, with new content.
-func withContent(note map[string]any, content string) map[string]any {
-	edited := map[string]any{}
-	for k, v := range note {
-		if k != "@context" {
-			edited[k] = v
-		}
-	}
-	edited["content"] = content
-	return edited
-}
-
-// waitAllProcessed waits until n incoming activities have been processed
-// without error on i, for activities without an id of their own.
-func (t *T) waitAllProcessed(i Instance, n int) {
-	t.waitRows(i, n, `SELECT 1 FROM incoming_activity WHERE is_processed = 1 AND error IS NULL`)
-}

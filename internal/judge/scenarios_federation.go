@@ -1,10 +1,7 @@
 package judge
 
 import (
-	"fmt"
 	"net/url"
-	"slices"
-	"strings"
 )
 
 // FederationScenarios cover the interactions the admin UI can trigger between
@@ -218,112 +215,4 @@ var FederationScenarios = []Scenario{
 		t.Check(err)
 		remoteRedirect(t, resp)
 	}},
-}
-
-// blockedBy makes blocker block i, and waits until i is told.
-func blockedBy(t *T, i, blocker Instance) {
-	act(t, blocker, "block", url.Values{"ap_actor_id": {BaseURL(i)}})
-	t.waitRows(blocker, 1, `SELECT 1 FROM actor WHERE ap_id = ? AND is_blocked = 1`, BaseURL(i))
-	t.waitRows(i, 1, `SELECT 1 FROM notifications WHERE notification_type = 'BLOCKED'`)
-}
-
-// remoteRedirect checks that a looked up b's subscribe template and sent the
-// visitor to it with a's id, by the Refresh header (app/main.py:272-282).
-func remoteRedirect(t *T, resp *Response) {
-	t.equal("status", resp.Status, 200)
-	t.sawExchange("a", "GET", finger(t.B, "b"), 200)
-	t.equal("Refresh", resp.Header.Get("Refresh"), "0;url="+BaseURL(t.B)+"/admin/lookup?query="+BaseURL(t.A))
-}
-
-// pollCounted waits until b counts a's vote for answers in its poll, and a
-// applies the poll's Update (app/boxes.py:2035-2110). votersCount counts
-// voters, not answers.
-//
-// BUG(port): b sends one Update per answer, with an id made of the poll's id
-// and the time to the second (app/boxes.py:2098-2099, 839-866). Two Updates
-// in the same second share an id, and a drops the second as a duplicate
-// (app/boxes.py:2362-2374), so a may show only the first answer counted.
-// The wire is the same either way; a's final count depends on timing, so it
-// is only required to have applied an Update.
-func pollCounted(t *T, poll, pollType string, answers ...string) {
-	// counted lists, sorted, the answers with one vote in a box's copy.
-	counted := func(i Instance, box string) ([]string, error) {
-		rows, err := Query(i, `SELECT json_extract(answer.value, '$.name') AS name
-			FROM `+box+`, json_each(`+box+`.ap_object, '$.`+pollType+`') AS answer
-			WHERE ap_id = ? AND json_extract(answer.value, '$.replies.totalItems') = 1 ORDER BY name`, poll)
-		var names []string
-		for _, r := range rows {
-			names = append(names, fmt.Sprint(r["name"]))
-		}
-		return names, err
-	}
-	t.Eventually("b counts the vote for "+strings.Join(answers, ", "), func() error {
-		names, err := counted(t.B, "outbox")
-		if err == nil && !slices.Equal(names, answers) {
-			err = fmt.Errorf("b counts %v", names)
-		}
-		return err
-	})
-	t.waitRows(t.B, 1, `SELECT 1 FROM outbox WHERE ap_id = ? AND json_extract(ap_object, '$.votersCount') = 1`, poll)
-	t.waitRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ? AND json_extract(ap_object, '$.votersCount') = 1`, poll)
-	t.waitRows(t.A, len(answers), `SELECT 1 FROM incoming_activity WHERE ap_object ->> '$.type' = 'Update' AND is_processed = 1`)
-	names, err := counted(t.A, "inbox")
-	t.Check(err)
-	if len(names) == 0 || slices.ContainsFunc(names, func(n string) bool { return !slices.Contains(answers, n) }) {
-		t.Fatalf("a counts %v of a vote for %v", names, answers)
-	}
-}
-
-// itemIDs returns the ids of a collection's items, which may be inlined.
-func itemIDs(items any) []any {
-	var ids []any
-	for _, it := range items.([]any) {
-		if obj, ok := it.(map[string]any); ok {
-			it = obj["id"]
-		}
-		ids = append(ids, it)
-	}
-	return ids
-}
-
-// remoteNote makes a follow b, posts a note on b, and returns its id once a
-// has received it.
-func remoteNote(t *T) string {
-	follow(t, t.A, t.B)
-	note := newPost(t, t.B, url.Values{"content": {"Hello"}})
-	t.waitRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ?`, note)
-	return note
-}
-
-// sawExchange fails unless the proxy recorded a request from sender for
-// exactly url, answered with status.
-func (t *T) sawExchange(from, method, url string, status int) {
-	t.sawInOrder(from, method, status, url)
-}
-
-// sawInOrder fails unless the proxy recorded requests from sender for each
-// of urls, in that order, all answered with status.
-func (t *T) sawInOrder(from, method string, status int, urls ...string) {
-	next := 0
-	for _, e := range t.Proxy.Exchanges() {
-		if next < len(urls) && e.From == from && e.Method == method && e.URL == urls[next] && e.Status == status {
-			next++
-		}
-	}
-	if next < len(urls) {
-		t.Fatalf("no %s %s from %s answered %d on the wire (after %v)", method, urls[next], from, status, urls[:next])
-	}
-}
-
-// finger is the WebFinger URL for user on i, as the original requests it.
-func finger(i Instance, user string) string {
-	return BaseURL(i) + "/.well-known/webfinger?resource=" + url.QueryEscape("acct:"+user+"@"+Host(i))
-}
-
-// isUpdateTo reports deliveries of an Update to instance name's inbox.
-func isUpdateTo(name string) func(WireRecord) bool {
-	return func(r WireRecord) bool {
-		body, _ := r.Body.(map[string]any)
-		return r.Method == "POST" && r.URL == "https://"+name+".test/inbox" && body["type"] == "Update"
-	}
 }

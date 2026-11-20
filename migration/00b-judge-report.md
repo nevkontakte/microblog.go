@@ -245,7 +245,7 @@ scenario): 2 blocking, 8 should-fix, 5 nits. All accepted except where noted.
 | 3 | A relative `-venv` broke, since the CSS compiler runs in another directory. | The path is made absolute. |
 | 4 | Poll scenarios checked how many answers were counted, not which. | The counted answers must be exactly the ones voted for. |
 | 5 | Id numbering depended on the order in which a serializer writes JSON members, which the port may change. | Bodies are put in canonical form (sorted members) before ids are numbered; every golden was re-recorded. |
-| 6 | LD signatures are masked, not verified. | Planned for part 3, with the LD-signed traffic it judges; open for the owner to decide. |
+| 6 | LD signatures are masked, not verified. | Deferred to part 3, which judges the LD-signed traffic (forwarded activities); the owner left the call to us. Between two instances of the original, an LD signature can only be wrong if the port computes it wrong, and part 1 has no port yet. |
 
 **Owner review** (on the first pull request, which this stack replaces):
 
@@ -256,6 +256,10 @@ scenario): 2 blocking, 8 should-fix, 5 nits. All accepted except where noted.
 | 3 | Coverage: every ActivityPub interaction, lookups of each object type, and error cases. | The coverage inventory and 65 scenarios beyond the ported suite (section 1). |
 | 4 | No scenario may assume that work completes in a fixed time. | Audit below. |
 | 5 | Part 2 should be three parts. | 2a, 2b, 2c (top of this report). |
+| 6 | Proxy fields, `from` and the plain http path were undocumented; JSON-LD code sat in `tls.go`; `Listen` could register a server after `Close`. | Documented; `jsonld.go`; `Listen` refuses once closing. |
+| 7 | Helpers were spread over scenario files and `run.go`. | Every helper lives in `steps.go`, grouped by kind: waits, assertions, admin actions, fake-actor steps. Scenario files hold only scenarios. |
+| 8 | `T.run` hand-rolled a goroutine join. | `sync.WaitGroup.Go`. |
+| 9 | Assertion failures printed both values whole. | `equal` prints a `go-cmp` diff. The wire comparison stays a multiset diff of normalized lines, since its order is not meaningful. |
 
 The timing audit went through every wait in the judge:
 

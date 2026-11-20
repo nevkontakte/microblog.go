@@ -81,27 +81,3 @@ var CLIScenarios = []Scenario{
 		t.waitRows(t.B, 1, `SELECT 1 FROM follower WHERE ap_actor_id = ?`, BaseURL(t.A))
 	}},
 }
-
-// restart lets the pair settle, stops i, and starts it again on its data
-// with config added to its profile.toml lines (a key set again overrides
-// the earlier value), as an admin editing the profile would. It returns the
-// new instance, which also replaces i in t. Until the new instance's address
-// is routed, its host still points at the stopped one; nothing is pending by
-// then. The admin session survives: its cookie is signed with the same
-// secret.
-func (t *T) restart(i Instance, config string) Instance {
-	t.settle(0)
-	t.Check(i.Stop())
-	spec := t.specs[i.Name()]
-	spec.Config += "\n" + config
-	t.specs[i.Name()] = spec
-	inst, err := t.start(i.Name())
-	t.Check(err)
-	t.Check(t.waitReady(inst))
-	if i == t.A {
-		t.A = inst
-	} else {
-		t.B = inst
-	}
-	return inst
-}

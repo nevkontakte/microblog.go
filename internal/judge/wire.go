@@ -196,7 +196,7 @@ func (m *masker) value(v any) any {
 			switch k {
 			case "publicKeyPem":
 				v[k] = "<key>"
-			case "signatureValue":
+			case "signatureValue": // LD signatures: verified in part 3, with the forwarded activities that carry them
 				v[k] = "<signature>"
 			default:
 				v[k] = m.value(x)

@@ -1,7 +1,6 @@
 package judge
 
 import (
-	"fmt"
 	"net/url"
 )
 
@@ -43,14 +42,4 @@ var FollowScenarios = []Scenario{
 			t.expectRows(t.A, 0, `SELECT 1 FROM following`)
 			t.expectRows(t.B, 0, `SELECT 1 FROM follower`)
 		}},
-}
-
-// pendingFollow makes a follow b, which approves followers manually, and
-// returns the id of b's pending-follower notification.
-func pendingFollow(t *T) string {
-	act(t, t.A, "follow", url.Values{"ap_actor_id": {BaseURL(t.B)}})
-	t.waitProcessed(t.B, t.one(t.A, `SELECT ap_id FROM outbox WHERE ap_type = 'Follow'`)["ap_id"])
-	t.expectRows(t.B, 0, `SELECT 1 FROM follower`)
-	n := t.one(t.B, `SELECT id FROM notifications WHERE notification_type = 'PENDING_INCOMING_FOLLOWER'`)
-	return fmt.Sprint(n["id"])
 }

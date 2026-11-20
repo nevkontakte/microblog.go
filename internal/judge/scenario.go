@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"runtime"
+	"sync"
 	"time"
 )
 
@@ -80,11 +81,11 @@ func (t *T) Eventually(what string, check func() error) {
 	}
 }
 
-// run executes the scenario body and reports whether it passed.
+// run executes the scenario body and reports whether it passed. The body
+// runs in its own goroutine, because Fatalf ends it with runtime.Goexit.
 func (t *T) run(f func(*T)) bool {
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
+	var wg sync.WaitGroup
+	wg.Go(func() {
 		defer func() {
 			if r := recover(); r != nil {
 				t.Logf("PANIC: %v", r)
@@ -92,8 +93,8 @@ func (t *T) run(f func(*T)) bool {
 			}
 		}()
 		f(t)
-	}()
-	<-done
+	})
+	wg.Wait()
 	return !t.failed
 }
 
