@@ -18,6 +18,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"regexp"
+	"runtime"
 
 	"github.com/nevkontakte/microblog.go/internal/judge"
 )
@@ -30,6 +31,7 @@ func main() {
 		run       = flag.String("run", "", "run only scenarios matching this regexp")
 		golden    = flag.String("golden", "internal/judge/testdata/golden", "directory of golden wire recordings")
 		update    = flag.Bool("update-golden", false, "write the golden wire recordings instead of comparing")
+		parallel  = flag.Int("parallel", runtime.NumCPU(), "how many scenarios to play at once")
 		patch     = flag.String("patch", "", "apply this patch to the Python original's copy, to check the judge catches it")
 	)
 	flag.DurationVar(&judge.Timeout, "timeout", judge.Timeout, "ceiling for each wait; raise it on slow machines")
@@ -61,7 +63,7 @@ func main() {
 	}
 	results := judge.Run(ctx, judge.Options{
 		A: py, B: py, Work: filepath.Join(*work, "py-py"),
-		Golden: *golden, UpdateGolden: *update,
+		Golden: *golden, UpdateGolden: *update, Parallel: *parallel,
 	}, scenarios)
 	summary, ok := judge.Summary(results)
 	fmt.Print(summary)

@@ -27,7 +27,8 @@ go run ./cmd/judge -venv "$(cd reference/microblog.pub && poetry env info -p)"
 
 Flags: `-run <regexp>` selects scenarios, `-update-golden` re-records the wire (Python–Python
 only), `-patch <file>` applies a mutation to the judge's copy of the original, `-timeout` sets
-the ceiling for every wait (default 2 min), and `-work <dir>` sets the scratch directory (default
+the ceiling for every wait (default 2 min), `-parallel <n>` how many scenarios play at once
+(default: the number of CPUs), and `-work <dir>` sets the scratch directory (default
 `_judge/`, gitignored). CI runs the same command on every pull request
 (`.github/workflows/judge.yml`). Each scenario leaves its
 instances' logs, `exchanges.json` (all traffic) and `wire.jsonl` (the normalized comparison)
