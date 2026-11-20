@@ -301,3 +301,33 @@ The timing audit went through every wait in the judge:
 
 - 2a, 2b, 2c and 3, listed at the top. The coverage inventory marks which interactions wait
   for 2c (Webmention delivery, C2S) and 3 (`hs2019`, LD-signed forwarded activities).
+
+## Part 2a: the on-disk swap
+
+`scenarios_swap.go` judges the swap test: an instance stops, and the peer's implementation
+starts on its `data/` with no migration step (`t.swap`). On the Python pair a swap is a
+restart, so these scenarios pin what a swap must keep; with the port on one side of a
+Go–Python or Python–Go pairing, they are the swap test in each direction.
+
+| Scenario | Checks after the swap |
+|---|---|
+| `swap__served_state` | WebFinger, actor (key included), collections, a post, its activity and its attachment are served unchanged; the schema is still the original's last migration |
+| `swap__federates` | New posts are delivered, signed with the kept key; a like of an old post is counted |
+| `swap__peer` | The swapped receiver still follows its peer and takes its deliveries |
+| `swap__custom_emoji` | An emoji in `data/custom_emoji` is served |
+
+The schema check reads `alembic_version`, which is what `alembic current` reports
+(`a209f0333f5a`), so it holds for any implementation that ran on the data.
+
+**Clean run:** 4/4 pass, recording the goldens, and 4/4 again against them.
+
+**Mutations,** run on the swap scenarios:
+
+| # | Mutation | Caught by |
+|---|---|---|
+| 11 | The web server replaces `data/key.pem` whenever it starts | `swap__served_state`, `swap__federates`, `swap__peer` |
+| 12 | Uploads go to a temporary directory and are lost on stop | `swap__served_state` |
+| 13 | `data/custom_emoji` isn't loaded | `swap__custom_emoji` |
+| 14 | A new migration moves the schema past the original's last one | `swap__served_state`, `swap__peer` |
+
+4 of 4 caught.

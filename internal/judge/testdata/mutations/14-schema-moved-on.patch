@@ -1,0 +1,22 @@
+Mutation: a new migration moves the schema past the original's last one, so the original can't take the data back.
+
+--- /dev/null
++++ b/alembic/versions/2026_01_01_0000-judge0mutation_bump.py	2026-11-20 17:59:54.778342255 +0000
+@@ -0,0 +1,17 @@
++"""A migration the original doesn't have
++
++Revision ID: judge0mutation
++Revises: a209f0333f5a
++"""
++revision = "judge0mutation"
++down_revision = "a209f0333f5a"
++branch_labels = None
++depends_on = None
++
++
++def upgrade() -> None:
++    pass
++
++
++def downgrade() -> None:
++    pass

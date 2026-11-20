@@ -1,0 +1,15 @@
+Mutation: the web server replaces data/key.pem with a new key whenever it starts.
+
+--- a/app/main.py	2026-11-20 17:59:39.736784207 +0000
++++ b/app/main.py	2026-11-20 17:59:39.751251679 +0000
+@@ -72,6 +72,10 @@
+ from app.incoming_activities import new_ap_incoming_activity
+ from app.templates import is_current_user_admin
+ from app.uploads import UPLOAD_DIR
++from app.key import generate_key
++
++config.KEY_PATH.unlink()
++generate_key(config.KEY_PATH)
+ from app.utils import pagination
+ from app.utils.emoji import EMOJIS_BY_NAME
+ from app.utils.facepile import Face

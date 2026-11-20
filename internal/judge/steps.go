@@ -167,6 +167,13 @@ func (t *T) sameJSON(what string, stored any, want map[string]any) {
 	t.equal(what, got, norm)
 }
 
+// expectSchema checks that i's database is still at the original's last
+// migration, which is what alembic current reports: the original must be
+// able to take the data back.
+func (t *T) expectSchema(i Instance) {
+	t.equal("alembic version", t.one(i, `SELECT version_num FROM alembic_version`)["version_num"], "a209f0333f5a")
+}
+
 // hasSuffix fails the scenario unless s ends with suffix.
 func (t *T) hasSuffix(what, s, suffix string) {
 	if !strings.HasSuffix(s, suffix) {
@@ -416,6 +423,22 @@ func (t *T) restart(i Instance, config string) Instance {
 	return inst
 }
 
+// swap stops i and starts the peer's implementation on i's data, as an owner
+// swapping binaries would: same directory, no migration step. It returns the
+// new instance, which also replaces i in t. On a Python pair it is a restart;
+// with the port on one side it is the swap test.
+func (t *T) swap(i Instance) Instance {
+	peer := map[string]string{"a": "b", "b": "a"}[i.Name()]
+	t.impls[i.Name()] = t.impls[peer]
+	return t.restart(i, "")
+}
+
+// addCustomEmoji puts an image in i's data/custom_emoji, which an
+// implementation loads when it starts (app/utils/emoji.py:14-40).
+func addCustomEmoji(t *T, i Instance, file string, data []byte) {
+	t.Check(os.WriteFile(filepath.Join(i.DataDir(), "custom_emoji", file), data, 0o644))
+}
+
 // Steps with fake actors.
 
 // followFake makes i follow f, which must accept automatically.
@@ -477,6 +500,37 @@ func fetchAP(t *T, f *Fake, url string, signed bool, status int) map[string]any 
 		t.Check(json.Unmarshal(resp.Body, &obj))
 	}
 	return obj
+}
+
+// servedState fetches, as f, what remote servers and readers see of i: its
+// WebFinger, actor and collections, each object in ids with its activity,
+// and each of i's attachments. Two calls compare equal if nothing visible changed.
+func servedState(t *T, f *Fake, i Instance, ids ...string) map[string]any {
+	base := BaseURL(i)
+	state := map[string]any{}
+	resp, err := f.Fetch(t.Ctx, base+"/.well-known/webfinger?resource=acct:"+i.Name()+"@"+Host(i), false)
+	t.Check(err)
+	state["webfinger"] = string(resp.Body)
+	for _, path := range []string{"", "/outbox", "/followers", "/following", "/featured"} {
+		doc := fetchAP(t, f, base+path, false, 200)
+		state[path] = doc
+		if first, ok := doc["first"].(string); ok {
+			state[path+" first"] = fetchAP(t, f, first, false, 200)
+		}
+	}
+	for _, id := range ids {
+		state[id] = fetchAP(t, f, id, false, 200)
+		state[id+"/activity"] = fetchAP(t, f, id+"/activity", false, 200)
+	}
+	for _, r := range t.rows(i, `SELECT u.content_hash || '/' || a.filename AS path
+		FROM upload u JOIN outbox_object_attachment a ON a.upload_id = u.id`) {
+		path := r["path"].(string)
+		resp, err := t.Client.Get(t.Ctx, base+"/attachments/"+path, "*/*")
+		t.Check(err)
+		t.equal("attachment "+path, resp.Status, 200)
+		state["attachment "+path] = string(resp.Body)
+	}
+	return state
 }
 
 // publicKey parses a PEM-encoded RSA public key.
