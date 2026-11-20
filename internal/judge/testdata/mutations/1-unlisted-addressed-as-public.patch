@@ -1,0 +1,13 @@
+Mutation: unlisted posts are addressed to as:Public, which makes them public.
+
+--- a/app/boxes.py	2026-11-19 01:25:29.683738788 +0000
++++ b/app/boxes.py	2026-11-19 01:25:29.687389354 +0000
+@@ -628,7 +628,7 @@
+         to = [ap.AS_PUBLIC]
+         cc = [f"{BASE_URL}/followers"] + mentioned_actor_ap_ids
+     elif visibility == ap.VisibilityEnum.UNLISTED:
+-        to = [f"{BASE_URL}/followers"]
++        to = [ap.AS_PUBLIC]
+         cc = [ap.AS_PUBLIC] + mentioned_actor_ap_ids
+     elif visibility == ap.VisibilityEnum.FOLLOWERS_ONLY:
+         to = [f"{BASE_URL}/followers"]

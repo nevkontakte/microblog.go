@@ -1,0 +1,13 @@
+Mutation: the inbox accepts requests without a valid HTTP signature.
+
+--- a/app/httpsig.py	2026-11-19 01:25:29.717674417 +0000
++++ b/app/httpsig.py	2026-11-19 01:25:29.720929819 +0000
+@@ -286,7 +286,7 @@
+         logger.warning(f"{httpsig_info.server} is blocked")
+         raise fastapi.HTTPException(status_code=403, detail="Blocked")
+ 
+-    if not httpsig_info.has_valid_signature:
++    if False:
+         logger.warning(f"Invalid HTTP sig {httpsig_info=}")
+         body = await request.body()
+         logger.info(f"{body=}")

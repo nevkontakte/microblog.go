@@ -16,10 +16,12 @@ type Python struct {
 	App  string // runnable copy of the reference, made by PreparePython
 }
 
-// PreparePython copies the reference implementation from src into dst and
-// compiles its stylesheet, which the reference expects to find in app/. The
-// reference checkout itself stays untouched.
-func PreparePython(src, dst, venv string) (*Python, error) {
+// PreparePython copies the reference implementation from src into dst,
+// applies patches to the copy (used to validate the judge against
+// deliberately broken code), and compiles its stylesheet, which the
+// reference expects to find in app/. The reference checkout itself stays
+// untouched.
+func PreparePython(src, dst, venv string, patches ...string) (*Python, error) {
 	// Both are used from child processes running in other directories.
 	dst, err := filepath.Abs(dst)
 	if err != nil {
@@ -37,6 +39,15 @@ func PreparePython(src, dst, venv string) (*Python, error) {
 	for _, f := range []string{"app", "alembic", "alembic.ini", "boussole.json", "tasks.py"} {
 		if out, err := exec.Command("cp", "-r", filepath.Join(src, f), dst).CombinedOutput(); err != nil {
 			return nil, fmt.Errorf("copying %s: %v: %s", f, err, out)
+		}
+	}
+	for _, p := range patches {
+		p, err := filepath.Abs(p)
+		if err != nil {
+			return nil, err
+		}
+		if out, err := exec.Command("patch", "-p1", "-d", dst, "-i", p).CombinedOutput(); err != nil {
+			return nil, fmt.Errorf("applying %s: %v: %s", p, err, out)
 		}
 	}
 	theme := filepath.Join(dst, "data", "_theme.scss")

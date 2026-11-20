@@ -1,0 +1,13 @@
+Mutation: outgoing signatures cover the wrong request method.
+
+--- a/app/httpsig.py	2026-11-19 01:25:29.776495732 +0000
++++ b/app/httpsig.py	2026-11-19 01:25:29.779690617 +0000
+@@ -332,7 +332,7 @@
+             sigheaders = "(request-target) user-agent host date accept"
+ 
+         to_be_signed, _ = _build_signed_string(
+-            sigheaders, r.method, r.url.path, r.headers, bodydigest, {}
++            sigheaders, "GET", r.url.path, r.headers, bodydigest, {}
+         )
+         if not self.key.privkey:
+             raise ValueError("Should never happen")
