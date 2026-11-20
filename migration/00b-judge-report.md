@@ -276,6 +276,7 @@ scenario): 2 blocking, 8 should-fix, 5 nits. All accepted except where noted.
 | 13 | Receiving edits must be judged. | `inbox__update_note` also checks `updated_at`; `inbox__update_unknown_note` and `inbox__update_unsupported_type` cover the two branches of the Update handler no scenario reached. |
 | 14 | The ignored Digest header is a bug. | Marked `BUG(port)` in `inbox__digest_header_ignored`, to fix after parity. The wrong-key ACL bug (Copilot finding 6) is kept until parity too, by the owner's decision. |
 | 15 | Field-by-field checks of a document stop at the first difference. | `ap__actor_document` and `ap__collections` compare the fields they check in one `go-cmp` diff. |
+| 16 | Scenario directories must be deleted at the end and never shared. | Each scenario's directory is named after it and emptied before it starts; it is now deleted once the scenario passes (a failing one's is kept for debugging), and two scenarios with the same name stop the run. Only a restart reuses an instance's directory, within its scenario. |
 
 The timing audit went through every wait in the judge:
 
