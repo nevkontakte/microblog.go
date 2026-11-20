@@ -18,6 +18,10 @@ var InboxEdgeScenarios = []Scenario{
 	// The other half: the Digest header itself is never compared to the
 	// body (app/httpsig.py:41-57), so a wrong header on a request signed over
 	// the real digest is accepted.
+	//
+	// BUG(port): a server should reject a Digest header that doesn't match
+	// the body (RFC 3230), as Mastodon does. Nothing unsigned gets in, since
+	// the signature covers the real digest.
 	{Name: "inbox__digest_header_ignored", Run: func(t *T) {
 		f := t.NewFake("f")
 		follow := f.Activity("Follow", BaseURL(t.A))

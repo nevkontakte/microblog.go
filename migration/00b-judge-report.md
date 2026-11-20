@@ -240,7 +240,7 @@ scenario): 2 blocking, 8 should-fix, 5 nits. All accepted except where noted.
 | 7 | The served `publicKeyPem` was never compared with the key on disk. | Compared with `data/key.pem`. |
 | 8, 9 | Unknown Undo/Accept: storage unchecked. Blocked actor's Undo: only the counter checked. | Storage, the undone Like, the notification, and a dropped non-Undo now checked. |
 | 10 | One follower and one followee can't show ordering. | Two of each, newest first. |
-| 11 | The Digest header is never compared to the body; only the signed digest matters. | `inbox__digest_header_ignored`: a wrong header on a correctly signed request is accepted. |
+| 11 | The Digest header is never compared to the body; only the signed digest matters. | `inbox__digest_header_ignored`: a wrong header on a correctly signed request is accepted, marked `BUG(port)` (owner review): fixed after parity. |
 | 12 | Unexercised branches. | Someone else's actor payload and WebFinger by actor id added. The `save_to_inbox` blocked-server check is unreachable from outside (the signature check answers 403 first), and the token bypass of hidden collections belongs to 2c. |
 | 13–15 | Read's author unchecked; restart config (as batch 3); `waitReady` ignored cancellation. | Fixed. |
 
@@ -272,6 +272,7 @@ scenario): 2 blocking, 8 should-fix, 5 nits. All accepted except where noted.
 | 11 | The poll helper bundled following, posting and checking, with fixed roles. | `postQuestion`, `expectQuestion` and `expectDelivered` take the instances as arguments; the vote and lookup scenarios reuse `postQuestion`. Voting itself is `poll__vote` and `poll__vote_any_of`. |
 | 12 | Other helpers also folded several actions, or fixed which instance plays which role. | Every helper is now one action or one check, taking the instances as arguments: `remoteNote` and `followedNote` are spelled out in their scenarios, `pendingFollow` became `pendingFollower`, `pollCounted` became `expectVotesCounted` and `expectPollUpdated`, `lookupObject` became `expectLookedUp`, and `remoteRedirect` takes both instances. |
 | 13 | Receiving edits must be judged. | `inbox__update_note` also checks `updated_at`; `inbox__update_unknown_note` and `inbox__update_unsupported_type` cover the two branches of the Update handler no scenario reached. |
+| 14 | The ignored Digest header is a bug. | Marked `BUG(port)` in `inbox__digest_header_ignored`, to fix after parity. The wrong-key ACL bug (Copilot finding 6) is kept until parity too, by the owner's decision. |
 
 The timing audit went through every wait in the judge:
 
