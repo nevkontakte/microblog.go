@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 // Python starts instances of the reference implementation.
@@ -15,10 +16,12 @@ type Python struct {
 	App  string // runnable copy of the reference, made by PreparePython
 }
 
-// PreparePython copies the reference implementation from src into dst and
-// compiles its stylesheet, which the reference expects to find in app/. The
-// reference checkout itself stays untouched.
-func PreparePython(src, dst, venv string) (*Python, error) {
+// PreparePython copies the reference implementation from src into dst,
+// applies patches to the copy (used to validate the judge against
+// deliberately broken code), and compiles its stylesheet, which the
+// reference expects to find in app/. The reference checkout itself stays
+// untouched.
+func PreparePython(src, dst, venv string, patches ...string) (*Python, error) {
 	// Both are used from child processes running in other directories.
 	dst, err := filepath.Abs(dst)
 	if err != nil {
@@ -33,9 +36,18 @@ func PreparePython(src, dst, venv string) (*Python, error) {
 	if err := os.MkdirAll(filepath.Join(dst, "data"), 0o755); err != nil {
 		return nil, err
 	}
-	for _, f := range []string{"app", "alembic", "alembic.ini", "boussole.json"} {
+	for _, f := range []string{"app", "alembic", "alembic.ini", "boussole.json", "tasks.py"} {
 		if out, err := exec.Command("cp", "-r", filepath.Join(src, f), dst).CombinedOutput(); err != nil {
 			return nil, fmt.Errorf("copying %s: %v: %s", f, err, out)
+		}
+	}
+	for _, p := range patches {
+		p, err := filepath.Abs(p)
+		if err != nil {
+			return nil, err
+		}
+		if out, err := exec.Command("patch", "-p1", "-d", dst, "-i", p).CombinedOutput(); err != nil {
+			return nil, fmt.Errorf("applying %s: %v: %s", p, err, out)
 		}
 	}
 	theme := filepath.Join(dst, "data", "_theme.scss")
@@ -51,13 +63,22 @@ func PreparePython(src, dst, venv string) (*Python, error) {
 }
 
 type pythonInstance struct {
-	name, data, addr string
-	procs            []*process
+	name, dir, data, addr string
+	env                   []string
+	inv                   string // the original's command-line tool
+	procs                 []*process
 }
 
 func (i *pythonInstance) Name() string    { return i.name }
 func (i *pythonInstance) DataDir() string { return i.data }
 func (i *pythonInstance) Addr() string    { return i.addr }
+
+func (i *pythonInstance) Command(ctx context.Context, stdin string, args ...string) (string, error) {
+	cmd := exec.CommandContext(ctx, i.inv, args...)
+	cmd.Dir, cmd.Env, cmd.Stdin = i.dir, i.env, strings.NewReader(stdin)
+	out, err := cmd.CombinedOutput()
+	return string(out), err
+}
 
 func (i *pythonInstance) Stop() error {
 	var errs []error
@@ -68,14 +89,16 @@ func (i *pythonInstance) Stop() error {
 }
 
 // Start runs one instance the way misc/supervisord.conf does: a web server
-// plus the incoming and outgoing activity workers.
+// plus the incoming and outgoing activity workers. Starting again on the same
+// directory restarts the instance on its existing data.
 func (py *Python) Start(ctx context.Context, s Spec) (_ Instance, err error) {
 	data, err := writeData(s)
 	if err != nil {
 		return nil, err
 	}
-	for _, f := range []string{"app", "alembic", "alembic.ini"} {
-		if err := os.Symlink(filepath.Join(py.App, f), filepath.Join(s.Dir, f)); err != nil {
+	for _, f := range []string{"app", "alembic", "alembic.ini", "tasks.py"} {
+		err := os.Symlink(filepath.Join(py.App, f), filepath.Join(s.Dir, f))
+		if err != nil && !os.IsExist(err) {
 			return nil, err
 		}
 	}
@@ -95,7 +118,7 @@ func (py *Python) Start(ctx context.Context, s Spec) (_ Instance, err error) {
 		return nil, err
 	}
 	defer func() { err = errors.Join(err, socket.Close()) }() // uvicorn has its own copy
-	inst := &pythonInstance{name: s.Name, data: data, addr: addr}
+	inst := &pythonInstance{name: s.Name, dir: s.Dir, data: data, addr: addr, env: env, inv: bin("inv")}
 	start := func(log string, files []*os.File, name string, args ...string) error {
 		p, err := startProcess(s.Dir, filepath.Join(s.Dir, log), env, files, name, args...)
 		if err == nil {

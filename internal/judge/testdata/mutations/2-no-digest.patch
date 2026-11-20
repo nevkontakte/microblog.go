@@ -1,0 +1,15 @@
+Mutation: signed POSTs carry no Digest header and don't sign it.
+
+--- a/app/httpsig.py	2026-11-19 01:25:29.701728822 +0000
++++ b/app/httpsig.py	2026-11-19 01:25:29.705017333 +0000
+@@ -326,8 +326,8 @@
+         date = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")
+         r.headers["Date"] = date
+         if bodydigest:
+-            r.headers["Digest"] = bodydigest
+-            sigheaders = "(request-target) user-agent host date digest content-type"
++            pass
++            sigheaders = "(request-target) user-agent host date content-type"
+         else:
+             sigheaders = "(request-target) user-agent host date accept"
+ 

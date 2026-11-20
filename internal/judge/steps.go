@@ -55,6 +55,12 @@ func (t *T) waitRows(i Instance, n int, query string, args ...any) {
 	t.Eventually(fmt.Sprintf("%d rows on %s", n, i.Name()), t.rowCount(i, n, query, args...))
 }
 
+// waitRow waits until query yields exactly one row on i, and returns it.
+func (t *T) waitRow(i Instance, query string, args ...any) map[string]any {
+	t.waitRows(i, 1, query, args...)
+	return t.one(i, query, args...)
+}
+
 // expectRows checks once that query yields exactly n rows on i.
 func (t *T) expectRows(i Instance, n int, query string, args ...any) {
 	t.Check(t.rowCount(i, n, query, args...)())
@@ -384,6 +390,30 @@ func remoteRedirect(t *T, from, to Instance, resp *Response) {
 	t.equal("status", resp.Status, 200)
 	t.sawExchange(from.Name(), "GET", finger(to, to.Name()), 200)
 	t.equal("Refresh", resp.Header.Get("Refresh"), "0;url="+BaseURL(to)+"/admin/lookup?query="+BaseURL(from))
+}
+
+// restart lets the pair settle, stops i, and starts it again on its data
+// with config added to its profile.toml lines (a key set again overrides
+// the earlier value), as an admin editing the profile would. It returns the
+// new instance, which also replaces i in t. Until the new instance's address
+// is routed, its host still points at the stopped one; nothing is pending by
+// then. The admin session survives: its cookie is signed with the same
+// secret.
+func (t *T) restart(i Instance, config string) Instance {
+	t.settle(0)
+	t.Check(i.Stop())
+	spec := t.specs[i.Name()]
+	spec.Config += "\n" + config
+	t.specs[i.Name()] = spec
+	inst, err := t.start(i.Name())
+	t.Check(err)
+	t.Check(t.waitReady(inst))
+	if i == t.A {
+		t.A = inst
+	} else {
+		t.B = inst
+	}
+	return inst
 }
 
 // Steps with fake actors.

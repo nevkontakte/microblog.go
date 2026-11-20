@@ -29,6 +29,10 @@ type Instance interface {
 	DataDir() string // the instance's data/ directory
 	Addr() string    // where its web server listens, for the proxy to route to
 	Stop() error
+	// Command runs the implementation's command-line tool on the instance's
+	// data, with stdin as input, and returns its combined output. The
+	// arguments are the original's: `inv` task names and flags.
+	Command(ctx context.Context, stdin string, args ...string) (string, error)
 }
 
 // Host returns the instance's hostname on the fake network.
@@ -52,7 +56,8 @@ type Impl interface {
 }
 
 // writeData creates the data/ directory both implementations read: config,
-// RSA key and upload directories.
+// RSA key and upload directories. On a restart it rewrites the config and
+// keeps the key and everything else.
 func writeData(s Spec) (string, error) {
 	data := filepath.Join(s.Dir, "data")
 	for _, d := range []string{"uploads", "custom_emoji"} {
@@ -68,13 +73,17 @@ func writeData(s Spec) (string, error) {
 		return "", err
 	}
 
+	keyFile := filepath.Join(data, "key.pem")
+	if _, err := os.Stat(keyFile); err == nil {
+		return data, nil
+	}
 	// PKCS#1 PEM, the format pycryptodome's exportKey("PEM") writes.
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return "", err
 	}
 	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)})
-	return data, os.WriteFile(filepath.Join(data, "key.pem"), keyPEM, 0o600)
+	return data, os.WriteFile(keyFile, keyPEM, 0o600)
 }
 
 // profile returns the instance's profile.toml: the defaults, with any key
@@ -156,7 +165,7 @@ type process struct {
 
 // startProcess starts name with args, passing it files as descriptors 3 and up.
 func startProcess(dir, logPath string, env []string, files []*os.File, name string, args ...string) (*process, error) {
-	log, err := os.Create(logPath)
+	log, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644) // a restart appends
 	if err != nil {
 		return nil, err
 	}

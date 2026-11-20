@@ -222,7 +222,7 @@ func (p *Proxy) serve(from string) http.Handler {
 			return
 		}
 		if r.Method == http.MethodConnect {
-			p.tunnel(from, host, w, h)
+			p.tunnel(from, host, w)
 			return
 		}
 		rec := p.exchange(from, r, h)
@@ -286,8 +286,9 @@ func (p *Proxy) exchange(from string, r *http.Request, h http.Handler) *httptest
 }
 
 // tunnel answers a CONNECT to an https host: it terminates TLS with a
-// certificate from the judge CA and serves the requests inside with h.
-func (p *Proxy) tunnel(from, host string, w http.ResponseWriter, h http.Handler) {
+// certificate from the judge CA and serves each request inside with the
+// host's current handler, which changes when an instance restarts.
+func (p *Proxy) tunnel(from, host string, w http.ResponseWriter) {
 	conn, _, err := http.NewResponseController(w).Hijack()
 	if err != nil {
 		p.fail(fmt.Errorf("tunneling to %s for %s: %w", host, from, err))
@@ -334,7 +335,7 @@ func (p *Proxy) tunnel(from, host string, w http.ResponseWriter, h http.Handler)
 		r = r.WithContext(p.ctx)
 		r.URL.Scheme, r.URL.Host = "https", host
 		r.Header.Set("X-Forwarded-Proto", "https") // uvicorn trusts it from localhost
-		rec := p.exchange(from, r, h)
+		rec := p.exchange(from, r, p.handler(host))
 		resp := rec.Result()
 		resp.Request = r // so a HEAD response is written without a body
 		if r.Method != http.MethodHead {

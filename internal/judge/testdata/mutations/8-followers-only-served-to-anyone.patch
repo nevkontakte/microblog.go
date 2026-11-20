@@ -1,0 +1,13 @@
+Mutation: followers-only objects are served to any signed request.
+
+--- a/app/main.py	2026-11-19 11:47:53.558915297 +0000
++++ b/app/main.py	2026-11-19 11:47:53.561492563 +0000
+@@ -731,7 +731,7 @@
+         followers = await boxes.fetch_actor_collection(
+             db_session, BASE_URL + "/followers"
+         )
+-        if httpsig_info.signed_by_ap_actor_id in [actor.ap_id for actor in followers]:
++        if True:
+             return None
+ 
+     elif ap_object.visibility == ap.VisibilityEnum.DIRECT:

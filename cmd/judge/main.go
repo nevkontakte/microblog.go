@@ -30,6 +30,7 @@ func main() {
 		run       = flag.String("run", "", "run only scenarios matching this regexp")
 		golden    = flag.String("golden", "internal/judge/testdata/golden", "directory of golden wire recordings")
 		update    = flag.Bool("update-golden", false, "write the golden wire recordings instead of comparing")
+		patch     = flag.String("patch", "", "apply this patch to the Python original's copy, to check the judge catches it")
 	)
 	flag.DurationVar(&judge.Timeout, "timeout", judge.Timeout, "ceiling for each wait; raise it on slow machines")
 	flag.Parse()
@@ -44,7 +45,11 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	py, err := judge.PreparePython(*reference, filepath.Join(*work, "python-app"), *venv)
+	var patches []string
+	if *patch != "" {
+		patches = append(patches, *patch)
+	}
+	py, err := judge.PreparePython(*reference, filepath.Join(*work, "python-app"), *venv, patches...)
 	if err != nil {
 		fatalf("preparing the Python original: %v", err)
 	}
