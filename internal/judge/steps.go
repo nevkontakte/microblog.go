@@ -3,6 +3,7 @@ package judge
 import (
 	"fmt"
 	"net/url"
+	"strings"
 )
 
 // Waiting on state. Scenarios wait for what they expect to see, never for a
@@ -51,9 +52,66 @@ func (t *T) expectRows(i Instance, n int, query string, args ...any) {
 }
 
 // waitProcessed waits until i's incoming worker has processed the activity
-// apID.
+// apID. A failed try that a retry fixed keeps its error; settle counts those,
+// except lost lock races (lockRace).
 func (t *T) waitProcessed(i Instance, apID any) {
 	t.waitRows(i, 1, `SELECT 1 FROM incoming_activity WHERE ap_id = ? AND is_processed = 1`, apID)
+}
+
+// lockRace matches the error an incoming activity keeps when its try lost a
+// lock race in the original: the worker reads, then writes in the same
+// transaction, and SQLite refuses that upgrade at once, without waiting,
+// while another connection is writing. The worker tries again; it isn't a
+// processing failure.
+const lockRace = `error LIKE '%database is locked%'`
+
+// settle waits until the pair is quiet, so the wire recording holds
+// everything the scenario caused, however fast the workers run: every
+// delivery sent (or given up on), every incoming activity tried. No scenario
+// expects a delivery to fail: one that fails keeps the pair unsettled until
+// its retry succeeds, and the extra attempt shows on the wire. Incoming
+// activities that fail must number exactly what the scenario expects
+// (Scenario.IncomingErrors).
+//
+// The instances can't be read at one instant: a delivery can land on a after
+// a was read and be marked sent before b is. So the pair counts as quiet only
+// when two polls in a row find nothing pending and the same state (the newest
+// queue rows, how many are done): anything that moved in between changes it.
+func (t *T) settle(expectedErrors int) {
+	var last string
+	t.Eventually("pending deliveries and incoming activities", func() error {
+		var state strings.Builder
+		for _, i := range []Instance{t.A, t.B} {
+			row, err := Query(i, `SELECT
+				(SELECT count(*) FROM outgoing_activity WHERE NOT is_sent AND NOT is_errored) AS outgoing,
+				(SELECT count(*) FROM incoming_activity WHERE NOT is_processed AND NOT is_errored AND (error IS NULL OR `+lockRace+`)) AS incoming,
+				(SELECT coalesce(max(id), 0) FROM outgoing_activity) AS last_outgoing,
+				(SELECT coalesce(max(id), 0) FROM incoming_activity) AS last_incoming,
+				(SELECT count(*) FROM outgoing_activity WHERE is_sent OR is_errored) AS sent,
+				(SELECT count(*) FROM incoming_activity WHERE is_processed OR is_errored OR error IS NOT NULL) AS tried`)
+			if err != nil {
+				return err
+			}
+			r := row[0]
+			if r["outgoing"] != int64(0) || r["incoming"] != int64(0) {
+				last = ""
+				return fmt.Errorf("%s has %v deliveries and %v incoming activities pending", i.Name(), r["outgoing"], r["incoming"])
+			}
+			fmt.Fprintf(&state, "%s:%v/%v/%v/%v ", i.Name(), r["last_outgoing"], r["last_incoming"], r["sent"], r["tried"])
+		}
+		if state.String() != last {
+			last = state.String()
+			return fmt.Errorf("not quiet yet: %s", last)
+		}
+		return nil
+	})
+	var errors int
+	for _, i := range []Instance{t.A, t.B} {
+		errors += len(t.rows(i, `SELECT 1 FROM incoming_activity WHERE error IS NOT NULL AND NOT `+lockRace))
+	}
+	if errors != expectedErrors {
+		t.Fatalf("%d incoming activities failed, want %d (see the instances' incoming.log)", errors, expectedErrors)
+	}
 }
 
 // Admin actions, and the interactions built from them.

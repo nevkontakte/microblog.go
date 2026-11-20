@@ -14,7 +14,10 @@ type Scenario struct {
 	Name string
 	// Config holds extra profile.toml lines per instance name.
 	Config map[string]string
-	Run    func(t *T)
+	// IncomingErrors is how many incoming activities are expected to fail
+	// processing, across both instances.
+	IncomingErrors int
+	Run            func(t *T)
 }
 
 // T is a scenario's handle on the running pair, in the style of testing.T.
