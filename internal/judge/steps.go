@@ -130,12 +130,11 @@ func follow(t *T, from, to Instance) {
 	t.waitRows(to, 1, `SELECT 1 FROM follower WHERE ap_actor_id = ?`, BaseURL(from))
 }
 
-// pendingFollow makes a follow b, which approves followers manually, and
-// returns the id of b's pending-follower notification.
-func pendingFollow(t *T) string {
-	act(t, t.A, "follow", url.Values{"ap_actor_id": {BaseURL(t.B)}})
-	t.waitProcessed(t.B, t.one(t.A, `SELECT ap_id FROM outbox WHERE ap_type = 'Follow'`)["ap_id"])
-	t.expectRows(t.B, 0, `SELECT 1 FROM follower`)
-	n := t.one(t.B, `SELECT id FROM notifications WHERE notification_type = 'PENDING_INCOMING_FOLLOWER'`)
+// pendingFollower waits until i has processed follower's Follow without
+// accepting it, and returns the id of i's pending-follower notification.
+func pendingFollower(t *T, i, follower Instance) string {
+	t.waitProcessed(i, t.one(follower, `SELECT ap_id FROM outbox WHERE ap_type = 'Follow'`)["ap_id"])
+	t.expectRows(i, 0, `SELECT 1 FROM follower WHERE ap_actor_id = ?`, BaseURL(follower))
+	n := t.one(i, `SELECT id FROM notifications WHERE notification_type = 'PENDING_INCOMING_FOLLOWER'`)
 	return fmt.Sprint(n["id"])
 }
