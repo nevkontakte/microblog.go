@@ -104,17 +104,19 @@ original, full suite run each time):
 | # | Mutation | Caught by |
 |---|---|---|
 | 1 | Unlisted post addressed as public | `post__visibility`, `ap__collections` |
-| 2 | Outgoing requests without a Digest | 46 scenarios: every one with a delivery |
+| 2 | Outgoing requests without a Digest | 48 scenarios: every one with a delivery |
 | 3 | Inbox accepts unsigned requests | `inbox_requires_httpsig`, `inbox__incoming_delete_for_unknown_actor`, `inbox__bad_digest`, `inbox__wrong_key` |
 | 4 | Undo Like "fixes" the counter (no longer -1) | `like__and_undo`, `inbox__blocked_actor_undo` (the `BUG(port)` assertions) |
 | 5 | Like notified as `ANNOUNCE` | `like__and_undo` |
 | 6 | `Hashtag` sent as `Tag` | `tags__note_with_tag` |
-| 7 | Signature computed over the wrong method | 46 scenarios: every one with a signed delivery |
+| 7 | Signature computed over the wrong method | 48 scenarios: every one with a signed delivery |
 | 8 | Followers-only objects served to any signed request | `lookup__private_object`, `ap__object_acl` |
 | 9 | Activities from a blocked actor processed | `inbox__actor_is_blocked`, `follow__peer_blocked_me`, `post__direct_to_peer_blocked_me`, `inbox__blocked_actor_undo` |
 | 10 | A note updated by someone other than its author | `inbox__update_note_wrong_actor` |
 
-10 of 10 caught. Mutations 8 to 10 were added for the new coverage. The runs before the poll fix
+10 of 10 caught, in a re-run on the final judge after the owner's review rounds (four judges
+sharing four cores): every mutation failed exactly the scenarios listed. Mutations 8 to 10 were
+added for the new coverage. The runs before the poll fix
 (judge bug 5 below) also failed `poll__vote_any_of`, for an unrelated reason; it isn't listed.
 Mutation 7 makes every delivery fail, so each scenario waits out its ceiling; it ran with
 `-timeout 90s`.
