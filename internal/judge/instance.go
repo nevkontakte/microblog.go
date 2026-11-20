@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -134,18 +135,24 @@ func proxyEnv(s Spec, extra ...string) []string {
 // the socket as a file for the server process to inherit and its address.
 // Handing over the bound socket, rather than a port number to bind, leaves no
 // moment in which another connection can take the port.
-func listen() (*os.File, string, error) {
+func listen() (_ *os.File, _ string, err error) {
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return nil, "", err
 	}
-	defer l.Close() // the file is a duplicate of the socket
+	defer func() { err = errors.Join(err, l.Close()) }() // the file is a duplicate of the socket
 	f, err := l.(*net.TCPListener).File()
 	return f, l.Addr().String(), err
 }
 
 // process is a child process in its own process group, logging to a file.
-type process struct{ cmd *exec.Cmd }
+type process struct {
+	cmd  *exec.Cmd
+	done chan struct{} // closed once the process has exited and its log is closed
+	// Valid once done is closed: why the process exited, and the error, if
+	// any, from closing its log.
+	exitErr, logErr error
+}
 
 // startProcess starts name with args, passing it files as descriptors 3 and up.
 func startProcess(dir, logPath string, env []string, files []*os.File, name string, args ...string) (*process, error) {
@@ -161,23 +168,51 @@ func startProcess(dir, logPath string, env []string, files []*os.File, name stri
 	cmd.ExtraFiles = files
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	if err := cmd.Start(); err != nil {
-		log.Close()
-		return nil, err
+		return nil, errors.Join(err, log.Close())
 	}
-	go func() { cmd.Wait(); log.Close() }()
-	return &process{cmd}, nil
+	p := &process{cmd: cmd, done: make(chan struct{})}
+	go func() {
+		p.exitErr = cmd.Wait()
+		p.logErr = log.Close()
+		close(p.done)
+	}()
+	return p, nil
 }
 
-// stop sends SIGTERM to the process group, then SIGKILL after a grace period.
-func (p *process) stop() {
-	pgid := -p.cmd.Process.Pid
-	syscall.Kill(pgid, syscall.SIGTERM)
-	deadline := time.Now().Add(5 * time.Second)
-	for time.Now().Before(deadline) {
-		if syscall.Kill(pgid, 0) != nil {
-			return
-		}
-		time.Sleep(50 * time.Millisecond)
+// stop sends SIGTERM to the process group, then SIGKILL after a grace
+// period, and waits for the process to exit. A process that had exited
+// before it was stopped is an error: instances run until the judge stops
+// them. Once stopped, how it exited doesn't matter.
+func (p *process) stop() error {
+	select {
+	case <-p.done:
+		return errors.Join(fmt.Errorf("%s exited by itself: %v", p.cmd, p.exitErr), p.logErr)
+	default:
 	}
-	syscall.Kill(pgid, syscall.SIGKILL)
+	pgid := -p.cmd.Process.Pid
+	if err := signalGroup(pgid, syscall.SIGTERM); err != nil {
+		return err
+	}
+	for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); time.Sleep(50 * time.Millisecond) {
+		err := syscall.Kill(pgid, 0)
+		if errors.Is(err, syscall.ESRCH) {
+			break // the whole group is gone
+		}
+		if err != nil {
+			return err
+		}
+	}
+	if err := signalGroup(pgid, syscall.SIGKILL); err != nil {
+		return err
+	}
+	<-p.done
+	return p.logErr
+}
+
+// signalGroup sends sig to a process group that may have exited already.
+func signalGroup(pgid int, sig syscall.Signal) error {
+	if err := syscall.Kill(pgid, sig); err != nil && !errors.Is(err, syscall.ESRCH) {
+		return fmt.Errorf("sending %v to process group %d: %w", sig, -pgid, err)
+	}
+	return nil
 }
