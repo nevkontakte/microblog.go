@@ -14,14 +14,17 @@ var EndpointScenarios = []Scenario{
 		Run: func(t *T) {
 			base := BaseURL(t.A)
 			actor := fetchAP(t, t.NewFake("f"), base, false, 200)
-			for field, want := range map[string]any{
+			want := map[string]any{
 				"type": "Person", "id": base, "preferredUsername": "a", "url": base + "/",
 				"inbox": base + "/inbox", "outbox": base + "/outbox", "featured": base + "/featured",
 				"followers": base + "/followers", "following": base + "/following",
 				"manuallyApprovesFollowers": false, "alsoKnownAs": []any{"https://old.test"},
-			} {
-				t.equal(field, actor[field], want)
 			}
+			got := map[string]any{}
+			for field := range want {
+				got[field] = actor[field]
+			}
+			t.equal("actor document", got, want)
 			key := actor["publicKey"].(map[string]any)
 			t.equal("publicKey", []any{key["id"], key["owner"]}, []any{base + "#main-key", base})
 			// The key on disk is the one served: existing keys keep working.
@@ -77,13 +80,14 @@ var EndpointScenarios = []Scenario{
 			t.equal(path+" items", itemIDs(page["orderedItems"]), newestFirst)
 		}
 		outbox := fetchAP(t, f, BaseURL(t.A)+"/outbox", false, 200)
-		var objects []any
+		var types, objects []any
 		for _, it := range outbox["orderedItems"].([]any) {
 			create := it.(map[string]any)
-			t.equal("outbox item type", create["type"], "Create")
+			types = append(types, create["type"])
 			objects = append(objects, create["object"].(map[string]any)["id"])
 		}
-		t.equal("outbox", []any{outbox["totalItems"], objects}, []any{float64(2), []any{second, first}})
+		t.equal("outbox", []any{outbox["totalItems"], types, objects},
+			[]any{float64(2), []any{"Create", "Create"}, []any{second, first}})
 	}},
 
 	{Name: "ap__hidden_collections",

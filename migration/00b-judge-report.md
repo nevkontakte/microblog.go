@@ -275,6 +275,7 @@ scenario): 2 blocking, 8 should-fix, 5 nits. All accepted except where noted.
 | 12 | Other helpers also folded several actions, or fixed which instance plays which role. | Every helper is now one action or one check, taking the instances as arguments: `remoteNote` and `followedNote` are spelled out in their scenarios, `pendingFollow` became `pendingFollower`, `pollCounted` became `expectVotesCounted` and `expectPollUpdated`, `lookupObject` became `expectLookedUp`, and `remoteRedirect` takes both instances. |
 | 13 | Receiving edits must be judged. | `inbox__update_note` also checks `updated_at`; `inbox__update_unknown_note` and `inbox__update_unsupported_type` cover the two branches of the Update handler no scenario reached. |
 | 14 | The ignored Digest header is a bug. | Marked `BUG(port)` in `inbox__digest_header_ignored`, to fix after parity. The wrong-key ACL bug (Copilot finding 6) is kept until parity too, by the owner's decision. |
+| 15 | Field-by-field checks of a document stop at the first difference. | `ap__actor_document` and `ap__collections` compare the fields they check in one `go-cmp` diff. |
 
 The timing audit went through every wait in the judge:
 
