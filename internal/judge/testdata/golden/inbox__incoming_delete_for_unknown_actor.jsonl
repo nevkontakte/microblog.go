@@ -1,0 +1,3 @@
+{"from":"a","method":"GET","url":"https://f.test/","accept":"application/activity+json","status":410,"respType":"text/plain; charset=utf-8"}
+{"from":"f","method":"POST","url":"https://a.test/inbox","contentType":"application/activity+json","date":"http-date","digest":"SHA-256 ok","signature":"keyId=https://f.test#main-key rsa-sha256 (request-target) host date digest content-type unverified","body":{"@context":"https://www.w3.org/ns/activitystreams","actor":"https://f.test","id":"https://f.test/delete/1","object":"https://f.test/note/1","type":"Delete"},"status":202,"respType":"application/json","response":{"detail":"Accepted"}}
+{"posts":["Delete https://f.test/delete/1"],"sequence":"f -\u003e a.test"}

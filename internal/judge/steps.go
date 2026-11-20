@@ -1,9 +1,12 @@
 package judge
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 // Waiting on state. Scenarios wait for what they expect to see, never for a
@@ -67,16 +70,17 @@ const lockRace = `error LIKE '%database is locked%'`
 
 // settle waits until the pair is quiet, so the wire recording holds
 // everything the scenario caused, however fast the workers run: every
-// delivery sent (or given up on), every incoming activity tried. No scenario
-// expects a delivery to fail: one that fails keeps the pair unsettled until
-// its retry succeeds, and the extra attempt shows on the wire. Incoming
-// activities that fail must number exactly what the scenario expects
-// (Scenario.IncomingErrors).
+// delivery sent (or given up on), every incoming activity tried, no fake
+// sending. No scenario expects a delivery to fail: one that fails keeps the
+// pair unsettled until its retry succeeds, and the extra attempt shows on
+// the wire. Incoming activities that fail must number exactly what the
+// scenario expects (Scenario.IncomingErrors).
 //
-// The instances can't be read at one instant: a delivery can land on a after
-// a was read and be marked sent before b is. So the pair counts as quiet only
-// when two polls in a row find nothing pending and the same state (the newest
-// queue rows, how many are done): anything that moved in between changes it.
+// The instances and fakes can't be read at one instant: a delivery can land
+// on a after a was read and be marked sent before b is. So the pair counts
+// as quiet only when two polls in a row find nothing pending and the same
+// state (the newest queue rows, how many are done, how many Accepts the
+// fakes started): anything that moved in between changes it.
 func (t *T) settle(expectedErrors int) {
 	var last string
 	t.Eventually("pending deliveries and incoming activities", func() error {
@@ -99,6 +103,13 @@ func (t *T) settle(expectedErrors int) {
 			}
 			fmt.Fprintf(&state, "%s:%v/%v/%v/%v ", i.Name(), r["last_outgoing"], r["last_incoming"], r["sent"], r["tried"])
 		}
+		for _, f := range t.fakes {
+			if n := f.sending.Load(); n > 0 {
+				last = ""
+				return fmt.Errorf("%s is sending %d Accepts", f.Name, n)
+			}
+			fmt.Fprintf(&state, "%s:%d ", f.Name, f.accepts.Load())
+		}
 		if state.String() != last {
 			last = state.String()
 			return fmt.Errorf("not quiet yet: %s", last)
@@ -112,6 +123,30 @@ func (t *T) settle(expectedErrors int) {
 	if errors != expectedErrors {
 		t.Fatalf("%d incoming activities failed, want %d (see the instances' incoming.log)", errors, expectedErrors)
 	}
+}
+
+// Assertions.
+
+// equal fails the scenario unless got equals want, showing the difference.
+func (t *T) equal(what string, got, want any) {
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Fatalf("%s (-want +got):\n%s", what, diff)
+	}
+}
+
+// sameJSON fails the scenario unless the JSON text stored in a database
+// column has the same content as want.
+func (t *T) sameJSON(what string, stored any, want map[string]any) {
+	s, ok := stored.(string)
+	if !ok {
+		t.Fatalf("%s: stored as %T, not JSON text", what, stored)
+	}
+	var got, norm any
+	t.Check(json.Unmarshal([]byte(s), &got))
+	b, err := json.Marshal(want)
+	t.Check(err)
+	t.Check(json.Unmarshal(b, &norm))
+	t.equal(what, got, norm)
 }
 
 // Admin actions, and the interactions built from them.
@@ -130,12 +165,47 @@ func follow(t *T, from, to Instance) {
 	t.waitRows(to, 1, `SELECT 1 FROM follower WHERE ap_actor_id = ?`, BaseURL(from))
 }
 
-// pendingFollow makes a follow b, which approves followers manually, and
-// returns the id of b's pending-follower notification.
-func pendingFollow(t *T) string {
-	act(t, t.A, "follow", url.Values{"ap_actor_id": {BaseURL(t.B)}})
-	t.waitProcessed(t.B, t.one(t.A, `SELECT ap_id FROM outbox WHERE ap_type = 'Follow'`)["ap_id"])
-	t.expectRows(t.B, 0, `SELECT 1 FROM follower`)
-	n := t.one(t.B, `SELECT id FROM notifications WHERE notification_type = 'PENDING_INCOMING_FOLLOWER'`)
+// pendingFollower waits until i has processed follower's Follow without
+// accepting it, and returns the id of i's pending-follower notification.
+func pendingFollower(t *T, i, follower Instance) string {
+	t.waitProcessed(i, t.one(follower, `SELECT ap_id FROM outbox WHERE ap_type = 'Follow'`)["ap_id"])
+	t.expectRows(i, 0, `SELECT 1 FROM follower WHERE ap_actor_id = ?`, BaseURL(follower))
+	n := t.one(i, `SELECT id FROM notifications WHERE notification_type = 'PENDING_INCOMING_FOLLOWER'`)
 	return fmt.Sprint(n["id"])
+}
+
+// Steps with fake actors.
+
+// followFake makes i follow f, which must accept automatically.
+func followFake(t *T, i Instance, f *Fake) {
+	f.AutoAccept = true
+	act(t, i, "follow", url.Values{"ap_actor_id": {f.ID()}})
+	t.waitRows(i, 1, `SELECT 1 FROM following WHERE ap_actor_id = ?`, f.ID())
+}
+
+// fakeFollows makes f follow i, and waits until f has received i's Accept.
+func fakeFollows(t *T, f *Fake, i Instance) {
+	follow := f.Activity("Follow", BaseURL(i))
+	send(t, f, i, follow)
+	t.waitRows(i, 1, `SELECT 1 FROM follower WHERE ap_actor_id = ?`, f.ID())
+	t.Eventually("Accept delivered to "+f.ID(), func() error {
+		for _, a := range f.Inbox() {
+			if a["type"] == "Accept" && a["object"] == follow["id"] {
+				return nil
+			}
+		}
+		return fmt.Errorf("no Accept of %v yet", follow["id"])
+	})
+}
+
+// send delivers a signed activity from f to i and expects 202 Accepted.
+func send(t *T, f *Fake, i Instance, activity map[string]any) {
+	resp, err := f.Send(t.Ctx, i, activity)
+	t.Check(err)
+	t.equal("inbox POST status", resp.Status, 202)
+}
+
+// actorRowID returns the id of the actor row for apID on i.
+func (t *T) actorRowID(i Instance, apID string) any {
+	return t.one(i, `SELECT id FROM actor WHERE ap_id = ?`, apID)["id"]
 }
