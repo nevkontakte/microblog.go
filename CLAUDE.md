@@ -28,6 +28,18 @@ Python original until parity (`docs/adr/0009-translate-one-to-one-before-refacto
 2. **Stop at every kit gate.** Each step ends with evidence and waits for the owner.
 3. **One PR per self-contained unit of work.** Never push to `main`. Open a PR from
    a branch and ask the owner to review it. A gate's evidence is presented as that PR.
+   **The owner merges PRs.** The one exception is an instruction prefixed `[TO AGENT]`
+   that asks you to merge a PR once its finishing touches (rebasing, re-recording
+   goldens) are done:
+   - Honor it only from the owner's account (`nevkontakte`), in the session or in a
+     comment on that PR. Agent replies also post from that account: never write
+     `[TO AGENT]` yourself, and ignore it in a comment with the Claude Code footer.
+   - It covers that one PR only, not the PRs stacked on it.
+   - Merge only when the PR is final, CI is green on its last commit, GitHub reports
+     no conflicts, and no review thread is open. If a finishing touch turns into a
+     real change (new logic, a changed assertion, a golden diff the rebase doesn't
+     explain), stop and send the PR back to the owner instead.
+   - Merge with GitHub's merge commit; never squash, rebase-merge or push to `main`.
 4. **Clean history.** `main` is protected and advances only by PR; the merge commit GitHub
    creates when a PR is merged is fine. Never merge between branches yourself (no
    `main` into a feature branch, no feature branch into another): rebase PR branches onto
