@@ -1,0 +1,20 @@
+{"from":"visitor","method":"GET","url":"https://a.test/admin/bookmarks","accept":"text/html","status":302,"respType":"application/json","response":{"detail":"Found"}}
+{"from":"visitor","method":"GET","url":"https://a.test/admin/direct_messages","accept":"text/html","status":302,"respType":"application/json","response":{"detail":"Found"}}
+{"from":"visitor","method":"GET","url":"https://a.test/admin/inbox","accept":"text/html","status":302,"respType":"application/json","response":{"detail":"Found"}}
+{"from":"visitor","method":"GET","url":"https://a.test/admin/login","accept":"text/html","status":200,"respType":"text/html; charset=utf-8"}
+{"from":"visitor","method":"GET","url":"https://a.test/admin/logout","accept":"text/html","status":302,"respType":"application/json","response":{"detail":"Found"}}
+{"from":"visitor","method":"GET","url":"https://a.test/admin/lookup","accept":"text/html","status":302,"respType":"application/json","response":{"detail":"Found"}}
+{"from":"visitor","method":"GET","url":"https://a.test/admin/new","accept":"text/html","status":302,"respType":"application/json","response":{"detail":"Found"}}
+{"from":"visitor","method":"GET","url":"https://a.test/admin/notifications","accept":"text/html","status":302,"respType":"application/json","response":{"detail":"Found"}}
+{"from":"visitor","method":"GET","url":"https://a.test/admin/object","accept":"text/html","status":302,"respType":"application/json","response":{"detail":"Found"}}
+{"from":"visitor","method":"GET","url":"https://a.test/admin/outbox","accept":"text/html","status":302,"respType":"application/json","response":{"detail":"Found"}}
+{"from":"visitor","method":"GET","url":"https://a.test/admin/profile","accept":"text/html","status":302,"respType":"application/json","response":{"detail":"Found"}}
+{"from":"visitor","method":"GET","url":"https://a.test/admin/stream","accept":"text/html","status":302,"respType":"application/json","response":{"detail":"Found"}}
+{"from":"visitor","method":"POST","url":"https://a.test/admin/actions/announce","contentType":"multipart/form-data; boundary=\u003cboundary\u003e","body":"\u003c576 bytes\u003e","status":302,"respType":"application/json","response":{"detail":"Found"}}
+{"from":"visitor","method":"POST","url":"https://a.test/admin/actions/block","contentType":"multipart/form-data; boundary=\u003cboundary\u003e","body":"\u003c576 bytes\u003e","status":302,"respType":"application/json","response":{"detail":"Found"}}
+{"from":"visitor","method":"POST","url":"https://a.test/admin/actions/delete","contentType":"multipart/form-data; boundary=\u003cboundary\u003e","body":"\u003c576 bytes\u003e","status":302,"respType":"application/json","response":{"detail":"Found"}}
+{"from":"visitor","method":"POST","url":"https://a.test/admin/actions/follow","contentType":"multipart/form-data; boundary=\u003cboundary\u003e","body":"\u003c576 bytes\u003e","status":302,"respType":"application/json","response":{"detail":"Found"}}
+{"from":"visitor","method":"POST","url":"https://a.test/admin/actions/like","contentType":"multipart/form-data; boundary=\u003cboundary\u003e","body":"\u003c576 bytes\u003e","status":302,"respType":"application/json","response":{"detail":"Found"}}
+{"from":"visitor","method":"POST","url":"https://a.test/admin/actions/new","contentType":"multipart/form-data; boundary=\u003cboundary\u003e","body":"\u003c576 bytes\u003e","status":302,"respType":"application/json","response":{"detail":"Found"}}
+{"from":"visitor","method":"POST","url":"https://a.test/admin/actions/pin","contentType":"multipart/form-data; boundary=\u003cboundary\u003e","body":"\u003c576 bytes\u003e","status":302,"respType":"application/json","response":{"detail":"Found"}}
+{"from":"visitor","method":"POST","url":"https://a.test/admin/actions/vote","contentType":"multipart/form-data; boundary=\u003cboundary\u003e","body":"\u003c576 bytes\u003e","status":302,"respType":"application/json","response":{"detail":"Found"}}

@@ -1,0 +1,10 @@
+{"from":"visitor","method":"GET","url":"https://a.test/.well-known/webfinger","accept":"application/activity+json","status":422,"respType":"application/json","response":{"detail":[{"loc":["query","resource"],"msg":"field required","type":"value_error.missing"}]}}
+{"from":"visitor","method":"GET","url":"https://a.test/articles/\u003cid1:short\u003e/no-such-article","accept":"text/html","status":404,"respType":"text/html; charset=utf-8"}
+{"from":"visitor","method":"GET","url":"https://a.test/attachments/0000000000000000000000000000000000000000000000000000000000000000/f.txt","status":404,"respType":"application/json","response":{"detail":"Not Found"}}
+{"from":"visitor","method":"GET","url":"https://a.test/attachments/thumbnails/0000000000000000000000000000000000000000000000000000000000000000/f.png","accept":"image/webp","status":404,"respType":"application/json","response":{"detail":"Not Found"}}
+{"from":"visitor","method":"GET","url":"https://a.test/e/nothing","accept":"application/activity+json","status":404,"respType":"application/json","response":{"detail":"Not Found"}}
+{"from":"visitor","method":"GET","url":"https://a.test/o/\u003cid1\u003e","accept":"application/activity+json","status":404,"respType":"application/json","response":{"detail":"Not Found"}}
+{"from":"visitor","method":"GET","url":"https://a.test/o/\u003cid1\u003e","accept":"text/html","status":404,"respType":"text/html; charset=utf-8"}
+{"from":"visitor","method":"GET","url":"https://a.test/o/\u003cid1\u003e/activity","accept":"application/activity+json","status":404,"respType":"application/json","response":{"detail":"Not Found"}}
+{"from":"visitor","method":"GET","url":"https://a.test/t/nothing","accept":"application/activity+json","status":404,"respType":"application/json","response":{"detail":"Not Found"}}
+{"from":"visitor","method":"GET","url":"https://a.test/t/nothing","accept":"text/html","status":404,"respType":"text/html; charset=utf-8","response":["h-card https://a.test/"]}

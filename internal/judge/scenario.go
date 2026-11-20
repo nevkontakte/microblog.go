@@ -31,6 +31,11 @@ type T struct {
 	Client *Client
 	Proxy  *Proxy
 
+	// Visitor is an anonymous browser or feed reader: no session, no
+	// signature. Its exchanges are on the wire as "visitor", with bodies
+	// compared as asJSON keeps them.
+	Visitor *Client
+
 	impls map[string]Impl // by instance name
 	specs map[string]Spec
 	fakes []*Fake
@@ -137,6 +142,7 @@ func All() []Scenario {
 		EndpointScenarios,
 		CLIScenarios,
 		SwapScenarios,
+		PublicScenarios,
 	} {
 		all = append(all, group...)
 	}

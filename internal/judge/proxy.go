@@ -359,7 +359,10 @@ func (p *Proxy) record(e Exchange) {
 // forwarder relays requests to addr unchanged, keeping the Host header the
 // sender used, since HTTP signatures cover it.
 func forwarder(addr string) http.Handler {
-	transport := &http.Transport{Proxy: nil}
+	// A connection per request: an instance may close a connection after
+	// an error (uvicorn after an unhandled exception), and a reused one
+	// would then fail the next request with no answer from the instance.
+	transport := &http.Transport{Proxy: nil, DisableKeepAlives: true}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		out := r.Clone(r.Context())
 		out.RequestURI = ""

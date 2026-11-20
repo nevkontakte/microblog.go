@@ -332,3 +332,58 @@ The schema check reads `alembic_version`, which is what `alembic current` report
 | 14 | A new migration moves the schema past the original's last one | `swap__served_state`, `swap__peer` |
 
 4 of 4 caught.
+
+## Part 2b: the public read surface
+
+`scenarios_public.go` judges what anonymous visitors (browsers, feed readers, servers fetching
+without a signature) are served, and what they must never be. A third proxy listener,
+`visitor`, carries an anonymous client, so its exchanges are on the wire like the rest. Its
+response bodies are compared as `asJSON` keeps them: JSON as it is, feeds as XML trees
+(attribute order and whitespace ignored, RFC 822 dates masked), HTML by its microformats (each
+`h-entry`, `h-card` and `h-feed` with its own `u-url`), since templates may differ.
+
+| Scenario | Judges |
+|---|---|
+| `public__visibility` | One post of each kind (public, unlisted, followers-only, direct, article, poll, reply, pinned, pinned then deleted), and every surface that lists or serves posts: home page, outbox, featured, followers, following, tag pages, NodeInfo, WebFinger, the JSON, RSS and Atom feeds, `robots.txt`, and each post as ActivityPub, as its activity and as a page. No response holds the id or text of a followers-only, direct or deleted post |
+| `public__not_found` | Unknown objects, articles, tags, attachments, thumbnails and emoji; WebFinger without a resource |
+| `public__thumbnail` | An image's thumbnail, as WebP and as the original |
+| `public__admin_requires_login` | Every admin page and action sends an anonymous visitor to the login page and changes nothing |
+| `public__media_proxy` | Media proxy URLs the judge signs itself: valid, resized, forged and expired |
+| `public__collection_pages` | Followers past 20 page, with a working next link |
+| `public__index`, `public__collections_html` | The rest of `tests/test_public.py`: the index as HTML and under each accepted ActivityPub type, and followers and following pages, shown and hidden |
+
+**Found in the original,** marked `BUG(port)` (kept until parity, as for every bug the
+original has):
+
+- An attachment is served to anyone who has its URL, whatever its post's visibility, and after
+  the post is deleted (`app/main.py:1533-1551`). The URL holds the content's hash, so it can't
+  be guessed, but deleting a post doesn't take its attachments down.
+- A forged or expired media proxy URL fails with 500, not a 4xx: the signature error isn't
+  handled (`app/main.py:1378-1388`).
+- A thumbnail requested without an `Accept` header fails with 500 (`app/main.py:1569`).
+- Also pinned by the goldens: the outbox never lists polls (`app/main.py:604`).
+
+**Judge fixes on the way:**
+
+- The proxy now opens a connection per request to an instance. After a 500, uvicorn closes the
+  connection, and a reused one failed the next request with a 502 from the proxy (seen in
+  `public__media_proxy` under load).
+- Multipart boundaries are masked; the original's media proxy ignores `HTTPS_PROXY`, so proxied
+  media come from b's own address, which debug mode allows.
+
+**Clean run:** 8/8 pass, recording the goldens, and again against them; `public__media_proxy`
+and `public__admin_requires_login` also passed six runs at once. The full suite, now 105
+scenarios, passed twice in a row (297 s and 282 s, four scenarios at a time).
+
+**Mutations,** run on the public scenarios:
+
+| # | Mutation | Caught by |
+|---|---|---|
+| 15 | The outbox lists followers-only posts | `public__visibility` |
+| 16 | The feeds list deleted posts | `public__visibility` |
+| 17 | The home page lists unlisted posts | `public__visibility` |
+| 18 | An admin page is served without a session | `public__admin_requires_login` |
+| 19 | The media proxy accepts expired URLs | `public__media_proxy` |
+| 20 | Tag pages list followers-only posts | `public__visibility` |
+
+6 of 6 caught.

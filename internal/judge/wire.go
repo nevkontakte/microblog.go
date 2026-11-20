@@ -6,9 +6,12 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
+	"encoding/xml"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -17,6 +20,8 @@ import (
 	"slices"
 	"sort"
 	"strings"
+
+	"golang.org/x/net/html"
 )
 
 // The wire comparison holds one implementation's traffic to the reference's:
@@ -54,6 +59,16 @@ var (
 	shortID   = regexp.MustCompile(`/articles/([0-9a-f]{7})/`) // the first 7 characters of a public id
 	timestamp = regexp.MustCompile(`\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?(Z|[+-]\d\d:\d\d)?`)
 	digit     = regexp.MustCompile(`\d`)
+	// rfc822 is the date format of RSS feeds.
+	rfc822 = regexp.MustCompile(`(Mon|Tue|Wed|Thu|Fri|Sat|Sun), \d\d (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} \d\d:\d\d:\d\d`)
+	// A media proxy URL's expiry is the day it was made, plus a week, and its
+	// signature covers the expiry (app/media.py:16-41). The proxied URL may
+	// hold an instance's address, which changes from run to run.
+	proxyURL = regexp.MustCompile(`/proxy/media/\d+/[A-Za-z0-9_=-]+/[A-Za-z0-9_=-]+`)
+	// A multipart form's boundary is random.
+	multipartBoundary = regexp.MustCompile(`boundary=[^;]+`)
+	// A pagination cursor encodes a timestamp (app/utils/pagination.py).
+	cursor = regexp.MustCompile(`next_cursor=[A-Za-z0-9_=%-]+`)
 )
 
 // A masker replaces generated ids with <id1>, <id2>, … numbered by first
@@ -114,7 +129,16 @@ func orderKey(e Exchange) string {
 	s := strings.Join([]string{e.From, e.Method, e.URL, canonicalJSON(e.ReqBody), fmt.Sprint(e.Status), canonicalJSON(e.RespBody)}, "\n")
 	s = volatileField.ReplaceAllString(s, `"$1":""`)
 	s = hexID.ReplaceAllString(s, "<id>")
-	return timestamp.ReplaceAllStringFunc(s, func(ts string) string { return digit.ReplaceAllString(ts, "9") })
+	return maskTimes(s)
+}
+
+// maskTimes keeps the shape of timestamps (precision, zone), and of values
+// derived from the time, but not their values.
+func maskTimes(s string) string {
+	s = timestamp.ReplaceAllStringFunc(s, func(ts string) string { return digit.ReplaceAllString(ts, "9") })
+	s = rfc822.ReplaceAllString(s, "Day, 99 Mon 9999 99:99:99")
+	s = proxyURL.ReplaceAllString(s, "/proxy/media/<expiry>/<signature>/<url>")
+	return cursor.ReplaceAllString(s, "next_cursor=<cursor>")
 }
 
 var volatileField = regexp.MustCompile(`"(publicKeyPem|signatureValue|nonce)":\s*"[^"]*"`)
@@ -122,6 +146,12 @@ var volatileField = regexp.MustCompile(`"(publicKeyPem|signatureValue|nonce)":\s
 // normalize turns recorded exchanges into wire records. keys maps a host to
 // the public key of the instance serving it, for checking signatures.
 func normalize(exchanges []Exchange, keys map[string]*rsa.PublicKey) []WireRecord {
+	exchanges = slices.Clone(exchanges)
+	for i, e := range exchanges {
+		if e.From == "visitor" {
+			exchanges[i].RespBody = asJSON(e.RespHeader.Get("Content-Type"), e.RespBody)
+		}
+	}
 	m := newMasker(exchanges)
 	var out []WireRecord
 	for _, e := range exchanges {
@@ -133,7 +163,7 @@ func normalize(exchanges []Exchange, keys map[string]*rsa.PublicKey) []WireRecor
 			Method: e.Method,
 			URL:    m.str(e.URL),
 			Accept: e.ReqHeader.Get("Accept"),
-			Type:   e.ReqHeader.Get("Content-Type"),
+			Type:   multipartBoundary.ReplaceAllString(e.ReqHeader.Get("Content-Type"), "boundary=<boundary>"),
 			Body:   m.json(e.ReqBody),
 			Status: e.Status,
 		}
@@ -147,7 +177,7 @@ func normalize(exchanges []Exchange, keys map[string]*rsa.PublicKey) []WireRecor
 			r.Signature = m.str(checkSignature(e, s, keys))
 		}
 		r.RespType = e.RespHeader.Get("Content-Type")
-		if strings.Contains(r.RespType, "json") {
+		if strings.Contains(r.RespType, "json") || e.From == "visitor" {
 			r.Response = m.json(e.RespBody)
 		}
 		out = append(out, r)
@@ -171,8 +201,7 @@ func (m *masker) str(s string) string {
 		}
 		return "/articles/<short-id>/"
 	})
-	// Keep a timestamp's shape (precision, zone) but not its value.
-	return timestamp.ReplaceAllStringFunc(s, func(ts string) string { return digit.ReplaceAllString(ts, "9") })
+	return maskTimes(s)
 }
 
 // json parses a JSON body and masks its run-specific values. Bodies that
@@ -341,4 +370,120 @@ func diffWire(want, got []string) (missing, extra []string) {
 	sort.Strings(missing)
 	sort.Strings(extra)
 	return missing, extra
+}
+
+// asJSON turns what a visitor (a browser or feed reader) was served into
+// JSON text, keeping what must not change: JSON as it is, an HTML page's
+// microformats (templates may differ, ADR 0003), an XML feed's element tree,
+// other text as a string, and other content as its length and hash.
+func asJSON(contentType, body string) string {
+	if body == "" {
+		return ""
+	}
+	var v any
+	switch {
+	case strings.Contains(contentType, "json"):
+		return body
+	case strings.Contains(contentType, "html"):
+		v = microformats(body)
+	case strings.Contains(contentType, "xml"):
+		v = xmlTree(body)
+	case strings.HasPrefix(contentType, "text/"):
+		v = body
+	default:
+		sum := sha256.Sum256([]byte(body))
+		v = map[string]any{"bytes": len(body), "sha256": hex.EncodeToString(sum[:])}
+	}
+	return string(must(json.Marshal(v)))
+}
+
+// microformats lists, in document order, each h-entry, h-card and h-feed of
+// an HTML page with its first u-url or u-uid: what the page publishes,
+// whatever its template.
+func microformats(page string) []string {
+	doc, err := html.Parse(strings.NewReader(page))
+	if err != nil {
+		return []string{"<invalid HTML: " + err.Error() + ">"}
+	}
+	var out []string
+	for n := range doc.Descendants() {
+		for _, class := range classes(n) {
+			if class == "h-entry" || class == "h-card" || class == "h-feed" {
+				out = append(out, class+" "+firstURL(n))
+			}
+		}
+	}
+	return out
+}
+
+func classes(n *html.Node) []string {
+	if n.Type != html.ElementNode {
+		return nil
+	}
+	for _, a := range n.Attr {
+		if a.Key == "class" {
+			return strings.Fields(a.Val)
+		}
+	}
+	return nil
+}
+
+// firstURL returns the href of n's first u-url or u-uid, the element itself
+// included, leaving out microformats nested in n, such as an entry's author.
+func firstURL(n *html.Node) string {
+	if slices.Contains(classes(n), "u-url") || slices.Contains(classes(n), "u-uid") {
+		for _, a := range n.Attr {
+			if a.Key == "href" {
+				return a.Val
+			}
+		}
+	}
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		if slices.ContainsFunc(classes(c), func(class string) bool { return strings.HasPrefix(class, "h-") }) {
+			continue
+		}
+		if url := firstURL(c); url != "" {
+			return url
+		}
+	}
+	return ""
+}
+
+// xmlTree parses an XML document into nested maps (name, attributes, text,
+// children), so attribute order and insignificant whitespace don't count.
+func xmlTree(body string) any {
+	root := map[string]any{}
+	stack := []map[string]any{root}
+	dec := xml.NewDecoder(strings.NewReader(body))
+	for {
+		tok, err := dec.Token()
+		if err == io.EOF {
+			return root["children"]
+		}
+		if err != nil {
+			return "<invalid XML: " + err.Error() + ">"
+		}
+		top := stack[len(stack)-1]
+		switch t := tok.(type) {
+		case xml.StartElement:
+			n := map[string]any{"name": t.Name.Local}
+			if len(t.Attr) > 0 {
+				attrs := map[string]string{}
+				for _, a := range t.Attr {
+					attrs[strings.TrimPrefix(a.Name.Space+":"+a.Name.Local, ":")] = a.Value
+				}
+				n["attrs"] = attrs
+			}
+			children, _ := top["children"].([]any)
+			top["children"] = append(children, n)
+			stack = append(stack, n)
+		case xml.EndElement:
+			stack = stack[:len(stack)-1]
+		case xml.CharData:
+			if text := strings.TrimSpace(string(t)); text != "" {
+				prev, _ := top["text"].(string)
+				top["text"] = prev + text
+			}
+		}
+	}
 }

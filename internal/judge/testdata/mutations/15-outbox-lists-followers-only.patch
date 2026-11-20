@@ -1,0 +1,15 @@
+Mutation: the outbox lists followers-only posts to anyone.
+
+--- a/app/main.py	2026-11-20 18:53:55.013003413 +0000
++++ b/app/main.py	2026-11-20 18:53:55.029540824 +0000
+@@ -601,7 +601,9 @@
+ 
+     # Default restrictions unless the request is authenticated with an access token
+     restricted_where = [
+-        models.OutboxObject.visibility == ap.VisibilityEnum.PUBLIC,
++        models.OutboxObject.visibility.in_(
++            [ap.VisibilityEnum.PUBLIC, ap.VisibilityEnum.FOLLOWERS_ONLY]
++        ),
+         models.OutboxObject.ap_type.in_(["Create", "Note", "Article", "Announce"]),
+     ]
+ 

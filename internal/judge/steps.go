@@ -1,16 +1,23 @@
 package judge
 
 import (
+	"bytes"
+	"crypto/hmac"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"image"
+	"image/png"
 	"net/url"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -559,4 +566,55 @@ func instanceKey(t *T, i Instance) *rsa.PublicKey {
 	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
 	t.Check(err)
 	return &key.PublicKey
+}
+
+// Visitors: anonymous browsers and feed readers.
+
+// Accept headers a visitor sends.
+const (
+	acceptAP   = "application/activity+json"
+	acceptHTML = "text/html"
+)
+
+// visit fetches url as a visitor, accepting accept, or anything if empty.
+func visit(t *T, url, accept string) *Response {
+	resp, err := t.Visitor.Get(t.Ctx, url, accept)
+	t.Check(err)
+	return resp
+}
+
+// expectUndisclosed checks that nothing a visitor was served so far contains
+// any of secrets, in a body or a redirect.
+func (t *T) expectUndisclosed(secrets ...string) {
+	for _, e := range t.Proxy.Exchanges() {
+		if e.From != "visitor" {
+			continue
+		}
+		for _, s := range secrets {
+			if strings.Contains(e.RespBody, s) || strings.Contains(e.RespHeader.Get("Location"), s) {
+				t.Errorf("%s %s disclosed %q", e.Method, e.URL, s)
+			}
+		}
+	}
+}
+
+// mediaURL is the media proxy URL that i signs for url, expiring after day
+// expiry, counted in days since the epoch (app/media.py:16-41).
+func mediaURL(i Instance, url string, expiry int64) string {
+	mac := hmac.New(sha256.New, []byte(configSecret(i.Name())))
+	must(mac.Write(fmt.Appendf(nil, "%d|%s", expiry, url)))
+	return fmt.Sprintf("%s/proxy/media/%d/%s/%s", BaseURL(i), expiry,
+		base64.URLEncoding.EncodeToString(mac.Sum(nil)), base64.URLEncoding.EncodeToString([]byte(url)))
+}
+
+// today is the media proxy's day: days since the epoch.
+func today() int64 { return time.Now().Unix() / 86400 }
+
+// smallPNG is a 2×2 image, so the original makes a thumbnail of it.
+func smallPNG() []byte {
+	var b bytes.Buffer
+	if err := png.Encode(&b, image.NewGray(image.Rect(0, 0, 2, 2))); err != nil {
+		panic(err) // encoding to memory can't fail
+	}
+	return b.Bytes()
 }

@@ -1,0 +1,12 @@
+Mutation: the JSON, RSS and Atom feeds list deleted posts.
+
+--- a/app/main.py	2026-11-20 18:53:55.042449498 +0000
++++ b/app/main.py	2026-11-20 18:53:55.055021357 +0000
+@@ -1605,7 +1605,6 @@
+                 select(models.OutboxObject)
+                 .where(
+                     models.OutboxObject.visibility == ap.VisibilityEnum.PUBLIC,
+-                    models.OutboxObject.is_deleted.is_(False),
+                     models.OutboxObject.ap_type.in_(["Note", "Article", "Video"]),
+                 )
+                 .options(
