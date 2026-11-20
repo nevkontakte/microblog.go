@@ -18,7 +18,10 @@ type Scenario struct {
 	// IncomingErrors is how many incoming activities are expected to fail
 	// processing, across both instances.
 	IncomingErrors int
-	Run            func(t *T)
+	// Unstable reports the wire records left out of the comparison: those
+	// whose content depends on timing in the original. Each use says why.
+	Unstable func(WireRecord) bool
+	Run      func(t *T)
 }
 
 // T is a scenario's handle on the running pair, in the style of testing.T.
@@ -128,6 +131,7 @@ func All() []Scenario {
 		FollowScenarios,
 		InboxScenarios,
 		OutboxScenarios,
+		FederationScenarios,
 	} {
 		all = append(all, group...)
 	}
