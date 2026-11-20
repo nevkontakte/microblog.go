@@ -12,12 +12,14 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"syscall"
 )
 
 // An Exchange is one HTTP request and its response, as seen by the proxy.
@@ -77,6 +79,10 @@ type Proxy struct {
 	// http.Server, so Close closes them itself and waits on tunneling.
 	tunnels   map[net.Conn]bool
 	tunneling sync.WaitGroup
+
+	// errs holds what went wrong in the proxy's own goroutines, which have
+	// no caller to return an error to (fail). Close returns them.
+	errs []error
 }
 
 func NewProxy() (*Proxy, error) {
@@ -133,11 +139,14 @@ func (p *Proxy) Listen(from string) (string, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.closing { // Close wouldn't see this server
-		l.Close()
-		return "", errors.New("proxy is closed")
+		return "", errors.Join(errors.New("proxy is closed"), l.Close())
 	}
 	p.servers = append(p.servers, srv)
-	go srv.Serve(l)
+	go func() {
+		if err := srv.Serve(l); !errors.Is(err, http.ErrServerClosed) {
+			p.fail(fmt.Errorf("serving %s: %w", from, err))
+		}
+	}()
 	return l.Addr().String(), nil
 }
 
@@ -151,19 +160,47 @@ func (p *Proxy) Exchanges() []Exchange {
 }
 
 // Close stops the listeners, cancels requests in flight, ends open tunnels
-// and waits for them to finish.
-func (p *Proxy) Close() {
+// and waits for them to finish. It returns what went wrong in the proxy's
+// goroutines during the run (fail), and in closing.
+func (p *Proxy) Close() error {
 	p.mu.Lock()
 	p.closing = true
 	p.cancel()
+	errs := p.errs
 	for _, s := range p.servers {
-		s.Close()
+		errs = append(errs, s.Close())
 	}
 	for c := range p.tunnels {
-		c.Close()
+		if err := c.Close(); !errors.Is(err, net.ErrClosed) { // the tunnel may have closed it first
+			errs = append(errs, err)
+		}
 	}
 	p.mu.Unlock()
 	p.tunneling.Wait()
+	return errors.Join(errs...)
+}
+
+// fail records an error from one of the proxy's goroutines, failing the
+// run (Close). Errors once Close has begun come from the teardown itself,
+// and aren't recorded.
+func (p *Proxy) fail(err error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if !p.closing {
+		p.errs = append(p.errs, err)
+	}
+}
+
+// hungUp reports whether err only means that the other end of a connection
+// went away, as a sender does when it gives up waiting for an answer or its
+// instance stops. The proxy ends such an exchange quietly.
+func hungUp(err error) bool {
+	for _, quiet := range []error{io.EOF, io.ErrUnexpectedEOF, net.ErrClosed, syscall.ECONNRESET, syscall.EPIPE} {
+		if errors.Is(err, quiet) {
+			return true
+		}
+	}
+	return false
 }
 
 // serve handles what a sender asks of its proxy listener. Almost everything
@@ -193,7 +230,9 @@ func (p *Proxy) serve(from string) http.Handler {
 			w.Header()[k] = v
 		}
 		w.WriteHeader(rec.Code)
-		w.Write(rec.Body.Bytes())
+		if _, err := w.Write(rec.Body.Bytes()); err != nil && !hungUp(err) {
+			p.fail(fmt.Errorf("answering %s %s from %s: %w", r.Method, r.URL, from, err))
+		}
 	})
 }
 
@@ -208,11 +247,29 @@ func (p *Proxy) handler(host string) http.Handler {
 
 // exchange serves r with h and records both. The recorded request headers
 // include Host, which HTTP signatures cover.
+// A handler that panics fails the run: handlers can't return errors, and
+// panic on those that only a bug in the judge can cause.
 func (p *Proxy) exchange(from string, r *http.Request, h http.Handler) *httptest.ResponseRecorder {
-	body, _ := io.ReadAll(r.Body)
-	r.Body = io.NopCloser(bytes.NewReader(body))
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, r)
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		if !hungUp(err) {
+			p.fail(fmt.Errorf("reading %s %s from %s: %w", r.Method, r.URL, from, err))
+		}
+		http.Error(rec, err.Error(), http.StatusBadRequest)
+		return rec
+	}
+	r.Body = io.NopCloser(bytes.NewReader(body))
+	func() {
+		defer func() {
+			if v := recover(); v != nil {
+				p.fail(fmt.Errorf("serving %s %s from %s: %v", r.Method, r.URL, from, v))
+				rec = httptest.NewRecorder()
+				http.Error(rec, "the judge failed", http.StatusInternalServerError)
+			}
+		}()
+		h.ServeHTTP(rec, r)
+	}()
 	header := r.Header.Clone()
 	header.Set("Host", r.Host)
 	p.record(Exchange{
@@ -234,25 +291,35 @@ func (p *Proxy) exchange(from string, r *http.Request, h http.Handler) *httptest
 func (p *Proxy) tunnel(from, host string, w http.ResponseWriter) {
 	conn, _, err := http.NewResponseController(w).Hijack()
 	if err != nil {
+		p.fail(fmt.Errorf("tunneling to %s for %s: %w", host, from, err))
 		return
 	}
 	p.mu.Lock()
 	if p.closing {
 		p.mu.Unlock()
-		conn.Close()
+		if err := conn.Close(); err != nil {
+			p.fail(err)
+		}
 		return
 	}
 	p.tunnels[conn] = true
 	p.tunneling.Add(1)
 	p.mu.Unlock()
 	defer func() {
-		conn.Close()
+		if err := conn.Close(); err != nil && !errors.Is(err, net.ErrClosed) { // Close may have closed it
+			p.fail(err)
+		}
 		p.mu.Lock()
 		delete(p.tunnels, conn)
 		p.mu.Unlock()
 		p.tunneling.Done()
 	}()
-	conn.Write([]byte("HTTP/1.1 200 Connection Established\r\n\r\n"))
+	if _, err := conn.Write([]byte("HTTP/1.1 200 Connection Established\r\n\r\n")); err != nil {
+		if !hungUp(err) {
+			p.fail(fmt.Errorf("tunneling to %s for %s: %w", host, from, err))
+		}
+		return
+	}
 	tlsConn := tls.Server(conn, &tls.Config{GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
 		return p.ca.leaf(host)
 	}})
@@ -260,6 +327,9 @@ func (p *Proxy) tunnel(from, host string, w http.ResponseWriter) {
 	for {
 		r, err := http.ReadRequest(in)
 		if err != nil {
+			if !hungUp(err) {
+				p.fail(fmt.Errorf("reading a request to %s from %s: %w", host, from, err))
+			}
 			return
 		}
 		r = r.WithContext(p.ctx)
@@ -272,6 +342,9 @@ func (p *Proxy) tunnel(from, host string, w http.ResponseWriter) {
 			resp.ContentLength = int64(rec.Body.Len())
 		}
 		if err := resp.Write(tlsConn); err != nil {
+			if !hungUp(err) {
+				p.fail(fmt.Errorf("answering %s %s from %s: %w", r.Method, r.URL, from, err))
+			}
 			return
 		}
 	}
@@ -298,11 +371,17 @@ func forwarder(addr string) http.Handler {
 			http.Error(w, err.Error(), http.StatusBadGateway)
 			return
 		}
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				panic(err) // fails the run, see exchange
+			}
+		}()
 		for k, v := range resp.Header {
 			w.Header()[k] = v
 		}
 		w.WriteHeader(resp.StatusCode)
-		io.Copy(w, resp.Body)
+		if _, err := io.Copy(w, resp.Body); err != nil {
+			panic(fmt.Errorf("relaying the answer from %s: %w", addr, err)) // see exchange
+		}
 	})
 }

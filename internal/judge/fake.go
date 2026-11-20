@@ -12,6 +12,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -33,6 +34,7 @@ type Fake struct {
 	AutoAccept  bool // answer Follow with Accept
 	Gone        bool // answer every GET with 410, like a deleted account
 
+	t       *T // reports what goes wrong in the background
 	key     *rsa.PrivateKey
 	client  *http.Client
 	sending atomic.Int32 // Accepts being sent in the background
@@ -51,9 +53,11 @@ func (t *T) NewFake(name string) *Fake {
 	t.Check(err)
 	addr, err := t.Proxy.Listen(name)
 	t.Check(err)
-	proxy, _ := url.Parse("http://" + addr)
+	proxy, err := url.Parse("http://" + addr)
+	t.Check(err)
 	f := &Fake{
 		Name: name,
+		t:    t,
 		key:  key,
 		client: &http.Client{
 			Transport: &http.Transport{Proxy: http.ProxyURL(proxy), TLSClientConfig: &tls.Config{RootCAs: t.Proxy.CertPool()}},
@@ -193,12 +197,12 @@ func (f *Fake) post(ctx context.Context, inbox string, activity map[string]any, 
 	return f.do(req)
 }
 
-func (f *Fake) do(req *http.Request) (*Response, error) {
+func (f *Fake) do(req *http.Request) (_ *Response, err error) {
 	resp, err := f.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { err = errors.Join(err, resp.Body.Close()) }()
 	body, err := io.ReadAll(resp.Body)
 	return &Response{Status: resp.StatusCode, Header: resp.Header, Body: body}, err
 }
@@ -227,7 +231,7 @@ func (f *Fake) sign(req *http.Request, key *rsa.PrivateKey, headers string) erro
 }
 
 func (f *Fake) actor() map[string]any {
-	pub, _ := x509.MarshalPKIXPublicKey(&f.key.PublicKey)
+	pub := must(x509.MarshalPKIXPublicKey(&f.key.PublicKey))
 	return map[string]any{
 		"@context":          []any{"https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"},
 		"type":              "Person",
@@ -276,10 +280,13 @@ func (f *Fake) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeAP(w, f.actor())
 	case r.URL.Path == "/.well-known/webfinger":
 		w.Header().Set("Content-Type", "application/jrd+json")
-		json.NewEncoder(w).Encode(map[string]any{
+		err := json.NewEncoder(w).Encode(map[string]any{
 			"subject": fmt.Sprintf("acct:%s@%s.test", f.Name, f.Name),
 			"links":   []any{map[string]any{"rel": "self", "type": "application/activity+json", "href": f.ID()}},
 		})
+		if err != nil {
+			panic(err) // fails the run, see Proxy.exchange
+		}
 	case r.URL.Path == "/outbox" || r.URL.Path == "/followers" || r.URL.Path == "/following":
 		writeAP(w, map[string]any{
 			"@context": "https://www.w3.org/ns/activitystreams", "id": id,
@@ -291,7 +298,9 @@ func (f *Fake) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		f.mu.Unlock()
 		if page != "" {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			io.WriteString(w, page)
+			if _, err := io.WriteString(w, page); err != nil {
+				panic(err) // fails the run, see Proxy.exchange
+			}
 			return
 		}
 		if obj == nil {
@@ -303,10 +312,20 @@ func (f *Fake) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (f *Fake) accept(follow map[string]any) {
-	actor, _ := follow["actor"].(string)
+	actor, ok := follow["actor"].(string)
+	if !ok {
+		f.t.Errorf("%s got a Follow without an actor: %v", f.Name, follow)
+		return
+	}
 	accept := f.Activity("Accept", follow["id"])
 	accept["to"] = []any{actor}
-	f.post(context.Background(), actor+"/inbox", accept, signing{key: f.key})
+	resp, err := f.post(context.Background(), actor+"/inbox", accept, signing{key: f.key})
+	if err == nil && resp.Status >= 300 {
+		err = fmt.Errorf("status %d: %s", resp.Status, resp.Body)
+	}
+	if err != nil {
+		f.t.Errorf("%s accepting a Follow from %s: %v", f.Name, actor, err)
+	}
 }
 
 // Activity builds an activity from the fake, shaped like the original test
@@ -363,5 +382,7 @@ func (f *Fake) Create(obj map[string]any) map[string]any {
 
 func writeAP(w http.ResponseWriter, obj any) {
 	w.Header().Set("Content-Type", "application/activity+json")
-	json.NewEncoder(w).Encode(obj)
+	if err := json.NewEncoder(w).Encode(obj); err != nil {
+		panic(err) // fails the run, see Proxy.exchange
+	}
 }

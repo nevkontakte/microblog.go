@@ -2,6 +2,7 @@ package judge
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -80,16 +81,17 @@ func (i *pythonInstance) Command(ctx context.Context, stdin string, args ...stri
 }
 
 func (i *pythonInstance) Stop() error {
+	var errs []error
 	for _, p := range i.procs {
-		p.stop()
+		errs = append(errs, p.stop())
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 // Start runs one instance the way misc/supervisord.conf does: a web server
 // plus the incoming and outgoing activity workers. Starting again on the same
 // directory restarts the instance on its existing data.
-func (py *Python) Start(ctx context.Context, s Spec) (Instance, error) {
+func (py *Python) Start(ctx context.Context, s Spec) (_ Instance, err error) {
 	data, err := writeData(s)
 	if err != nil {
 		return nil, err
@@ -115,7 +117,7 @@ func (py *Python) Start(ctx context.Context, s Spec) (Instance, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer socket.Close() // uvicorn has its own copy
+	defer func() { err = errors.Join(err, socket.Close()) }() // uvicorn has its own copy
 	inst := &pythonInstance{name: s.Name, dir: s.Dir, data: data, addr: addr, env: env, inv: bin("inv")}
 	start := func(log string, files []*os.File, name string, args ...string) error {
 		p, err := startProcess(s.Dir, filepath.Join(s.Dir, log), env, files, name, args...)
@@ -131,12 +133,10 @@ func (py *Python) Start(ctx context.Context, s Spec) (Instance, error) {
 		return nil, err
 	}
 	if err := start("incoming.log", nil, bin("python"), "-c", worker("incoming_activities")); err != nil {
-		inst.Stop()
-		return nil, err
+		return nil, errors.Join(err, inst.Stop())
 	}
 	if err := start("outgoing.log", nil, bin("python"), "-c", worker("outgoing_activities")); err != nil {
-		inst.Stop()
-		return nil, err
+		return nil, errors.Join(err, inst.Stop())
 	}
 	return inst, nil
 }

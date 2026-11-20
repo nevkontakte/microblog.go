@@ -155,11 +155,15 @@ func (t *T) equal(what string, got, want any) {
 // sameJSON fails the scenario unless the JSON text stored in a database
 // column has the same content as want.
 func (t *T) sameJSON(what string, stored any, want map[string]any) {
+	s, ok := stored.(string)
+	if !ok {
+		t.Fatalf("%s: stored as %T, not JSON text", what, stored)
+	}
 	var got, norm any
-	s, _ := stored.(string)
 	t.Check(json.Unmarshal([]byte(s), &got))
-	b, _ := json.Marshal(want)
-	json.Unmarshal(b, &norm)
+	b, err := json.Marshal(want)
+	t.Check(err)
+	t.Check(json.Unmarshal(b, &norm))
 	t.equal(what, got, norm)
 }
 
