@@ -387,3 +387,43 @@ scenarios, passed twice in a row (297 s and 282 s, four scenarios at a time).
 | 20 | Tag pages list followers-only posts | `public__visibility` |
 
 6 of 6 caught.
+
+## Part 2c: client protocols — IndieAuth
+
+`scenarios_indieauth.go` judges the authorization server (`app/indieauth.py`) as a third-party
+app uses it. The app is the `visitor`, so its exchanges are on the wire; tokens, client secrets
+and their timestamps are masked. The admin's consent is the one step a browser takes, through
+the judge's logged-in client.
+
+| Scenario | Judges |
+|---|---|
+| `indieauth__discovery` | The authorization server metadata |
+| `indieauth__authorization_code` | Registration (RFC 7591), consent with state and issuer, code redemption with PKCE, introspection, a token unlocking the outbox and a followers-only post, refresh, and revocation |
+| `indieauth__rejected_codes` | A code reused, redeemed for another redirect URI or by another client, unknown, older than two minutes, or granting no scope: each `invalid_grant` |
+| `indieauth__token_expiry` | An access token older than an hour is inactive and unlocks nothing |
+| `indieauth__introspection_auth` | Introspection answers only the token's own client, and only with its secret |
+| `indieauth__client_url` | An unregistered app named by its URL: the consent page fetches its `h-app` |
+| `indieauth__hidden_collections` | A token sees the followers and following an instance hides |
+
+**Found in the original,** marked `BUG(port)`:
+
+- **Security:** the PKCE verifier is never checked against the challenge
+  (`app/indieauth.py:191-227` takes it and ignores it), so an intercepted code is redeemable
+  without it. Kept until parity per ADR 0013; worth fixing first after it.
+- A refresh token used twice raises `ValueError`: a 500, not `invalid_grant`
+  (`app/indieauth.py:318-319`). So does an unknown grant type.
+- Also pinned, without a marker since it's a TODO rather than a bug: a token's scopes are never
+  checked; any token unlocks every private object (`app/main.py:719`).
+
+**Clean run:** 7/7 pass, recording the goldens, and again against them.
+
+**Mutations,** run on the IndieAuth scenarios:
+
+| # | Mutation | Caught by |
+|---|---|---|
+| 21 | Access tokens never expire | `indieauth__token_expiry` |
+| 22 | Revoked access tokens stay valid | `indieauth__authorization_code` |
+| 23 | A code can be redeemed more than once | `indieauth__rejected_codes` |
+| 24 | A code is redeemed for any redirect URI | `indieauth__rejected_codes` |
+
+4 of 4 caught.

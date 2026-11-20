@@ -1,0 +1,13 @@
+Mutation: access tokens never expire.
+
+--- a/app/indieauth.py	2026-11-20 21:12:29.439495871 +0000
++++ b/app/indieauth.py	2026-11-20 21:12:29.459012053 +0000
+@@ -370,7 +370,7 @@
+         logger.info("Access token is revoked")
+         return False, None
+ 
+-    if now() > access_token_info.created_at.replace(tzinfo=timezone.utc) + timedelta(
++    if False and now() > access_token_info.created_at.replace(tzinfo=timezone.utc) + timedelta(
+         seconds=access_token_info.expires_in
+     ):
+         logger.info("Access token has expired")

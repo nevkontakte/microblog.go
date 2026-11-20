@@ -141,7 +141,7 @@ func maskTimes(s string) string {
 	return cursor.ReplaceAllString(s, "next_cursor=<cursor>")
 }
 
-var volatileField = regexp.MustCompile(`"(publicKeyPem|signatureValue|nonce)":\s*"[^"]*"`)
+var volatileField = regexp.MustCompile(`"(publicKeyPem|signatureValue|nonce|access_token|refresh_token|client_secret)":\s*"[^"]*"`)
 
 // normalize turns recorded exchanges into wire records. keys maps a host to
 // the public key of the instance serving it, for checking signatures.
@@ -224,6 +224,10 @@ func (m *masker) value(v any) any {
 			switch k {
 			case "publicKeyPem":
 				v[k] = "<key>"
+			case "access_token", "refresh_token", "client_secret":
+				v[k] = "<secret>"
+			case "client_id_issued_at", "exp", "iat":
+				v[k] = "<time>"
 			case "signatureValue": // LD signatures: verified in part 3, with the forwarded activities that carry them
 				v[k] = "<signature>"
 			default:

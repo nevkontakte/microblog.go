@@ -1,0 +1,13 @@
+Mutation: revoked access tokens stay valid.
+
+--- a/app/indieauth.py	2026-11-20 21:12:29.439495871 +0000
++++ b/app/indieauth.py	2026-11-20 21:12:29.487575115 +0000
+@@ -366,7 +366,7 @@
+     if not access_token_info:
+         return False, None
+ 
+-    if access_token_info.is_revoked:
++    if False:
+         logger.info("Access token is revoked")
+         return False, None
+ 
