@@ -24,19 +24,25 @@ import (
 	"golang.org/x/net/html"
 )
 
-// The wire comparison holds one implementation's traffic to the reference's:
-// for each scenario, the multiset of normalized exchanges between instances
-// must equal the golden recording made with Python on both sides
-// (testdata/golden). Normalization keeps what a receiving server can depend
-// on (method, URL, content types, addressing, payload structure, which object
-// references which, timestamp formats, the Date header's format, signature
-// key, coverage and validity, and the order in which each sender delivers to
-// each receiver) and masks what legitimately differs between runs (the values
-// of generated ids and timestamps, keys, signature bytes).
+// The wire comparison compares one implementation's traffic with the
+// original's. For each scenario, the multiset of normalized exchanges between
+// instances must equal the golden recording, made with Python on both sides
+// (testdata/golden).
 //
-// Left out of the comparison, though still recorded: the judge's own
-// requests, failed CONNECTs, and JSON-LD context fetches, whose order and
-// number depend on caching rather than on the protocol.
+// Normalization keeps what a receiving server can depend on:
+//   - the method, URL, content types, addressing and payload structure,
+//   - which object refers to which,
+//   - the format of timestamps and of the Date header,
+//   - the key, coverage and validity of signatures,
+//   - the order in which each sender delivers to each receiver.
+//
+// It masks what can differ between correct runs: the values of generated ids
+// and timestamps, keys, and signature bytes.
+//
+// The comparison leaves out these exchanges, which the proxy still records:
+// the judge's own requests, failed CONNECTs, and JSON-LD context fetches. The
+// order and number of context fetches depend on caching, not on the
+// protocol.
 
 // A WireRecord is one normalized exchange.
 type WireRecord struct {
@@ -48,8 +54,8 @@ type WireRecord struct {
 	Date      string `json:"date,omitempty"`
 	Digest    string `json:"digest,omitempty"`
 	Signature string `json:"signature,omitempty"`
-	// LDSignature is the verdict on the body's LD signature, if it has one;
-	// its value is masked in Body.
+	// LDSignature is the verdict on the body's LD signature, if the body has
+	// one. Body masks the signature's value.
 	LDSignature string `json:"ldSignature,omitempty"`
 	Body        any    `json:"body,omitempty"`
 	Status      int    `json:"status"`
@@ -58,15 +64,16 @@ type WireRecord struct {
 }
 
 var (
-	hexID     = regexp.MustCompile(`(\b|%2F)([0-9a-f]{32})\b`) // also in a URL-encoded URL, as a query value
+	hexID     = regexp.MustCompile(`(\b|%2F)([0-9a-f]{32})\b`) // also in an encoded URL in a query
 	shortID   = regexp.MustCompile(`/articles/([0-9a-f]{7})/`) // the first 7 characters of a public id
 	timestamp = regexp.MustCompile(`\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?(Z|[+-]\d\d:\d\d)?`)
 	digit     = regexp.MustCompile(`\d`)
 	// rfc822 is the date format of RSS feeds.
 	rfc822 = regexp.MustCompile(`(Mon|Tue|Wed|Thu|Fri|Sat|Sun), \d\d (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} \d\d:\d\d:\d\d`)
-	// A media proxy URL's expiry is the day it was made, plus a week, and its
-	// signature covers the expiry (app/media.py:16-41). The proxied URL may
-	// hold an instance's address, which changes from run to run.
+	// A media proxy URL expires a week after the day that the instance made
+	// it, and its signature covers the expiry (app/media.py:16-41). The URL
+	// that the media proxy fetches may hold an instance's address, which
+	// changes from run to run.
 	proxyURL = regexp.MustCompile(`/proxy/media/\d+/[A-Za-z0-9_=-]+/[A-Za-z0-9_=-]+`)
 	// A multipart form's boundary is random.
 	multipartBoundary = regexp.MustCompile(`boundary=[^;]+`)
@@ -74,19 +81,20 @@ var (
 	cursor = regexp.MustCompile(`next_cursor=[A-Za-z0-9_=%-]+`)
 )
 
-// A masker replaces generated ids with <id1>, <id2>, … numbered by first
-// appearance, so equal ids stay equal and a reference to the wrong object
-// shows up as a different number.
+// A masker replaces generated ids with <id1>, <id2>, and so on, in the order
+// in which each id first appears. Equal ids thus stay equal, and a reference
+// to the wrong object shows as a different number.
 type masker struct{ ids map[string]int }
 
 // newMasker numbers the ids in exchanges in an order that doesn't depend on
-// timing. First come the judge's own requests, which run one at a time: the
-// URLs and Locations (a new object's id) of its admin actions, but not their
-// bodies, because admin pages and forms may differ in the port. Then the
-// instances' and fakes' exchanges, sorted by their content with ids and
-// timestamps masked alike: they run concurrently with the judge and each
-// other, and an id an instance makes up (a post's conversation, say) first
-// shows in whichever exchange happens to finish first.
+// timing:
+//  1. The judge's own requests, which run one at a time. newMasker uses the
+//     URLs and Locations (a new object's id) of its admin actions, but not
+//     their bodies, because admin pages and forms may differ in the port.
+//  2. The instances' and fakes' exchanges, sorted by their content, with ids
+//     and timestamps masked alike. They run at the same time as the judge and
+//     as each other. An id that an instance makes (for example a post's
+//     conversation) first shows in the exchange that finishes first.
 func newMasker(exchanges []Exchange) *masker {
 	m := &masker{ids: map[string]int{}}
 	number := func(texts ...string) {
@@ -113,10 +121,10 @@ func newMasker(exchanges []Exchange) *masker {
 	return m
 }
 
-// canonicalJSON re-encodes a JSON text with its object members sorted, so
-// that how ids are numbered doesn't depend on the order in which a
-// serializer writes members; the port's may differ from the original's.
-// Text that isn't JSON is returned as it is.
+// canonicalJSON encodes a JSON text again, with its object members sorted.
+// The numbers of ids then don't depend on the order in which a serializer
+// writes members, which the port may change. canonicalJSON returns text that
+// isn't JSON without a change.
 func canonicalJSON(s string) string {
 	var v any
 	if json.Unmarshal([]byte(s), &v) != nil {
@@ -125,8 +133,8 @@ func canonicalJSON(s string) string {
 	return string(must(json.Marshal(v))) // maps marshal with sorted keys
 }
 
-// orderKey is an exchange's content, with JSON in canonical form and
-// everything that varies between runs masked alike: ids, timestamps, keys and
+// orderKey is an exchange's content, with JSON in canonical form. It masks
+// alike all values that change between runs: ids, timestamps, keys and
 // signatures.
 func orderKey(e Exchange) string {
 	s := strings.Join([]string{e.From, e.Method, e.URL, canonicalJSON(e.ReqBody), fmt.Sprint(e.Status), canonicalJSON(e.RespBody)}, "\n")
@@ -136,7 +144,7 @@ func orderKey(e Exchange) string {
 }
 
 // maskTimes keeps the shape of timestamps (precision, zone), and of values
-// derived from the time, but not their values.
+// that come from the time, but not their values.
 func maskTimes(s string) string {
 	s = timestamp.ReplaceAllStringFunc(s, func(ts string) string { return digit.ReplaceAllString(ts, "9") })
 	s = rfc822.ReplaceAllString(s, "Day, 99 Mon 9999 99:99:99")
@@ -146,8 +154,8 @@ func maskTimes(s string) string {
 
 var volatileField = regexp.MustCompile(`"(publicKeyPem|signatureValue|nonce|access_token|refresh_token|client_secret)":\s*"[^"]*"`)
 
-// normalize turns recorded exchanges into wire records. keys maps a host to
-// the public key of the instance serving it, for checking signatures.
+// normalize changes recorded exchanges into wire records. keys maps a host to
+// the public key of the instance that serves it, to verify signatures.
 func normalize(exchanges []Exchange, keys map[string]*rsa.PublicKey) []WireRecord {
 	exchanges = slices.Clone(exchanges)
 	for i, e := range exchanges {
@@ -211,8 +219,8 @@ func (m *masker) str(s string) string {
 	return maskTimes(s)
 }
 
-// json parses a JSON body and masks its run-specific values. Bodies that
-// aren't JSON are reduced to their length.
+// json parses a JSON body and masks its run-specific values. It replaces a
+// body that isn't JSON with its length.
 func (m *masker) json(body string) any {
 	if body == "" {
 		return nil
@@ -235,7 +243,7 @@ func (m *masker) value(v any) any {
 				v[k] = "<secret>"
 			case "client_id_issued_at", "exp", "iat":
 				v[k] = "<time>"
-			case "signatureValue": // LD signatures: verified in part 3, with the forwarded activities that carry them
+			case "signatureValue": // the LD signature's value. LDSignature gives the verdict
 				v[k] = "<signature>"
 			default:
 				v[k] = m.value(x)
@@ -268,8 +276,8 @@ func checkDigest(header, body string) string {
 	return "bad"
 }
 
-// checkSignature verifies a draft-cavage HTTP signature and describes it as
-// "<algorithm> <signed headers> ok|bad|unverified".
+// checkSignature verifies a draft-cavage HTTP signature. It describes the
+// signature as "<algorithm> <signed headers> ok|bad|unverified".
 func checkSignature(e Exchange, header string, keys map[string]*rsa.PublicKey) string {
 	params := map[string]string{}
 	for _, part := range strings.Split(header, ",") {
@@ -284,13 +292,13 @@ func checkSignature(e Exchange, header string, keys map[string]*rsa.PublicKey) s
 	if err != nil || keys[keyURL.Host] == nil {
 		return desc + " unverified"
 	}
-	u := must(url.Parse(e.URL)) // the proxy recorded it from a parsed request
+	u := must(url.Parse(e.URL)) // the proxy recorded the URL from a parsed request
 	var lines []string
 	for _, h := range strings.Fields(params["headers"]) {
 		switch h {
 		case "(request-target)":
 			lines = append(lines, h+": "+strings.ToLower(e.Method)+" "+u.RequestURI())
-		default: // including host, as the proxy recorded it
+		default: // host too, as the proxy recorded it
 			lines = append(lines, h+": "+e.ReqHeader.Get(h))
 		}
 	}
@@ -302,8 +310,9 @@ func checkSignature(e Exchange, header string, keys map[string]*rsa.PublicKey) s
 	return desc + " ok"
 }
 
-// checkLDSignature verifies the LD signature of a JSON body, if it has one,
-// with the key of its creator's host: "<type> <creator> ok|bad|unverified".
+// checkLDSignature verifies the LD signature of a JSON body, if the body has
+// one, with the key of the creator's host. It returns "<type> <creator>
+// ok|bad|unverified".
 func checkLDSignature(body string, keys map[string]*rsa.PublicKey) string {
 	var doc map[string]any
 	if json.Unmarshal([]byte(body), &doc) != nil {
@@ -326,7 +335,7 @@ func checkLDSignature(body string, keys map[string]*rsa.PublicKey) string {
 }
 
 // instanceKeys reads the public keys of the instances in a scenario
-// directory, keyed by host.
+// directory, by host.
 func instanceKeys(dir string, names ...string) (map[string]*rsa.PublicKey, error) {
 	keys := map[string]*rsa.PublicKey{}
 	for _, n := range names {
@@ -348,11 +357,11 @@ func instanceKeys(dir string, names ...string) (map[string]*rsa.PublicKey, error
 	return keys, nil
 }
 
-// canonical renders records as sorted JSON lines, so that two recordings
-// compare as multisets regardless of how deliveries from different senders
-// interleave. One more line per sender and receiver lists the activities
-// POSTed in order, since each sender delivers one at a time. instances names
-// the senders that are instances, whose retries count once.
+// canonical writes records as sorted JSON lines. Two recordings thus compare
+// as multisets, whatever the order of deliveries from different senders.
+// One more line for each sender and receiver lists the activities that the
+// sender POSTed, in order, because each sender delivers one at a time.
+// instances names the senders that are instances. Their retries count once.
 func canonical(records []WireRecord, instances ...string) []string {
 	var lines []string
 	sequences := map[string][]string{}
@@ -360,11 +369,12 @@ func canonical(records []WireRecord, instances ...string) []string {
 	for _, r := range records {
 		b := must(json.Marshal(r))
 		if r.Method == http.MethodPost && slices.Contains(instances, r.From) {
-			// A delivery an instance sends again, identical, counts once:
-			// the original gives up on a slow receiver after httpx's default
-			// 5 s (app/activitypub.py:397) and retries, so on a loaded
-			// machine the receiver's late answer leaves two recorded
-			// attempts. Fakes never retry; a duplicate from one is meant.
+			// An identical delivery that an instance sends again counts
+			// once. The original stops its wait for a slow receiver after
+			// httpx's default 5 s (app/activitypub.py:397), and tries
+			// again. On a loaded machine, the receiver's late answer thus
+			// leaves two recorded tries. Fakes never try again, so a
+			// duplicate from a fake is on purpose.
 			if delivered[string(b)] {
 				continue
 			}
@@ -384,7 +394,8 @@ func canonical(records []WireRecord, instances ...string) []string {
 	return lines
 }
 
-// diffWire reports the records only in want and only in got.
+// diffWire returns the records that are only in want, and the records that
+// are only in got.
 func diffWire(want, got []string) (missing, extra []string) {
 	count := map[string]int{}
 	for _, l := range want {
@@ -406,10 +417,13 @@ func diffWire(want, got []string) (missing, extra []string) {
 	return missing, extra
 }
 
-// asJSON turns what a visitor (a browser or feed reader) was served into
-// JSON text, keeping what must not change: JSON as it is, an HTML page's
-// microformats (templates may differ, ADR 0003), an XML feed's element tree,
-// other text as a string, and other content as its length and hash.
+// asJSON changes a response to a visitor (a browser or feed reader) into JSON
+// text. It keeps what must not change:
+//   - JSON stays as it is.
+//   - An HTML page becomes its microformats (templates may differ, ADR 0003).
+//   - An XML feed becomes its element tree.
+//   - Other text becomes a string.
+//   - Other content becomes its length and hash.
 func asJSON(contentType, body string) string {
 	if body == "" {
 		return ""
@@ -432,8 +446,8 @@ func asJSON(contentType, body string) string {
 }
 
 // microformats lists, in document order, each h-entry, h-card and h-feed of
-// an HTML page with its first u-url or u-uid: what the page publishes,
-// whatever its template.
+// an HTML page, with its first u-url or u-uid. This is what the page
+// publishes, whatever its template.
 func microformats(page string) []string {
 	doc, err := html.Parse(strings.NewReader(page))
 	if err != nil {
@@ -462,8 +476,8 @@ func classes(n *html.Node) []string {
 	return nil
 }
 
-// firstURL returns the href of n's first u-url or u-uid, the element itself
-// included, leaving out microformats nested in n, such as an entry's author.
+// firstURL returns the href of the first u-url or u-uid in n, or of n itself.
+// It skips microformats in n, such as an entry's author.
 func firstURL(n *html.Node) string {
 	if slices.Contains(classes(n), "u-url") || slices.Contains(classes(n), "u-uid") {
 		for _, a := range n.Attr {
@@ -484,7 +498,7 @@ func firstURL(n *html.Node) string {
 }
 
 // xmlTree parses an XML document into nested maps (name, attributes, text,
-// children), so attribute order and insignificant whitespace don't count.
+// children). Attribute order and insignificant whitespace thus don't count.
 func xmlTree(body string) any {
 	root := map[string]any{}
 	stack := []map[string]any{root}

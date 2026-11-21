@@ -18,13 +18,13 @@ import (
 
 // RecordOptions configure a recording of the Mastodon replay set.
 type RecordOptions struct {
-	Impl Impl   // starts the instance Mastodon talks to
-	Work string // directory for the instances and their logs
+	Impl Impl   // starts the instance that Mastodon talks to
+	Work string // the directory for the instances and their logs
 	Out  string // the replay set file to write
 }
 
-// mastodonUser is the Mastodon account that does everything the replay set
-// records; mastodonAlias is the one it moves to.
+// mastodonUser is the Mastodon account that does everything that the replay
+// set records. mastodonAlias is the account that mastodonUser moves to.
 const (
 	mastodonUser  = "m"
 	mastodonAlias = "m2"
@@ -37,17 +37,18 @@ type recording struct {
 	mastodon *Mastodon
 	steps    []recordedStep
 	// placeholders maps the id of each object of a's that Mastodon refers to
-	// to its placeholder's name, so a replay can create its own and fill them
-	// in.
+	// to the name of its placeholder. A replay creates its own objects, and
+	// replaces the placeholders with their ids.
 	placeholders map[string]string
-	recorded     int    // exchanges already assigned to a step
+	recorded     int    // the number of exchanges that a step already holds
 	actor        string // the id of Mastodon's user
 }
 
 // RecordMastodon records what a real Mastodon server sends a microblog.pub
-// instance while its user follows, posts, likes, boosts, replies, votes,
-// edits, deletes and moves, and writes it as the replay set
+// instance, and writes it as the replay set
 // (docs/adr/0014-record-the-mastodon-replay-set-from-a-real-server.md).
+// During the recording, the Mastodon user follows, publishes, likes, boosts,
+// replies, votes, edits, deletes and moves.
 func RecordMastodon(ctx context.Context, opts RecordOptions) (err error) {
 	dir, err := filepath.Abs(opts.Work)
 	if err != nil {
@@ -184,20 +185,20 @@ func (r *recording) script(t *T) {
 	r.step("block", func() { r.api("POST", "/api/v1/accounts/"+a+"/block", nil) })
 	r.step("unblock", func() { r.api("POST", "/api/v1/accounts/"+a+"/unblock", nil) })
 
-	// The block ended a's follow, and a Move reaches only followers. A moved
-	// account can't use the API any more, so these come last.
+	// The Block stopped a's follow, and a Move reaches only followers. A moved
+	// account can't use the API, so these steps are the last ones.
 	act(t, t.A, "follow", url.Values{"ap_actor_id": {r.actor}})
 	r.addFollowPlaceholder("a_follow_again")
 	r.step("accept_again", func() {})
 	r.step("move", func() { r.rails(moveAccount) })
-	// a follows the account Mastodon's user moved to by itself.
+	// a follows the new account of Mastodon's user without a request.
 	r.addFollowPlaceholder("a_follow_alias")
 	r.step("delete_account", func() { r.rails(deleteAccount) })
 }
 
-// moveAccount moves Mastodon's user to its alias as the migration settings
-// page does (app/controllers/settings/migrations_controller.rb), after the
-// alias names it as an old account, which receivers check.
+// moveAccount moves Mastodon's user to its alias, as the settings page for
+// migrations does (app/controllers/settings/migrations_controller.rb). First,
+// the alias names the user as an old account, because receivers check that.
 const moveAccount = `
 m = Account.find_local('` + mastodonUser + `')
 m2 = Account.find_local('` + mastodonAlias + `')
@@ -207,13 +208,17 @@ migration.save!(validate: false)
 MoveService.new.call(migration)
 `
 
-// deleteAccount deletes Mastodon's user as its owner would, which tells
-// every server it knows.
+// deleteAccount deletes Mastodon's user as its owner would. Mastodon then
+// tells every server that it knows.
 const deleteAccount = `DeleteAccountService.new.call(Account.find_local('` + mastodonUser + `'), reserve_username: false)`
 
-// step runs do, waits until Mastodon has delivered something, the network is
-// quiet and a has processed every delivery, and records what was exchanged
-// meanwhile, including what a fetched from Mastodon.
+// step runs do, then waits until all of these are true:
+//   - Mastodon delivered something.
+//   - The network is quiet.
+//   - a processed every delivery.
+//
+// Then step records the exchanges of the step, which include what a fetched
+// from Mastodon.
 func (r *recording) step(name string, do func()) {
 	t := r.t
 	before := r.deliveryCount()
@@ -231,7 +236,7 @@ func (r *recording) step(name string, do func()) {
 	r.recorded = len(all)
 }
 
-// deliveryCount counts what Mastodon has delivered to a's inbox so far.
+// deliveryCount counts the deliveries from Mastodon to a's inbox so far.
 func (r *recording) deliveryCount() int {
 	n := 0
 	for _, e := range r.t.Proxy.Exchanges() {
@@ -242,8 +247,8 @@ func (r *recording) deliveryCount() int {
 	return n
 }
 
-// settle waits until the proxy has seen no new exchange for five seconds:
-// Mastodon delivers from background jobs, and some of them follow others.
+// settle waits until the proxy sees no new exchange for five seconds.
+// Mastodon delivers from background jobs, and some jobs start other jobs.
 func (r *recording) settle() {
 	n := -1
 	for n != len(r.t.Proxy.Exchanges()) {
@@ -259,22 +264,22 @@ func (r *recording) settle() {
 // addPlaceholder has the replay set refer to a's object id by name.
 func (r *recording) addPlaceholder(id, name string) { r.placeholders[id] = name }
 
-// addFollowPlaceholder has the replay set refer to the Follow a sent last by
-// name.
+// addFollowPlaceholder has the replay set refer to the Follow that a sent
+// last, by name.
 func (r *recording) addFollowPlaceholder(name string) {
 	follow := r.t.one(r.t.A, `SELECT ap_id FROM outbox WHERE ap_type = 'Follow' ORDER BY id DESC LIMIT 1`)
 	r.addPlaceholder(stringField(r.t, follow, "ap_id"), name)
 }
 
-// post posts a status with the given visibility on Mastodon and returns its
-// id there.
+// post publishes a status with the given visibility on Mastodon, and
+// returns the status's id on Mastodon.
 func (r *recording) post(text, visibility string) string {
 	return stringField(r.t, r.api("POST", "/api/v1/statuses", url.Values{"status": {text}, "visibility": {visibility}}), "id")
 }
 
-// search resolves query on Mastodon, fetching what it names, and returns the
-// one result of kind it finds: an account or a status, as Mastodon's API
-// shows it.
+// search resolves query on Mastodon, which fetches the object that query
+// names. It returns the one result of kind: an account or a status, as
+// Mastodon's API shows it.
 func (r *recording) search(query, kind string) map[string]any {
 	found := r.api("GET", "/api/v2/search?"+url.Values{"q": {query}, "resolve": {"true"}, "type": {kind}}.Encode(), nil)
 	results, ok := found[kind].([]any)
@@ -312,11 +317,11 @@ type recordedStep struct {
 }
 
 // replaySet keeps what the replay needs from the recorded exchanges: what
-// Mastodon delivered to a, and what a fetched from Mastodon. The ids of a's
-// objects become {{name}} placeholders.
+// Mastodon delivered to a, and what a fetched from Mastodon. It replaces the
+// ids of a's objects with {{name}} placeholders.
 func (r *recording) replaySet() (ReplaySet, error) {
 	set := ReplaySet{Mastodon: MastodonImage, Actor: r.actor}
-	served := func(url string) bool { // by Mastodon, over https or http
+	served := func(url string) bool { // reports whether Mastodon served url, over https or http
 		return strings.HasPrefix(url, "https://"+r.mastodon.Host()+"/") || strings.HasPrefix(url, "http://"+r.mastodon.Host()+"/")
 	}
 	for _, st := range r.steps {
@@ -351,8 +356,8 @@ func (r *recording) replaySet() (ReplaySet, error) {
 }
 
 // withPlaceholders replaces the ids of a's objects in a JSON body with their
-// names, and fails if any other id of a's object is left. A body that isn't
-// JSON is kept as a string.
+// names. It fails if the body still holds an id of a's object. It keeps a
+// body that isn't JSON as a string.
 func (r *recording) withPlaceholders(body string) (json.RawMessage, error) {
 	if body == "" {
 		return nil, nil
@@ -365,7 +370,7 @@ func (r *recording) withPlaceholders(body string) (json.RawMessage, error) {
 	}
 	var indented bytes.Buffer
 	if json.Indent(&indented, []byte(body), "", "  ") != nil {
-		return json.Marshal(body) // not JSON, e.g. an empty redirect
+		return json.Marshal(body) // the body isn't JSON, for example an empty redirect
 	}
 	return indented.Bytes(), nil
 }
@@ -373,9 +378,10 @@ func (r *recording) withPlaceholders(body string) (json.RawMessage, error) {
 // objectOfA matches the id of an object of a's.
 var objectOfA = regexp.MustCompile(`https://a\.test/o/[0-9a-f]{32}`)
 
-// signatureParams keeps what describes an HTTP signature: the key's id,
-// which the replay keeps while swapping the key, the algorithm and the signed
-// headers. It drops the signature value, which only that request can carry.
+// signatureParams keeps the parameters that describe an HTTP signature: the
+// key's id, the algorithm and the signed headers. The replay keeps the key's
+// id but uses a different key. signatureParams removes the signature value,
+// which is valid only for that request.
 func signatureParams(header string) string {
 	var kept []string
 	for _, part := range strings.Split(header, ",") {
@@ -386,9 +392,10 @@ func signatureParams(header string) string {
 	return strings.Join(kept, ",")
 }
 
-// extraSignedHeaders returns the headers e's HTTP signature covers beyond
-// those every delivery has, such as Mastodon's collection-synchronization:
-// the replay must send them as recorded for its own signature to cover them.
+// extraSignedHeaders returns the headers that e's HTTP signature covers in
+// addition to the headers of every delivery, such as Mastodon's
+// collection-synchronization. The replay must send them as recorded, so
+// that its own signature covers them.
 func extraSignedHeaders(e Exchange) map[string]string {
 	_, headers := signatureForm(e.ReqHeader.Get("Signature"))
 	extra := map[string]string{}
@@ -406,7 +413,7 @@ func extraSignedHeaders(e Exchange) map[string]string {
 }
 
 // signatureForm reads the algorithm and the signed headers from an HTTP
-// signature, or from what signatureParams keeps of one.
+// signature, or from the parameters that signatureParams keeps.
 func signatureForm(signature string) (algorithm, headers string) {
 	for _, part := range strings.Split(signature, ",") {
 		name, value, _ := strings.Cut(part, "=")
@@ -424,7 +431,7 @@ func signatureForm(signature string) (algorithm, headers string) {
 // ReplaySet is the Mastodon replay set: what a real Mastodon server sent a
 // microblog.pub instance, step by step (mastodon_record.go).
 type ReplaySet struct {
-	Mastodon string       `json:"mastodon"` // the image recorded
+	Mastodon string       `json:"mastodon"` // the image that the recorder used
 	Actor    string       `json:"actor"`    // the id of Mastodon's user
 	Steps    []ReplayStep `json:"steps"`
 }
@@ -432,19 +439,19 @@ type ReplaySet struct {
 // ReplayStep is what one step of the recording exchanged.
 type ReplayStep struct {
 	Name       string     `json:"name"`
-	Deliveries []Delivery `json:"deliveries"`          // to a's inbox, in order
-	Documents  []Document `json:"documents,omitempty"` // fetched by a meanwhile
+	Deliveries []Delivery `json:"deliveries"`          // the deliveries to a's inbox, in order
+	Documents  []Document `json:"documents,omitempty"` // the documents that a fetched during the step
 }
 
-// Delivery is an activity Mastodon delivered.
+// Delivery is an activity that Mastodon delivered.
 type Delivery struct {
 	ContentType string            `json:"contentType"`
 	Signature   string            `json:"signature"`         // the HTTP signature's key id, algorithm and headers
-	Headers     map[string]string `json:"headers,omitempty"` // signed headers beyond the usual ones
+	Headers     map[string]string `json:"headers,omitempty"` // the signed headers in addition to the usual ones
 	Activity    json.RawMessage   `json:"activity"`
 }
 
-// Document is what Mastodon served for a request of a's.
+// Document is what Mastodon served for a request from a.
 type Document struct {
 	URL         string          `json:"url"`
 	Status      int             `json:"status"`

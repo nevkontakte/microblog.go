@@ -23,8 +23,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-// Waiting on state. Scenarios wait for what they expect to see, never for a
-// length of time (scenario.go, Timeout).
+// Steps that wait for state. Scenarios wait for the state that they expect,
+// never for a length of time (scenario.go, Timeout).
 
 // rows runs a query on i and fails the scenario on error.
 func (t *T) rows(i Instance, query string, args ...any) []map[string]any {
@@ -33,7 +33,8 @@ func (t *T) rows(i Instance, query string, args ...any) []map[string]any {
 	return r
 }
 
-// one returns the single row query yields on i, and fails otherwise.
+// one returns the single row that query yields on i. It fails the scenario
+// if query yields a different number of rows.
 func (t *T) one(i Instance, query string, args ...any) map[string]any {
 	r := t.rows(i, query, args...)
 	if len(r) != 1 {
@@ -57,8 +58,8 @@ func (t *T) rowCount(i Instance, n int, query string, args ...any) func() error 
 }
 
 // waitRows waits until query yields exactly n rows on i. Use it for state
-// that is expected to change; to assert that something did not happen, wait
-// for processing to finish (waitProcessed) and use expectRows.
+// that must change. To assert that something did not happen, wait until
+// processing ends (waitProcessed), then use expectRows.
 func (t *T) waitRows(i Instance, n int, query string, args ...any) {
 	t.Eventually(fmt.Sprintf("%d rows on %s", n, i.Name()), t.rowCount(i, n, query, args...))
 }
@@ -74,39 +75,44 @@ func (t *T) expectRows(i Instance, n int, query string, args ...any) {
 	t.Check(t.rowCount(i, n, query, args...)())
 }
 
-// waitProcessed waits until i's incoming worker has processed the activity
-// apID. A failed try that a retry fixed keeps its error; settle counts those,
-// except lost lock races (lockRace).
+// waitProcessed waits until i's incoming worker processed the activity apID.
+// A failed try that a retry fixed keeps its error. Settle counts those, but
+// not lost lock races (lockRace).
 func (t *T) waitProcessed(i Instance, apID any) {
 	t.waitRows(i, 1, `SELECT 1 FROM incoming_activity WHERE ap_id = ? AND is_processed = 1`, apID)
 }
 
-// waitAllProcessed waits until n incoming activities have been processed
-// without error on i, for activities without an id of their own.
+// waitAllProcessed waits until i's incoming worker processed n activities
+// without error. Use it for activities that have no id of their own.
 func (t *T) waitAllProcessed(i Instance, n int) {
 	t.waitRows(i, n, `SELECT 1 FROM incoming_activity WHERE is_processed = 1 AND (error IS NULL OR `+lockRace+`)`)
 }
 
-// lockRace matches the error an incoming activity keeps when its try lost a
-// lock race in the original: the worker reads, then writes in the same
-// transaction, and SQLite refuses that upgrade at once, without waiting,
-// while another connection is writing. The worker tries again; it isn't a
-// processing failure.
+// lockRace matches the error that an incoming activity keeps when its try lost
+// a lock race in the original. The worker reads, then writes in the same
+// transaction. While another connection writes, SQLite refuses that upgrade
+// at once, without a wait. The worker tries again. This is not a processing
+// failure.
 const lockRace = `error LIKE '%database is locked%'`
 
-// settle waits until the pair is quiet, so the wire recording holds
-// everything the scenario caused, however fast the workers run: every
-// delivery sent (or given up on), every incoming activity tried, no fake
-// sending. No scenario expects a delivery to fail: one that fails keeps the
-// pair unsettled until its retry succeeds, and the extra attempt shows on
-// the wire. Incoming activities that fail must number exactly what the
+// settle waits until the pair is quiet, so that the wire recording holds
+// everything that the scenario caused, at any worker speed. The pair is
+// quiet when all of these are true:
+//   - The instances sent every delivery, or stopped their tries.
+//   - The instances tried every incoming activity.
+//   - No fake sends an activity.
+//
+// No scenario expects a delivery to fail. A failed delivery keeps the pair
+// unsettled until its retry succeeds, and the extra try shows on the wire.
+// The number of failed incoming activities must equal the number that the
 // scenario expects (Scenario.IncomingErrors).
 //
-// The instances and fakes can't be read at one instant: a delivery can land
-// on a after a was read and be marked sent before b is. So the pair counts
-// as quiet only when two polls in a row find nothing pending and the same
-// state (the newest queue rows, how many are done, how many Accepts the
-// fakes started): anything that moved in between changes it.
+// settle can't read the instances and fakes at one instant. A delivery can
+// land on a after settle read a, and b can mark it sent before settle reads
+// b. So the pair counts as quiet only when two polls in a row find nothing
+// pending, and find the same state. The state is the newest queue rows, the
+// number of finished rows, and the number of Accepts that the fakes
+// started. Any change between the polls changes that state.
 func (t *T) settle(expectedErrors int) {
 	var last string
 	t.Eventually("pending deliveries and incoming activities", func() error {
@@ -153,7 +159,7 @@ func (t *T) settle(expectedErrors int) {
 
 // Assertions.
 
-// equal fails the scenario unless got equals want, showing the difference.
+// equal fails the scenario unless got equals want, and shows the difference.
 func (t *T) equal(what string, got, want any) {
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Fatalf("%s (-want +got):\n%s", what, diff)
@@ -176,8 +182,8 @@ func (t *T) sameJSON(what string, stored any, want map[string]any) {
 }
 
 // expectSchema checks that i's database is still at the original's last
-// migration, which is what alembic current reports: the original must be
-// able to take the data back.
+// migration, which alembic current reports. The original must be able to
+// take the data back.
 func (t *T) expectSchema(i Instance) {
 	t.equal("alembic version", t.one(i, `SELECT version_num FROM alembic_version`)["version_num"], "a209f0333f5a")
 }
@@ -189,14 +195,14 @@ func (t *T) hasSuffix(what, s, suffix string) {
 	}
 }
 
-// sawExchange fails unless the proxy recorded a request from sender for
-// exactly url, answered with status.
+// sawExchange fails the scenario unless the proxy recorded a request from
+// sender for exactly url, and the answer had status.
 func (t *T) sawExchange(from, method, url string, status int) {
 	t.sawInOrder(from, method, status, url)
 }
 
-// sawInOrder fails unless the proxy recorded requests from sender for each
-// of urls, in that order, all answered with status.
+// sawInOrder fails the scenario unless the proxy recorded requests from
+// sender for each of urls, in that order, and each answer had status.
 func (t *T) sawInOrder(from, method string, status int, urls ...string) {
 	next := 0
 	for _, e := range t.Proxy.Exchanges() {
@@ -209,7 +215,8 @@ func (t *T) sawInOrder(from, method string, status int, urls ...string) {
 	}
 }
 
-// isUpdateTo reports deliveries of an Update to instance name's inbox.
+// isUpdateTo reports whether e delivers an Update to the inbox of the
+// instance called name.
 func isUpdateTo(name string) func(WireRecord) bool {
 	return func(r WireRecord) bool {
 		body, _ := r.Body.(map[string]any)
@@ -226,7 +233,7 @@ func act(t *T, i Instance, action string, form url.Values) {
 }
 
 // newPost publishes a post on i through the admin form and returns its id.
-// The form defaults to public visibility.
+// If form sets no visibility, the post is public.
 func newPost(t *T, i Instance, form url.Values, files ...File) string {
 	if form.Get("visibility") == "" {
 		form.Set("visibility", "PUBLIC")
@@ -244,8 +251,8 @@ func follow(t *T, from, to Instance) {
 	t.waitRows(to, 1, `SELECT 1 FROM follower WHERE ap_actor_id = ?`, BaseURL(from))
 }
 
-// pendingFollower waits until i has processed follower's Follow without
-// accepting it, and returns the id of i's pending-follower notification.
+// pendingFollower waits until i processed follower's Follow without an
+// Accept, and returns the id of i's pending-follower notification.
 func pendingFollower(t *T, i, follower Instance) string {
 	t.waitProcessed(i, t.one(follower, `SELECT ap_id FROM outbox WHERE ap_type = 'Follow'`)["ap_id"])
 	t.expectRows(i, 0, `SELECT 1 FROM follower WHERE ap_actor_id = ?`, BaseURL(follower))
@@ -253,7 +260,7 @@ func pendingFollower(t *T, i, follower Instance) string {
 	return fmt.Sprint(n["id"])
 }
 
-// blockedBy makes blocker block i, and waits until i is told.
+// blockedBy makes blocker block i, and waits until i receives the Block.
 func blockedBy(t *T, i, blocker Instance) {
 	act(t, blocker, "block", url.Values{"ap_actor_id": {BaseURL(i)}})
 	t.waitRows(blocker, 1, `SELECT 1 FROM actor WHERE ap_id = ? AND is_blocked = 1`, BaseURL(i))
@@ -273,15 +280,15 @@ func expectVotesCounted(t *T, author Instance, poll, pollType string, answers ..
 	t.waitRows(author, 1, `SELECT 1 FROM outbox WHERE ap_id = ? AND json_extract(ap_object, '$.votersCount') = 1`, poll)
 }
 
-// expectPollUpdated waits until voter has applied the Updates of poll that
-// its vote for answers caused, one per answer.
+// expectPollUpdated waits until voter applied the Updates of poll that its
+// vote for answers caused, one per answer.
 //
-// BUG(port): the author sends one Update per answer, with an id made of the
+// BUG(port): the author sends one Update per answer. The Update's id is the
 // poll's id and the time to the second (app/boxes.py:2098-2099, 839-866).
-// Two Updates in the same second share an id, and the voter drops the second
-// as a duplicate (app/boxes.py:2362-2374), so it may show only the first
-// answer counted. The wire is the same either way; the voter's final count
-// depends on timing, so it need only count some of answers.
+// Two Updates in the same second have the same id, and the voter drops the
+// second as a duplicate (app/boxes.py:2362-2374). So the voter may show only
+// the first answer counted. The wire is the same in both cases. The voter's
+// final count depends on timing, so it need only count some of answers.
 func expectPollUpdated(t *T, voter Instance, poll, pollType string, answers ...string) {
 	t.waitRows(voter, 1, `SELECT 1 FROM inbox WHERE ap_id = ? AND json_extract(ap_object, '$.votersCount') = 1`, poll)
 	t.waitRows(voter, len(answers), `SELECT 1 FROM incoming_activity WHERE ap_object ->> '$.type' = 'Update' AND is_processed = 1`)
@@ -315,8 +322,9 @@ func postQuestion(t *T, i Instance, pollType string, minutes int, answers ...str
 	return newPost(t, i, form)
 }
 
-// expectQuestion checks the poll id as its author i stored it: open, lasting
-// minutes, and offering answers as pollType ("oneOf" or "anyOf") alone.
+// expectQuestion checks the poll id as its author i stored it. The poll must
+// be open, last minutes, and offer answers only as pollType ("oneOf" or
+// "anyOf").
 func expectQuestion(t *T, i Instance, id, pollType string, minutes int, answers ...string) {
 	other := map[string]string{"oneOf": "anyOf", "anyOf": "oneOf"}[pollType]
 	q := t.one(i, `SELECT ap_type,
@@ -366,7 +374,8 @@ func outboxTypes(t *T, i Instance) []any {
 	return types
 }
 
-// itemIDs returns the ids of a collection's items, which may be inlined.
+// itemIDs returns the ids of a collection's items. The collection may
+// contain each item or only its id.
 func itemIDs(items any) []any {
 	var ids []any
 	for _, it := range items.([]any) {
@@ -407,13 +416,13 @@ func remoteRedirect(t *T, from, to Instance, resp *Response) {
 	t.equal("Refresh", resp.Header.Get("Refresh"), "0;url="+BaseURL(to)+"/admin/lookup?query="+BaseURL(from))
 }
 
-// restart lets the pair settle, stops i, and starts it again on its data
-// with config added to its profile.toml lines (a key set again overrides
-// the earlier value), as an admin editing the profile would. It returns the
-// new instance, which also replaces i in t. Until the new instance's address
-// is routed, its host still points at the stopped one; nothing is pending by
-// then. The admin session survives: its cookie is signed with the same
-// secret.
+// restart lets the pair settle, stops i, and starts it again on its data,
+// as an admin who edits the profile would. config adds lines to i's
+// profile.toml, and a key set again overrides the earlier value. restart
+// returns the new instance, which also replaces i in t. Until the proxy
+// routes the new instance's address, the host points at the stopped
+// instance. Nothing is pending by then. The admin session stays valid,
+// because the same secret signs its cookie.
 func (t *T) restart(i Instance, config string) Instance {
 	t.settle(0)
 	t.Check(i.Stop())
@@ -432,9 +441,9 @@ func (t *T) restart(i Instance, config string) Instance {
 }
 
 // swap stops i and starts the peer's implementation on i's data, as an owner
-// swapping binaries would: same directory, no migration step. It returns the
-// new instance, which also replaces i in t. On a Python pair it is a restart;
-// with the port on one side it is the swap test.
+// who swaps binaries would: same directory, no migration step. It returns
+// the new instance, which also replaces i in t. On a Python pair, swap is a
+// restart. With the port on one side, it is the swap test.
 func (t *T) swap(i Instance) Instance {
 	peer := map[string]string{"a": "b", "b": "a"}[i.Name()]
 	t.impls[i.Name()] = t.impls[peer]
@@ -456,7 +465,7 @@ func followFake(t *T, i Instance, f *Fake) {
 	t.waitRows(i, 1, `SELECT 1 FROM following WHERE ap_actor_id = ?`, f.ID())
 }
 
-// fakeFollows makes f follow i, and waits until f has received i's Accept.
+// fakeFollows makes f follow i, and waits until f received i's Accept.
 func fakeFollows(t *T, f *Fake, i Instance) {
 	follow := f.Activity("Follow", BaseURL(i))
 	send(t, f, i, follow)
@@ -510,9 +519,12 @@ func fetchAP(t *T, f *Fake, url string, signed bool, status int) map[string]any 
 	return obj
 }
 
-// servedState fetches, as f, what remote servers and readers see of i: its
-// WebFinger, actor and collections, each object in ids with its activity,
-// and each of i's attachments. Two calls compare equal if nothing visible changed.
+// servedState fetches, as f, what remote servers and readers see of i:
+//   - its WebFinger document, actor and collections,
+//   - each object in ids, with its activity,
+//   - each of i's attachments.
+//
+// Two results are equal if no visible change occurred.
 func servedState(t *T, f *Fake, i Instance, ids ...string) map[string]any {
 	base := BaseURL(i)
 	state := map[string]any{}
@@ -571,21 +583,22 @@ func instanceKey(t *T, i Instance) *rsa.PublicKey {
 
 // Visitors: anonymous browsers and feed readers.
 
-// Accept headers a visitor sends.
+// Accept headers that a visitor sends.
 const (
 	acceptAP   = "application/activity+json"
 	acceptHTML = "text/html"
 )
 
-// visit fetches url as a visitor, accepting accept, or anything if empty.
+// visit fetches url as a visitor, with accept as the Accept header. If
+// accept is empty, the request has no Accept header.
 func visit(t *T, url, accept string) *Response {
 	resp, err := t.Visitor.Get(t.Ctx, url, accept)
 	t.Check(err)
 	return resp
 }
 
-// expectUndisclosed checks that nothing a visitor was served so far contains
-// any of secrets, in a body or a redirect.
+// expectUndisclosed checks that no response to a visitor so far contains any
+// of secrets, in a body or a redirect.
 func (t *T) expectUndisclosed(secrets ...string) {
 	for _, e := range t.Proxy.Exchanges() {
 		if e.From != "visitor" {
@@ -599,8 +612,8 @@ func (t *T) expectUndisclosed(secrets ...string) {
 	}
 }
 
-// mediaURL is the media proxy URL that i signs for url, expiring after day
-// expiry, counted in days since the epoch (app/media.py:16-41).
+// mediaURL is the media proxy URL that i signs for url. The URL expires after
+// the day expiry, a number of days since the epoch (app/media.py:16-41).
 func mediaURL(i Instance, url string, expiry int64) string {
 	mac := hmac.New(sha256.New, []byte(configSecret(i.Name())))
 	must(mac.Write(fmt.Appendf(nil, "%d|%s", expiry, url)))
@@ -608,14 +621,15 @@ func mediaURL(i Instance, url string, expiry int64) string {
 		base64.URLEncoding.EncodeToString(mac.Sum(nil)), base64.URLEncoding.EncodeToString([]byte(url)))
 }
 
-// today is the media proxy's day: days since the epoch.
+// today is the current day as the media proxy counts days: the number of
+// days since the epoch.
 func today() int64 { return time.Now().Unix() / 86400 }
 
 // smallPNG is a 2×2 image, so the original makes a thumbnail of it.
 func smallPNG() []byte {
 	var b bytes.Buffer
 	if err := png.Encode(&b, image.NewGray(image.Rect(0, 0, 2, 2))); err != nil {
-		panic(err) // encoding to memory can't fail
+		panic(err) // an encode to memory can't fail
 	}
 	return b.Bytes()
 }
@@ -648,7 +662,7 @@ func postJSON(t *T, url string, v any, authorization string) *Response {
 	return request(t, http.MethodPost, url, header, must(json.Marshal(v)))
 }
 
-// bearer is the Authorization header carrying an access token.
+// bearer is the Authorization header that carries an access token.
 func bearer(token string) string { return "Bearer " + token }
 
 // fetchWithToken fetches an ActivityPub document from url as the holder of
@@ -657,7 +671,8 @@ func fetchWithToken(t *T, url, token string) *Response {
 	return request(t, http.MethodGet, url, http.Header{"Accept": {acceptAP}, "Authorization": {bearer(token)}}, nil)
 }
 
-// decode parses resp's JSON body, failing the scenario if it isn't JSON.
+// decode parses resp's JSON body. It fails the scenario if the body isn't
+// a JSON object.
 func decode(t *T, resp *Response) map[string]any {
 	var v map[string]any
 	if err := json.Unmarshal(resp.Body, &v); err != nil {
@@ -666,8 +681,8 @@ func decode(t *T, resp *Response) map[string]any {
 	return v
 }
 
-// stringField returns v's field key, failing the scenario if it isn't a
-// string.
+// stringField returns v's field key. It fails the scenario if the field
+// isn't a string.
 func stringField(t *T, v map[string]any, key string) string {
 	s, ok := v[key].(string)
 	if !ok {
@@ -693,16 +708,17 @@ func pkce(verifier string) (string, string) {
 }
 
 // approve has i's admin approve clientID's authorization request on the
-// consent page, and returns where the browser is sent: redirectURI with the
-// code, the state and the issuer.
+// consent page. It returns the URL that the page sends the browser to:
+// redirectURI with the code, the state and the issuer.
 func approve(t *T, i Instance, clientID, redirectURI, challenge string, scopes ...string) *url.URL {
 	resp, err := t.Client.Post(t.Ctx, i, "/admin/indieauth", url.Values{
 		"client_id": {clientID}, "redirect_uri": {redirectURI}, "state": {"judge-state"}, "scopes": scopes,
 		"code_challenge": {challenge}, "code_challenge_method": {"S256"}, "me": {BaseURL(i) + "/"},
 	})
 	t.Check(err)
-	// A page that redirects with a Refresh header, as the CSP forbids
-	// redirecting a form submission to another origin (app/redirect.py).
+	// The answer is a page that redirects with a Refresh header, because the
+	// CSP forbids a redirect of a form submission to another origin
+	// (app/redirect.py).
 	t.equal("approval", resp.Status, 200)
 	target, ok := strings.CutPrefix(resp.Header.Get("Refresh"), "0;url=")
 	if !ok {
@@ -742,8 +758,8 @@ func revoke(t *T, i Instance, token string) {
 	t.equal("revocation", postForm(t, BaseURL(i)+"/revoke_token", url.Values{"token": {token}}, "").Status, 200)
 }
 
-// objectField returns v's field key, failing the scenario if it isn't a
-// JSON object.
+// objectField returns v's field key. It fails the scenario if the field
+// isn't a JSON object.
 func objectField(t *T, v map[string]any, key string) map[string]any {
 	o, ok := v[key].(map[string]any)
 	if !ok {
@@ -752,9 +768,10 @@ func objectField(t *T, v map[string]any, key string) map[string]any {
 	return o
 }
 
-// grantToken has a client app registered on i get an access token with
-// scopes: the IndieAuth flow that indieauth__authorization_code judges step
-// by step, as the setup of a scenario that uses the token.
+// grantToken registers a client app on i and returns an access token with
+// scopes, through the IndieAuth flow. indieauth__authorization_code judges
+// that flow step by step. Here it is only the setup of a scenario that uses
+// the token.
 func grantToken(t *T, i Instance, scopes ...string) string {
 	const redirectURI = "https://app.test/callback"
 	clientID, _ := registerClient(t, i, redirectURI)
@@ -771,8 +788,8 @@ func sendWebmention(t *T, i Instance, source, target string) *Response {
 }
 
 // mentionPage is the HTML of an h-entry at source, by an author with a name
-// and a photo, that links to target with class kind: u-in-reply-to,
-// u-like-of, u-repost-of, or none for a plain mention.
+// and a photo. The entry links to target with the class kind: u-in-reply-to,
+// u-like-of, u-repost-of, or no class for a plain mention.
 func mentionPage(source, target, kind string) string {
 	return `<html><body><div class="h-entry">` +
 		`<div class="p-author h-card"><img class="u-photo" src="/photo.png" alt=""><span class="p-name">Judge site</span></div>` +
@@ -780,8 +797,8 @@ func mentionPage(source, target, kind string) string {
 		`<a class="u-url" href="` + source + `">Permalink</a></div></body></html>`
 }
 
-// c2sNote is a Note as a client app posts it, addressed to to and cc
-// (left out if empty).
+// c2sNote is a Note as a client app sends it, addressed to to and cc. If cc
+// is empty, the Note has no cc.
 func c2sNote(content string, to, cc []string) map[string]any {
 	note := map[string]any{"type": "Note", "content": content, "to": to}
 	if len(cc) > 0 {
@@ -790,16 +807,17 @@ func c2sNote(content string, to, cc []string) map[string]any {
 	return note
 }
 
-// c2sCreate is a Create of note by i's actor, as a client app posts it to
+// c2sCreate is a Create of note by i's actor, as a client app sends it to
 // i's outbox.
 func c2sCreate(i Instance, note map[string]any) map[string]any {
 	return map[string]any{"@context": "https://www.w3.org/ns/activitystreams", "type": "Create",
 		"actor": BaseURL(i), "object": note}
 }
 
-// lastFollow returns the id of the Follow i sent last: the outbox's row ids
-// increase with each insert (SQLite gives a new row one more than the
-// largest), while two rows can share a creation time.
+// lastFollow returns the id of the Follow that i sent last. The outbox's row
+// ids increase with each insert: SQLite gives a new row one more than the
+// largest. Two rows can have the same creation time, so lastFollow orders by
+// id.
 func lastFollow(t *T, i Instance) string {
 	return stringField(t, t.one(i, `SELECT ap_id FROM outbox WHERE ap_type = 'Follow' ORDER BY id DESC LIMIT 1`), "ap_id")
 }

@@ -5,15 +5,15 @@ import (
 	"strings"
 )
 
-// LookupScenarios cover /admin/lookup (app/lookup.py, app/admin.py:91-158)
-// for every kind of query it accepts and every way a lookup fails. The page
-// is admin HTML, which the port may render differently, and it answers 200
-// whether the lookup worked or not. So the scenarios check what the
-// instance fetched, and in which order: an object's author is fetched only
-// once the object parsed (app/ap_object.py:332-335).
+// LookupScenarios test /admin/lookup (app/lookup.py, app/admin.py:91-158)
+// for all kinds of queries that it accepts, and all causes of a failed
+// lookup. The page is admin HTML, which the port can render differently. The
+// page answers 200 if the lookup succeeds or fails. Thus the scenarios check
+// what the instance fetched, and in which order. The instance fetches an
+// object's author only after it parsed the object (app/ap_object.py:332-335).
 //
-// A lookup never stores what it finds; the checks that nothing was stored
-// guard the port, not the original.
+// A lookup never stores what it finds. The checks that the instance stored
+// nothing are for the port, not for the original.
 var LookupScenarios = []Scenario{
 	{Name: "lookup__remote_actor", Run: func(t *T) {
 		t.equal("status", lookup(t, t.A, "@b@b.test").Status, 200)
@@ -43,7 +43,7 @@ var LookupScenarios = []Scenario{
 		expectLookedUp(t, t.A, poll, BaseURL(t.B))
 	}},
 
-	// Some servers serve an object wrapped in its Create (app/lookup.py:44-47).
+	// Some servers serve an object in its Create (app/lookup.py:44-47).
 	{Name: "lookup__object_wrapped_in_create", Run: func(t *T) {
 		f := t.NewFake("f")
 		create := f.Create(f.Note("Hello", asPublic))
@@ -53,7 +53,7 @@ var LookupScenarios = []Scenario{
 		t.expectRows(t.A, 0, `SELECT 1 FROM inbox`)
 	}},
 
-	// A web page that links to its ActivityPub representation
+	// A web page with a link to its ActivityPub document
 	// (app/lookup.py:25-36).
 	{Name: "lookup__html_alternate", Run: func(t *T) {
 		f := t.NewFake("f")
@@ -103,7 +103,7 @@ var LookupScenarios = []Scenario{
 		t.sawExchange("a", "GET", gone, 410)
 	}},
 
-	// a doesn't follow b, so b's followers-only note isn't served to it
+	// a doesn't follow b, so b doesn't serve its followers-only note to a
 	// (app/main.py:706-742).
 	{Name: "lookup__private_object", Run: func(t *T) {
 		note := newPost(t, t.B, url.Values{"content": {"Hello"}, "visibility": {"FOLLOWERS_ONLY"}})

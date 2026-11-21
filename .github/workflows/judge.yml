@@ -1,6 +1,6 @@
 # Runs the federation judge (docs/adr/0013-run-the-judge-as-a-program.md)
-# against the Python original on every pull request. A pull request is
-# ready for review only once this passes.
+# on the Python original for each pull request. A pull request is ready for
+# review only after this workflow passes.
 name: judge
 
 on:
@@ -44,7 +44,8 @@ jobs:
 
       - run: go vet ./...
 
-      # Shared runners are slower than a laptop; the timeout is only a ceiling.
+      # Shared runners are slower than a laptop. The timeout is only the maximum
+      # time for a run that can't continue.
       - name: Run the judge
         run: go run ./cmd/judge -timeout 5m
 

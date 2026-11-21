@@ -1,13 +1,14 @@
 // Command record-mastodon records the Mastodon replay set: what a real
-// Mastodon server sends a microblog.pub instance, which the judge replays to
-// both implementations (docs/adr/0014-record-the-mastodon-replay-set-from-a-real-server.md).
+// Mastodon server sends to a microblog.pub instance. The judge replays the
+// set to the two implementations
+// (docs/adr/0014-record-the-mastodon-replay-set-from-a-real-server.md).
 //
 // Usage:
 //
 //	go run ./cmd/record-mastodon -venv $(cd reference/microblog.pub && poetry env info -p)
 //
-// It needs a running Docker daemon. Run it again only to record a new
-// Mastodon release: the replay set is committed.
+// It needs a running Docker daemon. The replay set is in the repository.
+// Run the command again only to record a new Mastodon release.
 package main
 
 import (
@@ -28,7 +29,7 @@ func main() {
 		work      = flag.String("work", "_judge", "directory for the instances and their logs")
 		out       = flag.String("out", "internal/judge/testdata/mastodon.json", "the replay set to write")
 	)
-	flag.DurationVar(&judge.Timeout, "timeout", judge.Timeout, "ceiling for each wait")
+	flag.DurationVar(&judge.Timeout, "timeout", judge.Timeout, "maximum time for each wait")
 	flag.Parse()
 	if *venv == "" {
 		fatalf("-venv is required: run `poetry env info -p` in %s", *reference)

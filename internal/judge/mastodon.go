@@ -20,28 +20,29 @@ import (
 	"time"
 )
 
-// MastodonImage is the Mastodon release the replay set is recorded from
-// (docs/adr/0014-record-the-mastodon-replay-set-from-a-real-server.md).
+// MastodonImage is the Mastodon release that the recorder records the replay
+// set from (docs/adr/0014-record-the-mastodon-replay-set-from-a-real-server.md).
 const MastodonImage = "ghcr.io/mastodon/mastodon:v4.7.6"
 
-// Mastodon is a real Mastodon server, run in containers, that joins the fake
-// network like an instance: the proxy routes its host to its web server, and
-// it sends through its own proxy listener, trusting the judge CA. It exists
-// only to record what Mastodon sends (mastodon_record.go).
+// Mastodon is a real Mastodon server that runs in containers. It joins the
+// fake network like an instance. The proxy routes its host to its web
+// server, and it sends through its own proxy listener, with trust in the
+// judge CA. Its only use is to record what Mastodon sends
+// (mastodon_record.go).
 type Mastodon struct {
 	name       string
 	addr       string            // the web server's address
-	web        string            // the web server's container, for Rails
-	containers []string          // to stop, in order
-	tokens     map[string]string // API access token by username
-	dir        string            // for the containers' logs
+	web        string            // the web server's container, which runs Rails code
+	containers []string          // the containers that Stop removes, in order
+	tokens     map[string]string // the API access token of each user
+	dir        string            // the directory for the containers' logs
 }
 
 func (m *Mastodon) Name() string { return m.name }
 func (m *Mastodon) Host() string { return m.name + ".test" }
 func (m *Mastodon) Addr() string { return m.addr }
 
-// mastodonSetup creates local users and prints an API token for each
+// mastodonSetup creates local users and prints an API token for each user
 // (mastodon_setup.rb).
 //
 //go:embed mastodon_setup.rb
@@ -53,9 +54,9 @@ var mastodonSetup []byte
 var mastodonPatch []byte
 
 // StartMastodon starts a Mastodon server for s with the given local users,
-// each with an API token. It needs a running Docker daemon; the containers
-// use the host's network, so they reach the proxy's listeners and the proxy
-// reaches the web server.
+// each with an API token. It needs a running Docker daemon. The containers
+// use the host's network, so they can reach the proxy's listeners, and the
+// proxy can reach the web server.
 func StartMastodon(ctx context.Context, s Spec, users ...string) (_ *Mastodon, err error) {
 	m := &Mastodon{name: s.Name, dir: s.Dir}
 	defer func() {
@@ -90,10 +91,10 @@ func StartMastodon(ctx context.Context, s Spec, users ...string) (_ *Mastodon, e
 	if err := os.WriteFile(setupFile, mastodonSetup, 0o644); err != nil {
 		return nil, err
 	}
-	// TODO(port): since v4.4.27, Mastodon can't resolve a microblog.pub account it
-	// hasn't met, whose id is a bare origin; this patch lets the recording run.
-	// The investigation and the options are in
-	// migration/post-parity/mastodon-bare-origin.md.
+	// TODO(port): since v4.4.27, Mastodon can't resolve a microblog.pub
+	// account that it didn't meet before, because the account's id is a bare
+	// origin. This patch lets the recording run. The investigation and the
+	// options are in migration/post-parity/mastodon-bare-origin.md.
 	patchFile := filepath.Join(s.Dir, "judge_patch.rb")
 	if err := os.WriteFile(patchFile, mastodonPatch, 0o644); err != nil {
 		return nil, err
@@ -141,8 +142,8 @@ func StartMastodon(ctx context.Context, s Spec, users ...string) (_ *Mastodon, e
 }
 
 // mastodonEnv is the configuration of a production Mastodon server for s,
-// with fresh secrets: it sends through s's proxy listener and trusts the
-// judge CA.
+// with new secrets. The server sends through s's proxy listener and trusts
+// the judge CA.
 func mastodonEnv(s Spec, pg, redis, web int) ([]string, error) {
 	secret := func(bytes int) (string, error) {
 		b := make([]byte, bytes)
@@ -172,8 +173,8 @@ func mastodonEnv(s Spec, pg, redis, web int) ([]string, error) {
 	return env, nil
 }
 
-// parseTokens reads the "name=token" lines mastodon_setup.rb prints, among
-// whatever else Rails logs.
+// parseTokens reads the "name=token" lines that mastodon_setup.rb prints.
+// The output also holds other lines that Rails logs.
 func parseTokens(out string, users []string) (map[string]string, error) {
 	tokens := map[string]string{}
 	for _, line := range strings.Split(out, "\n") {
@@ -190,7 +191,7 @@ func parseTokens(out string, users []string) (map[string]string, error) {
 }
 
 // API calls Mastodon's REST API as user, through the judge's client, and
-// decodes the JSON it answers.
+// decodes the JSON answer.
 func (m *Mastodon) API(ctx context.Context, c *Client, user, method, path string, params url.Values) (any, error) {
 	header := http.Header{"Authorization": {"Bearer " + m.tokens[user]}}
 	var body []byte
@@ -238,8 +239,8 @@ func (m *Mastodon) Upload(ctx context.Context, c *Client, user string, f File) (
 	return media.ID, json.Unmarshal(resp.Body, &media)
 }
 
-// RunRails runs Ruby code in the web server's Rails environment, for what
-// Mastodon's API can't do.
+// RunRails runs Ruby code in the web server's Rails environment. Use it for
+// actions that Mastodon's API doesn't have.
 func (m *Mastodon) RunRails(ctx context.Context, code string) (string, error) {
 	return docker(ctx, "exec", m.web, "bin/rails", "runner", code)
 }
@@ -259,7 +260,8 @@ func (m *Mastodon) Stop() error {
 	return errors.Join(errs...)
 }
 
-// startContainer starts a container on the host's network, to be stopped with m.
+// startContainer starts a container on the host's network. m.Stop removes
+// it.
 func (m *Mastodon) startContainer(ctx context.Context, name string, args ...string) error {
 	_, err := docker(ctx, append([]string{"run", "-d", "--name", name, "--network", "host"}, args...)...)
 	if err == nil {
@@ -277,8 +279,8 @@ func docker(ctx context.Context, args ...string) (string, error) {
 	return string(out), nil
 }
 
-// waitFor retries ready every second until it succeeds, for up to five
-// minutes: a cold Mastodon takes a while to boot.
+// waitFor calls ready every second until it succeeds, for five minutes at
+// most. A cold Mastodon needs much time to start.
 func waitFor(ctx context.Context, what string, ready func() error) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
@@ -295,8 +297,8 @@ func waitFor(ctx context.Context, what string, ready func() error) error {
 	}
 }
 
-// freePorts returns n ports nothing listens on, for servers that can't be
-// handed a socket.
+// freePorts returns n ports that no process listens on. Use it for servers
+// that can't receive a socket.
 func freePorts(n int) (_ []int, err error) {
 	var ports []int
 	for range n {
@@ -304,7 +306,8 @@ func freePorts(n int) (_ []int, err error) {
 		if err != nil {
 			return nil, err
 		}
-		// Held until all are chosen, so the n ports differ.
+		// freePorts holds each port until it chose all of them, so the n
+		// ports are different.
 		defer func() { err = errors.Join(err, l.Close()) }()
 		ports = append(ports, l.Addr().(*net.TCPAddr).Port)
 	}

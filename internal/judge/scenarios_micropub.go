@@ -5,12 +5,14 @@ import (
 	"net/url"
 )
 
-// MicropubScenarios judge the Micropub endpoint (app/micropub.py) as a
-// client app uses it, with a token it was granted through IndieAuth. The
-// app is the visitor, so its exchanges are on the wire.
+// MicropubScenarios test the Micropub endpoint (app/micropub.py) as a client
+// app uses it, with a token that the app got through IndieAuth. The app is
+// the visitor, so its exchanges are on the wire.
 var MicropubScenarios = []Scenario{
-	// A post created from a form and one created from JSON: each answers
-	// 201 with its URL, is served there and reaches followers.
+	// A post from a form and a post from JSON. For each post:
+	//   - The endpoint answers 201 with the post's URL.
+	//   - The instance serves the post at that URL.
+	//   - Followers receive the post.
 	{Name: "micropub__create", Run: func(t *T) {
 		follow(t, t.B, t.A)
 		token := grantToken(t, t.A, "create")
@@ -21,7 +23,7 @@ var MicropubScenarios = []Scenario{
 		json := postJSON(t, endpoint, map[string]any{"type": []string{"h-entry"},
 			"properties": map[string]any{"content": []string{"From JSON"}}}, bearer(token))
 		t.equal("JSON status", json.Status, 201)
-		// The token may also come in the form (app/indieauth.py:396-400).
+		// The token can also be in the form (app/indieauth.py:396-400).
 		inForm := postForm(t, endpoint, url.Values{"content": {"Token in the form"}, "access_token": {token}}, "")
 		t.equal("token in form status", inForm.Status, 201)
 
@@ -54,7 +56,7 @@ var MicropubScenarios = []Scenario{
 		t.equal("unknown error", decode(t, unknown)["error"], "invalid_request")
 	}},
 
-	// A deleted post is gone and its deletion reaches followers.
+	// The instance removes a deleted post, and followers receive the Delete.
 	{Name: "micropub__delete", Run: func(t *T) {
 		follow(t, t.B, t.A)
 		post := newPost(t, t.A, url.Values{"content": {"Secret, deleted"}})
@@ -79,7 +81,7 @@ var MicropubScenarios = []Scenario{
 		t.equal("content", decode(t, visit(t, post, acceptAP))["content"], "<p>Before</p>\n")
 	}},
 
-	// Each action needs its scope, and every request a valid token
+	// Each action needs its scope, and each request needs a valid token
 	// (app/micropub.py:79-80,98-99,105-106,123-124).
 	{Name: "micropub__unauthorized", Run: func(t *T) {
 		post := newPost(t, t.A, url.Values{"content": {"Kept"}})
@@ -95,7 +97,8 @@ var MicropubScenarios = []Scenario{
 		t.expectRows(t.A, 1, `SELECT 1 FROM outbox WHERE ap_type = 'Note' AND NOT is_deleted`)
 	}},
 
-	// Requests the endpoint doesn't support (app/micropub.py:83-95,115-122,135-145).
+	// Requests that the endpoint doesn't support
+	// (app/micropub.py:83-95,115-122,135-145).
 	{Name: "micropub__invalid", Run: func(t *T) {
 		token := grantToken(t, t.A, "create", "delete")
 		endpoint := BaseURL(t.A) + "/micropub"

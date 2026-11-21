@@ -5,10 +5,11 @@ import (
 	"net/url"
 )
 
-// InboxScenarios port tests/test_inbox.py and tests/test_remote_actor_deletion.py.
-// A fake actor sends what the original fixtures built by hand; state the
-// original seeded directly in the database is reached through real
-// interactions instead.
+// InboxScenarios port tests/test_inbox.py and
+// tests/test_remote_actor_deletion.py. A fake actor sends the activities
+// that the original fixtures made manually. The original wrote some states
+// directly into the database. These scenarios make the same states with
+// real interactions.
 var InboxScenarios = []Scenario{
 	{Name: "inbox_requires_httpsig", Run: func(t *T) {
 		f := t.NewFake("f")
@@ -95,9 +96,10 @@ var InboxScenarios = []Scenario{
 	{Name: "inbox__actor_is_blocked", Run: func(t *T) {
 		f := t.NewFake("f")
 		fakeFollows(t, f, t.A)
-		// The original only sets actor.is_blocked; blocking through the admin
-		// action also sends a Reject and removes the follower. The drop under
-		// test (app/boxes.py:2328-2330) happens before any follower logic.
+		// The original test only sets actor.is_blocked. The admin's block
+		// action also sends a Reject and removes the follower. The instance
+		// ignores the activity (app/boxes.py:2328-2330) before the follower
+		// logic, so the difference doesn't matter here.
 		act(t, t.A, "block", url.Values{"ap_actor_id": {f.ID()}})
 		t.waitRows(t.A, 1, `SELECT 1 FROM actor WHERE ap_id = ? AND is_blocked = 1`, f.ID())
 
@@ -123,7 +125,7 @@ var InboxScenarios = []Scenario{
 		for _, r := range t.rows(t.A, `SELECT ap_type FROM inbox ORDER BY ap_type`) {
 			types = append(types, r["ap_type"])
 		}
-		t.equal("inbox objects", types, []any{"Accept", "Move"}) // the Accept is from following old
+		t.equal("inbox objects", types, []any{"Accept", "Move"}) // the Accept answers a's Follow of the old account
 		inboxMove := t.one(t.A, `SELECT id, actor_id FROM inbox WHERE ap_type = 'Move'`)
 		t.equal("Move actor", inboxMove["actor_id"], t.actorRowID(t.A, old.ID()))
 		t.waitRows(t.A, 0, `SELECT 1 FROM following`)
@@ -147,11 +149,12 @@ var InboxScenarios = []Scenario{
 			"actor_id": t.actorRowID(t.A, f.ID()), "inbox_object_id": block["id"]})
 	}},
 
-	// The original mocks the signature check into "actor is gone"
-	// (app/httpsig.py:249-251), which answers 202 and stores nothing
-	// (:294-296). Here the actor really is gone: fetching its key gets 410.
-	// incoming_activity rows are written during the request, so checking right
-	// after the response is enough.
+	// The original test replaces the signature check with a mock that gives
+	// "actor is gone" (app/httpsig.py:249-251). The instance then answers 202
+	// and stores nothing (:294-296). Here the actor is really gone: the URL
+	// of its key answers 410. The instance writes incoming_activity rows
+	// during the request, so a check directly after the response is
+	// sufficient.
 	{Name: "inbox__incoming_delete_for_unknown_actor", Run: func(t *T) {
 		f := t.NewFake("f")
 		f.Gone = true
@@ -159,8 +162,8 @@ var InboxScenarios = []Scenario{
 		t.expectRows(t.A, 0, `SELECT 1 FROM incoming_activity`)
 	}},
 
-	// An unknown actor deleting itself is dropped before its key is fetched
-	// (app/httpsig.py:210-222).
+	// If an unknown actor deletes itself, the instance ignores the Delete
+	// before it fetches the key (app/httpsig.py:210-222).
 	{Name: "inbox__incoming_self_delete_for_unknown_actor", Run: func(t *T) {
 		f := t.NewFake("f")
 		send(t, f, t.A, f.Activity("Delete", f.ID()))

@@ -7,8 +7,9 @@ import (
 )
 
 // OutboxScenarios port tests/test_outbox.py, tests/test_emoji.py and
-// tests/test_tags.py. The remote actor of the original fixtures is the real
-// instance b, so every delivery is also checked on the receiving side.
+// tests/test_tags.py. The real instance b is the remote actor of the
+// original fixtures. Thus the scenarios also check each delivery on the
+// receiver.
 var OutboxScenarios = []Scenario{
 	{Name: "outbox__no_activities", Run: func(t *T) {
 		outbox, err := t.Client.GetAP(t.Ctx, BaseURL(t.A)+"/outbox")
@@ -38,8 +39,9 @@ var OutboxScenarios = []Scenario{
 		reply2 := newPost(t, t.A, url.Values{"content": {"reply 2"}, "in_reply_to": {note}})
 		t.waitRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ? AND replies_count = 2`, note)
 		t.waitRows(t.B, 1, `SELECT 1 FROM outbox WHERE ap_id = ? AND replies_count = 2`, note)
-		// A drifted counter, as the original seeds: deleting must recount the
-		// replies (app/boxes.py:230-245), not decrement.
+		// A counter with an incorrect value, as the original test writes it.
+		// The Delete must count the replies again (app/boxes.py:230-245),
+		// not subtract one.
 		t.Check(Exec(t.A, `UPDATE inbox SET replies_count = 5 WHERE ap_id = ?`, note))
 
 		redirect := BaseURL(t.A) + "/"
@@ -74,7 +76,8 @@ var OutboxScenarios = []Scenario{
 
 		upload := t.one(t.A, `SELECT id, content_hash FROM upload`)
 		t.equal("content hash", upload["content_hash"], "324dcf027dd4a30a932c441f365a25e86b173defa4b8e58948253471b81b72cf")
-		// Existing posts link to attachments by this URL (app/models.py:245-251).
+		// Current posts use this URL for links to attachments
+		// (app/models.py:245-251).
 		attachment := BaseURL(t.A) + "/attachments/" + upload["content_hash"].(string) + "/attachment.txt"
 		t.equal("attachment URL", note["url"], attachment)
 		resp, err := t.Client.Get(t.Ctx, attachment, "")
@@ -102,8 +105,8 @@ var OutboxScenarios = []Scenario{
 		t.equal("ap_type", note["ap_type"], "Note")
 		t.equal("outgoing", t.one(t.A, `SELECT outbox_object_id, recipient FROM outgoing_activity`),
 			map[string]any{"outbox_object_id": note["id"], "recipient": BaseURL(t.B) + "/inbox"})
-		// The original never sets inbox.has_local_mention; the notification is
-		// the observable effect of a mention.
+		// The original never sets inbox.has_local_mention. The notification
+		// is the visible result of a mention.
 		t.waitRows(t.B, 1, `SELECT 1 FROM notifications n JOIN inbox i ON n.inbox_object_id = i.id
 			WHERE n.notification_type = 'MENTION' AND i.ap_id = ?`, id)
 	}},
@@ -111,7 +114,7 @@ var OutboxScenarios = []Scenario{
 	{Name: "send_create_activity__with_followers", Run: func(t *T) {
 		follow(t, t.B, t.A)
 		id := newPost(t, t.A, url.Values{"content": {"hi followers"}})
-		t.equal("outbox", outboxTypes(t, t.A), []any{"Accept", "Note"}) // the Accept is b's follow
+		t.equal("outbox", outboxTypes(t, t.A), []any{"Accept", "Note"}) // the Accept answers b's Follow
 		expectDelivered(t, t.A, t.B, id, "Note")
 	}},
 
@@ -141,9 +144,9 @@ var OutboxScenarios = []Scenario{
 		t.waitRows(t.B, 1, `SELECT 1 FROM inbox WHERE ap_id = ? AND ap_type = 'Article'`, id)
 	}},
 
-	// Covers test_emoji_ap_endpoint and test_emoji_ap_endpoint__not_found.
-	// test_emoji_are_loaded reads a Python global; the 200 below shows the
-	// emoji were loaded.
+	// Ports test_emoji_ap_endpoint and test_emoji_ap_endpoint__not_found.
+	// test_emoji_are_loaded reads a Python global. Here, the 200 answer shows
+	// that the instance loaded the emoji.
 	{Name: "emoji_ap_endpoint", Run: func(t *T) {
 		resp, err := t.Client.Get(t.Ctx, BaseURL(t.A)+"/e/goose_honk", "application/activity+json")
 		t.Check(err)

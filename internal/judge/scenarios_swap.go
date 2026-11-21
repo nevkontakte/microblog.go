@@ -2,13 +2,14 @@ package judge
 
 import "net/url"
 
-// SwapScenarios judge the on-disk swap (ADR 0010): an instance stops, and the
-// peer's implementation starts on its data, as an owner swapping binaries
-// would. On a Python pair they pin what a swap must keep; with the port on
-// one side they are the swap test, in both directions across the pairings.
+// SwapScenarios test the on-disk swap (ADR 0010). An instance stops, and the
+// peer's implementation starts with the same data, as when an owner replaces
+// the binary. On a Python pair, these scenarios record what a swap must
+// keep. With the port on one side, they are the swap test, in the two
+// directions.
 var SwapScenarios = []Scenario{
-	// Everything remote servers and readers see survives: key, actor,
-	// collections, objects and attachments.
+	// All that remote servers and readers see stays the same: the key, the
+	// actor, the collections, the objects and the attachments.
 	{Name: "swap__served_state", Run: func(t *T) {
 		follow(t, t.B, t.A)
 		follow(t, t.A, t.B)
@@ -21,8 +22,9 @@ var SwapScenarios = []Scenario{
 		t.expectSchema(t.A)
 	}},
 
-	// The swapped instance keeps federating both ways: its deliveries are
-	// signed with the kept key, and it takes activities about its old posts.
+	// The swapped instance continues to send and receive. It signs its
+	// deliveries with the same key, and accepts activities about its old
+	// posts.
 	{Name: "swap__federates", Run: func(t *T) {
 		follow(t, t.B, t.A)
 		old := newPost(t, t.A, url.Values{"content": {"Before"}})
@@ -34,8 +36,8 @@ var SwapScenarios = []Scenario{
 		t.waitRows(t.A, 1, `SELECT 1 FROM outbox WHERE ap_id = ? AND likes_count = 1`, old)
 	}},
 
-	// The receiving side swapped: it still knows whom it follows, and takes
-	// their deliveries.
+	// The receiver is the swapped instance. It still knows the actors that it
+	// follows, and accepts their deliveries.
 	{Name: "swap__peer", Run: func(t *T) {
 		follow(t, t.B, t.A)
 		t.swap(t.B)
@@ -44,14 +46,14 @@ var SwapScenarios = []Scenario{
 		t.expectSchema(t.B)
 	}},
 
-	// Custom emoji in data/custom_emoji are the new implementation's too.
+	// The new implementation also uses the custom emoji in data/custom_emoji.
 	{Name: "swap__custom_emoji", Run: func(t *T) {
 		addCustomEmoji(t, t.A, "judge_star.png", []byte("not really a PNG"))
 		t.swap(t.A)
 		base := BaseURL(t.A)
 		emoji, err := t.Client.GetAP(t.Ctx, base+"/e/judge_star")
 		t.Check(err)
-		delete(emoji, "@context") // the same on every document
+		delete(emoji, "@context") // the same in all documents
 		t.equal("emoji", emoji, map[string]any{
 			"type": "Emoji", "name": ":judge_star:", "updated": "1970-01-01T00:00:00Z", "id": base + "/e/judge_star",
 			"icon": map[string]any{"mediaType": "image/png", "type": "Image", "url": base + "/custom_emoji/judge_star.png"},

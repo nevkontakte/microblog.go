@@ -20,20 +20,25 @@ import (
 	"time"
 )
 
-// mastodonReplaySet is what a real Mastodon server sent a microblog.pub
+// mastodonReplaySet holds what a real Mastodon server sent a microblog.pub
 // instance (mastodon_record.go).
 //
 //go:embed testdata/mastodon.json
 var mastodonReplaySet []byte
 
 // A Replay plays the Mastodon server of the replay set on t's network. It
-// serves the documents Mastodon served, and delivers what Mastodon
-// delivered, step by step, with a's ids replaced by the replaying instance's
-// own. Everything is signed again with the replay's key, which the actor
-// documents it serves carry instead of Mastodon's: HTTP signatures in
-// Mastodon's exact form, and LD signatures over the delivered payload with
-// the same creator and creation time
-// (docs/adr/0014-record-the-mastodon-replay-set-from-a-real-server.md).
+// serves the documents that Mastodon served, and delivers what Mastodon
+// delivered, step by step. It replaces the ids of a with the ids of the
+// replaying instance.
+//
+// The Replay signs everything again with its own key. The actor documents
+// that it serves hold this key in place of Mastodon's key. The Replay makes
+// these signatures:
+//   - HTTP signatures in Mastodon's exact form.
+//   - LD signatures over the delivered payload, with the same creator and
+//     creation time.
+//
+// See docs/adr/0014-record-the-mastodon-replay-set-from-a-real-server.md.
 type Replay struct {
 	Set ReplaySet
 
@@ -42,10 +47,10 @@ type Replay struct {
 	client *http.Client
 
 	mu           sync.Mutex
-	placeholders map[string]string   // the replaying instance's ids, by placeholder name
-	documents    map[string]Document // served now, by URL
-	inbox        []map[string]any    // what instances sent the server
-	idless       map[string]int      // deliveries without an id, by instance
+	placeholders map[string]string   // the ids of the replaying instance, by placeholder name
+	documents    map[string]Document // the documents that the server serves now, by URL
+	inbox        []map[string]any    // the activities that instances sent to the server
+	idless       map[string]int      // the number of deliveries without an id, by instance
 }
 
 // NewReplay puts the replay set's Mastodon server on t's network.
@@ -75,15 +80,16 @@ func (t *T) NewReplay() *Replay {
 	return r
 }
 
-// SetPlaceholder fills the placeholder {{name}} with id, one of the
-// replaying instance's objects, wherever the replay set uses it.
+// SetPlaceholder sets id as the value of the placeholder {{name}}, in all
+// locations of the replay set. id is the id of an object of the replaying
+// instance.
 func (r *Replay) SetPlaceholder(name, id string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.placeholders[name] = id
 }
 
-// Step returns the recorded step called name.
+// Step returns the recorded step with the given name.
 func (r *Replay) Step(name string) ReplayStep {
 	for _, s := range r.Set.Steps {
 		if s.Name == name {
@@ -94,11 +100,12 @@ func (r *Replay) Step(name string) ReplayStep {
 	return ReplayStep{}
 }
 
-// Serve adds the documents a fetched during step to those the server serves,
-// in place of any it served at the same URL before. The server keeps the
-// earlier steps' documents, as Mastodon kept serving them: the replay set
-// records only what a fetched during each step, so what Mastodon served at a
-// step is everything recorded up to it, each at its latest version.
+// Serve adds the documents that a fetched during step to the documents that
+// the server serves. A new document replaces an old document at the same URL.
+// The server keeps the documents of the earlier steps, because Mastodon
+// continued to serve them. The replay set records only what a fetched during
+// each step. Thus, at a step, Mastodon served all the documents that the
+// replay set recorded up to that step, each at its latest version.
 func (r *Replay) Serve(step ReplayStep) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -107,8 +114,8 @@ func (r *Replay) Serve(step ReplayStep) {
 	}
 }
 
-// Activity returns the step's n-th delivery, with the replaying instance's
-// ids in place of the placeholders.
+// Activity returns the step's n-th delivery, with the ids of the replaying
+// instance in place of the placeholders.
 func (r *Replay) Activity(step ReplayStep, n int) map[string]any {
 	if n >= len(step.Deliveries) {
 		r.t.Fatalf("step %s has %d deliveries, not %d", step.Name, len(step.Deliveries), n+1)
@@ -120,8 +127,8 @@ func (r *Replay) Activity(step ReplayStep, n int) map[string]any {
 	return activity
 }
 
-// fillPlaceholders replaces the placeholders in body with the ids set for
-// them, and fails if one isn't set.
+// fillPlaceholders replaces the placeholders in body with their ids. It fails
+// if a placeholder has no id.
 func (r *Replay) fillPlaceholders(body json.RawMessage) (json.RawMessage, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -135,9 +142,9 @@ func (r *Replay) fillPlaceholders(body json.RawMessage) (json.RawMessage, error)
 	return json.RawMessage(s), nil
 }
 
-// Play plays a step to i: it serves the step's documents, then delivers its
-// activities in order, checking i accepts each and waiting until i has
-// processed it.
+// Play plays a step to i. It serves the step's documents. Then it delivers
+// the step's activities in order. For each activity, it checks that i
+// accepts the activity, and waits until i processed it.
 func (r *Replay) Play(i Instance, step ReplayStep) {
 	r.Serve(step)
 	for n := range step.Deliveries {
@@ -145,9 +152,10 @@ func (r *Replay) Play(i Instance, step ReplayStep) {
 	}
 }
 
-// PlayOne delivers the step's n-th activity to i, checks i accepts it and
-// waits until i has processed it. Its placeholders are filled in now, so an
-// earlier delivery can cause the object whose id a later one needs.
+// PlayOne delivers the step's n-th activity to i. It checks that i accepts
+// the activity, and waits until i processed it. PlayOne sets the ids of the
+// placeholders at this time. Thus an earlier delivery can make the object
+// whose id a later delivery needs.
 func (r *Replay) PlayOne(i Instance, step ReplayStep, n int) {
 	activity := r.Activity(step, n)
 	resp := r.Send(i, activity, step.Deliveries[n])
@@ -157,8 +165,8 @@ func (r *Replay) PlayOne(i Instance, step ReplayStep, n int) {
 		return
 	}
 	// Mastodon sends some activities without an id, such as the Add of a
-	// pinned post, which the original files under a hash of the payload:
-	// wait until i has processed one more of those.
+	// pinned post. The original keeps them under a hash of the payload. Wait
+	// until i processed one more of those activities.
 	r.mu.Lock()
 	r.idless[i.Name()]++
 	n = r.idless[i.Name()]
@@ -166,11 +174,13 @@ func (r *Replay) PlayOne(i Instance, step ReplayStep, n int) {
 	r.t.waitRows(i, n, `SELECT 1 FROM incoming_activity WHERE ap_id NOT LIKE 'http%' AND is_processed = 1`)
 }
 
-// Send delivers activity to i's inbox as d was delivered, signed again with
-// the replay's key: an LD signature in place of any it carries, keeping its
-// creator and creation time, and an HTTP signature with d's key id,
-// algorithm and signed headers, sending the extra headers it covers as
-// recorded.
+// Send delivers activity to i's inbox in the same form as d. It signs again
+// with the replay's key:
+//   - It replaces the LD signature of activity, if there is one. The new
+//     signature has the same creator and creation time.
+//   - It makes an HTTP signature with the key id, algorithm and signed
+//     headers of d. It sends the extra headers that this signature covers
+//     with their recorded values.
 func (r *Replay) Send(i Instance, activity map[string]any, d Delivery) *Response {
 	r.Resign(activity)
 	body, err := json.Marshal(activity)
@@ -194,8 +204,9 @@ func (r *Replay) Send(i Instance, activity map[string]any, d Delivery) *Response
 	return &Response{Status: resp.StatusCode, Header: resp.Header, Body: respBody}
 }
 
-// Resign signs activity's LD signature again with the replay's key, keeping
-// its creator and creation time; an activity without one is left as it is.
+// Resign signs the LD signature of activity again with the replay's key. The
+// new signature has the same creator and creation time. Resign doesn't change
+// an activity without an LD signature.
 func (r *Replay) Resign(activity map[string]any) {
 	sig, ok := activity["signature"].(map[string]any)
 	if !ok {
@@ -206,8 +217,8 @@ func (r *Replay) Resign(activity map[string]any) {
 	r.t.Check(ldSign(activity, stringField(r.t, sig, "creator"), created, r.key))
 }
 
-// signatureKeyID reads the key id from a recorded signature's description
-// (signatureParams).
+// signatureKeyID reads the key id from the recorded parameters of a
+// signature (signatureParams).
 func signatureKeyID(signature string) string {
 	for _, part := range strings.Split(signature, ",") {
 		if name, value, _ := strings.Cut(part, "="); name == "keyId" {
@@ -217,15 +228,17 @@ func signatureKeyID(signature string) string {
 	return ""
 }
 
-// Inbox returns what instances delivered to the replayed server so far.
+// Inbox returns the activities that instances delivered to the replayed
+// server so far.
 func (r *Replay) Inbox() []map[string]any {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	return append([]map[string]any(nil), r.inbox...)
 }
 
-// ServeHTTP serves the documents published so far, with the replay's public
-// key in place of Mastodon's in actors, and takes deliveries to any inbox.
+// ServeHTTP serves the documents that Serve added so far. Actors have the
+// replay's public key in place of Mastodon's key. ServeHTTP also accepts
+// deliveries to all inboxes.
 func (r *Replay) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if req.Method == http.MethodPost && strings.HasSuffix(req.URL.Path, "/inbox") {
 		var activity map[string]any
@@ -240,14 +253,14 @@ func (r *Replay) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	r.mu.Lock()
-	d, ok := r.documents[req.URL.String()] // absolute: the proxy forwards it so
+	d, ok := r.documents[req.URL.String()] // the proxy forwards the absolute URL
 	r.mu.Unlock()
 	if !ok {
 		http.NotFound(w, req)
 		return
 	}
 	body, err := r.fillPlaceholders(d.Body)
-	if err != nil { // a scenario serves a document before setting the placeholders it uses
+	if err != nil { // a scenario served a document before it set the placeholders of the document
 		r.t.Errorf("serving %s: %v", req.URL, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -255,7 +268,7 @@ func (r *Replay) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	body = r.withReplayKey(body)
 	var text string
 	if json.Unmarshal(body, &text) == nil {
-		body = []byte(text) // recorded as a string: not JSON, like a redirect's page
+		body = []byte(text) // the recorder kept a body that isn't JSON as a string, for example a redirect's page
 	}
 	if d.ContentType != "" {
 		w.Header().Set("Content-Type", d.ContentType)
@@ -269,8 +282,8 @@ func (r *Replay) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// withReplayKey puts the replay's public key in place of Mastodon's in an
-// actor document, and returns any other body as it is.
+// withReplayKey puts the replay's public key in place of Mastodon's key in an
+// actor document. It returns other bodies without a change.
 func (r *Replay) withReplayKey(body json.RawMessage) json.RawMessage {
 	var doc map[string]any
 	if json.Unmarshal(body, &doc) != nil {

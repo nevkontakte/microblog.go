@@ -5,15 +5,15 @@ import (
 	"net/http"
 )
 
-// LD signatures (app/ldsig.py) canonicalize a payload with the JSON-LD
-// contexts it names, which a JSON-LD processor fetches from the web. The
-// proxy serves captured copies instead, so a run needs no network and every
-// signature is computed from the same bytes.
+// An LD signature (app/ldsig.py) normalizes a payload with the JSON-LD
+// contexts that the payload names. A JSON-LD processor fetches these
+// contexts from the web. The proxy serves captured copies in place of the
+// web. Thus a run needs no network, and all signatures use the same bytes.
 
 //go:embed testdata/jsonld/*.jsonld
 var jsonld embed.FS
 
-// jsonLDContexts maps host and path to a captured context document
+// jsonLDContexts maps a host and a path to a captured context document
 // (testdata/jsonld/README.md).
 var jsonLDContexts = map[string]map[string]string{
 	"www.w3.org": {"/ns/activitystreams": "activitystreams.jsonld"},

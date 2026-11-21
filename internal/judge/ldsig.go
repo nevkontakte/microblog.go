@@ -16,19 +16,23 @@ import (
 	"github.com/piprate/json-gold/ld"
 )
 
-// LD signatures (RsaSignature2017) sign a JSON-LD document itself, so that
-// a server can forward it and the receiver still knows its author. Mastodon
-// and the original (app/ldsig.py) make them alike: an RSA-SHA256 signature
-// over two hex SHA-256 hashes, of the signature's options and of the document
-// without its signature, each normalized with URDNA2015 to N-Quads.
+// An LD signature (RsaSignature2017) signs the JSON-LD document. Thus a
+// server can forward the document, and the receiver still knows its author.
+// Mastodon and the original (app/ldsig.py) make the signature in the same
+// way. It is an RSA-SHA256 signature over two hex SHA-256 hashes:
+//   - The hash of the signature's options.
+//   - The hash of the document without its signature.
+//
+// Before the hash, URDNA2015 normalizes each part to N-Quads.
 
-// ldOptionsContext is the context the options are normalized in. Mastodon
-// uses identity/v1 and the original security/v1; both define creator and
-// created alike, so the hashes agree.
+// ldOptionsContext is the context for the normalization of the options.
+// Mastodon uses identity/v1, and the original uses security/v1. The two
+// contexts give the same definitions of creator and created, so the hashes
+// are equal.
 const ldOptionsContext = "https://w3id.org/identity/v1"
 
-// ldSign signs doc as keyID's owner at created, replacing any signature it
-// has, the way Mastodon does.
+// ldSign signs doc as the owner of keyID at the time created. As Mastodon
+// does, it replaces the current signature of doc, if there is one.
 func ldSign(doc map[string]any, keyID string, created time.Time, key *rsa.PrivateKey) error {
 	sig := map[string]any{"type": "RsaSignature2017", "creator": keyID, "created": created.UTC().Format(time.RFC3339)}
 	doc["signature"] = sig
@@ -65,7 +69,7 @@ func ldVerify(doc map[string]any, key *rsa.PublicKey) error {
 	return rsa.VerifyPKCS1v15(key, crypto.SHA256, digest, raw)
 }
 
-// ldDigest is the SHA-256 of what an LD signature signs.
+// ldDigest is the SHA-256 of the data that an LD signature signs.
 func ldDigest(doc map[string]any) ([]byte, error) {
 	sig, ok := doc["signature"].(map[string]any)
 	if !ok {
@@ -108,7 +112,7 @@ func ldHash(doc map[string]any) (string, error) {
 	return hex.EncodeToString(sum[:]), nil
 }
 
-// capturedContexts loads JSON-LD contexts from the captured copies the
+// capturedContexts loads JSON-LD contexts from the captured copies that the
 // proxy serves (jsonld.go), never from the web.
 type capturedContexts struct{}
 

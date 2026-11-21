@@ -6,15 +6,17 @@ import (
 	"strings"
 )
 
-// PublicScenarios judge the public read surface (app/main.py): what
-// anonymous browsers, feed readers and remote servers fetching without a
-// signature are served, and what they must never be. The visitor's
-// exchanges are on the wire, so every page, document and feed is compared
-// with the original's (HTML by its microformats, feeds as XML trees).
+// PublicScenarios test the public pages and documents (app/main.py). They
+// check what an instance serves to anonymous browsers, to feed readers, and
+// to remote servers that fetch without a signature. They also check what the
+// instance must never serve to them. The visitor's exchanges are on the
+// wire. Thus the judge compares each page, document and feed with the
+// original's: HTML by its microformats, and feeds as XML trees.
 var PublicScenarios = []Scenario{
-	// One post of every kind, and every surface that lists or serves posts.
-	// Followers-only, direct and deleted posts must not show anywhere, by
-	// id or text; the rest show as the original shows them.
+	// One post of each kind, and each page or document that lists or serves
+	// posts. The id and the text of followers-only, direct and deleted posts
+	// must not show in any location. The other posts show as the original
+	// shows them.
 	{Name: "public__visibility", Run: func(t *T) {
 		follow(t, t.B, t.A)
 		follow(t, t.A, t.B)
@@ -49,22 +51,23 @@ var PublicScenarios = []Scenario{
 		for _, id := range []string{public, unlisted, followers, direct, article, poll, reply, pinned, deleted} {
 			visit(t, id, acceptAP)
 			visit(t, id+"/activity", acceptAP)
-			if resp := visit(t, id, acceptHTML); resp.Status == 301 { // an article's page
+			if resp := visit(t, id, acceptHTML); resp.Status == 301 { // the page of an article
 				visit(t, resp.Header.Get("Location"), acceptHTML)
 			}
 		}
 		t.expectUndisclosed(followers, direct, deleted, "Secret")
 
-		// BUG(port): an attachment is served to anyone who has its URL,
-		// whatever its post's visibility, and after the post is deleted
-		// (app/main.py:1533-1551). The URL holds the content's hash.
+		// BUG(port): the original serves an attachment to all requesters
+		// that have its URL. The visibility of the post doesn't change this,
+		// and the post's deletion doesn't stop it (app/main.py:1533-1551).
+		// The URL holds the hash of the content.
 		for _, r := range t.rows(t.A, `SELECT o.ap_id, '/attachments/' || u.content_hash || '/' || a.filename AS path
 			FROM outbox o JOIN outbox_object_attachment a ON a.outbox_object_id = o.id JOIN upload u ON u.id = a.upload_id`) {
 			t.equal("attachment of "+r["ap_id"].(string), visit(t, base+r["path"].(string), "").Status, 200)
 		}
 	}},
 
-	// Requests for what doesn't exist.
+	// Requests for objects and pages that don't exist.
 	{Name: "public__not_found", Run: func(t *T) {
 		base := BaseURL(t.A)
 		missing := base + "/o/0123456789abcdef0123456789abcdef"
@@ -87,7 +90,9 @@ var PublicScenarios = []Scenario{
 		}
 	}},
 
-	// An image's thumbnail is served as WebP to those who accept it.
+	// The instance serves an image's thumbnail as WebP to requesters that
+	// accept WebP.
+	//
 	// BUG(port): a request without an Accept header fails with 500
 	// (app/main.py:1569).
 	{Name: "public__thumbnail", Run: func(t *T) {
@@ -101,8 +106,8 @@ var PublicScenarios = []Scenario{
 		t.equal("without Accept", visit(t, thumbnail, "").Status, 500)
 	}},
 
-	// Every admin page and action sends an anonymous visitor to the login
-	// page, and acts on nothing (app/admin.py:52-88).
+	// All admin pages and actions send an anonymous visitor to the login
+	// page, and change nothing (app/admin.py:52-88).
 	{Name: "public__admin_requires_login", Run: func(t *T) {
 		base := BaseURL(t.A)
 		for _, path := range []string{"/admin/lookup", "/admin/new", "/admin/bookmarks", "/admin/stream",
@@ -122,13 +127,15 @@ var PublicScenarios = []Scenario{
 		t.equal("login page", visit(t, base+"/admin/login", acceptHTML).Status, 200)
 	}},
 
-	// The media proxy serves remote media under URLs it signs. URLs minted
-	// by the original appear in cached and federated HTML, so the port must
-	// accept them (feasibility report, call #5). The original's media proxy
-	// doesn't go through HTTPS_PROXY, so the media is fetched from b's own
-	// address, which debug mode allows.
-	// BUG(port): a forged or expired URL fails with 500, not a 4xx: the
-	// signature error isn't handled (app/main.py:1378-1388).
+	// The media proxy serves remote media at URLs that it signs. URLs from
+	// the original are in cached and federated HTML, so the port must accept
+	// them (feasibility report, call #5). The original's media proxy doesn't
+	// use HTTPS_PROXY, so it fetches the media from b's own address. Debug
+	// mode allows this.
+	//
+	// BUG(port): a false or expired URL fails with 500, not a 4xx, because
+	// the original doesn't handle the signature error
+	// (app/main.py:1378-1388).
 	{Name: "public__media_proxy", Run: func(t *T) {
 		newPost(t, t.B, url.Values{"content": {"An image"}},
 			File{Field: "files", Name: "image.png", ContentType: "image/png", Data: smallPNG()})
@@ -143,7 +150,8 @@ var PublicScenarios = []Scenario{
 		t.equal("expired", visit(t, mediaURL(t.A, image, today()-1), "image/png").Status, 500)
 	}},
 
-	// Collections page by 20, newest first, and link to the next page.
+	// Collections have pages of 20 items, newest first, with a link to the
+	// next page.
 	{Name: "public__collection_pages", Run: func(t *T) {
 		for n := range 21 {
 			fakeFollows(t, t.NewFake(fmt.Sprintf("f%02d", n)), t.A)
@@ -154,8 +162,8 @@ var PublicScenarios = []Scenario{
 		t.equal("next page", next.Status, 200)
 	}},
 
-	// tests/test_public.py: the index, and the followers and following pages,
-	// shown or hidden.
+	// tests/test_public.py: the index, and the pages of followers and
+	// follows, visible or hidden.
 	{Name: "public__index", Run: func(t *T) {
 		base := BaseURL(t.A)
 		resp := visit(t, base+"/", acceptHTML)
