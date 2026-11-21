@@ -22,32 +22,32 @@ import (
 // AdminPassword is the admin password of every judge instance.
 const AdminPassword = "judge"
 
-// An Instance is a running microblog.pub server on the fake network,
-// reachable at http://<Name>.test.
+// An Instance is a running microblog.pub server on the fake network, at
+// http://<Name>.test.
 type Instance interface {
-	Name() string    // also the local actor's username
+	Name() string    // the instance's name, which is also the local actor's username
 	DataDir() string // the instance's data/ directory
-	Addr() string    // where its web server listens, for the proxy to route to
+	Addr() string    // the address of the web server, where the proxy sends requests
 	Stop() error
 	// Command runs the implementation's command-line tool on the instance's
 	// data, with stdin as input, and returns its combined output. The
-	// arguments are the original's: `inv` task names and flags.
+	// arguments are the original's arguments: `inv` task names and flags.
 	Command(ctx context.Context, stdin string, args ...string) (string, error)
 }
 
 // Host returns the instance's hostname on the fake network.
 func Host(i Instance) string { return i.Name() + ".test" }
 
-// BaseURL returns the instance's ID, e.g. https://a.test.
+// BaseURL returns the instance's ID, for example https://a.test.
 func BaseURL(i Instance) string { return "https://" + Host(i) }
 
 // Spec describes an instance to start.
 type Spec struct {
 	Name      string
-	Dir       string // working directory; data/ is created inside it
-	ProxyAddr string // the proxy listener this instance sends through
-	CAFile    string // the only certificate authority to trust for https
-	Config    string // profile.toml lines, overriding the defaults by key
+	Dir       string // the working directory, which holds data/
+	ProxyAddr string // the proxy listener that the instance sends through
+	CAFile    string // the only certificate authority that the instance trusts for https
+	Config    string // profile.toml lines, which replace the defaults with the same key
 }
 
 // An Impl starts instances of one implementation.
@@ -55,9 +55,9 @@ type Impl interface {
 	Start(ctx context.Context, s Spec) (Instance, error)
 }
 
-// writeData creates the data/ directory both implementations read: config,
-// RSA key and upload directories. On a restart it rewrites the config and
-// keeps the key and everything else.
+// writeData makes the data/ directory that both implementations read: the
+// config, the RSA key and the upload directories. On a restart, it writes the
+// config again, and keeps the key and all other files.
 func writeData(s Spec) (string, error) {
 	data := filepath.Join(s.Dir, "data")
 	for _, d := range []string{"uploads", "custom_emoji"} {
@@ -77,7 +77,7 @@ func writeData(s Spec) (string, error) {
 	if _, err := os.Stat(keyFile); err == nil {
 		return data, nil
 	}
-	// PKCS#1 PEM, the format pycryptodome's exportKey("PEM") writes.
+	// PKCS#1 PEM is the format that pycryptodome's exportKey("PEM") writes.
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return "", err
@@ -86,8 +86,9 @@ func writeData(s Spec) (string, error) {
 	return data, os.WriteFile(keyFile, keyPEM, 0o600)
 }
 
-// profile returns the instance's profile.toml: the defaults, with any key
-// that s.Config sets replaced by its last line for that key.
+// profile returns the instance's profile.toml. It starts with the defaults.
+// For each key that s.Config sets, the last line of s.Config for that key
+// replaces the default.
 func profile(s Spec, passwordHash []byte) string {
 	defaults := [][2]string{
 		{"domain", fmt.Sprintf("%q", s.Name+".test")},
@@ -100,7 +101,7 @@ func profile(s Spec, passwordHash []byte) string {
 		{"debug", "true"},
 	}
 	lines := strings.Split(s.Config, "\n")
-	last := map[string]int{} // key -> index of its last line in s.Config
+	last := map[string]int{} // the index of each key's last line in s.Config
 	for n, line := range lines {
 		if key, _, ok := strings.Cut(line, "="); ok {
 			last[strings.TrimSpace(key)] = n
@@ -121,13 +122,14 @@ func profile(s Spec, passwordHash []byte) string {
 	return b.String()
 }
 
-// configSecret is the secret in instance name's profile.toml, which signs
-// sessions and media proxy URLs.
+// configSecret is the secret in the profile.toml of the instance name. The
+// instance signs sessions and media proxy URLs with it.
 func configSecret(name string) string { return "judge-secret-" + name + "-0123456789abcdef" }
 
-// proxyEnv returns the environment for an instance process: the parent's,
-// with every proxy variable pointing at the judge proxy and https trusting
-// only the judge CA.
+// proxyEnv returns the environment for an instance process. It is the
+// parent's environment with these changes:
+//   - All proxy variables point to the judge proxy.
+//   - For https, the process trusts only the judge CA.
 func proxyEnv(s Spec, extra ...string) []string {
 	var env []string
 	for _, kv := range os.Environ() {
@@ -144,32 +146,35 @@ func proxyEnv(s Spec, extra ...string) []string {
 	return append(env, extra...)
 }
 
-// listen binds a localhost port for an instance's web server, and returns
-// the socket as a file for the server process to inherit and its address.
-// Handing over the bound socket, rather than a port number to bind, leaves no
-// moment in which another connection can take the port.
+// listen binds a localhost port for an instance's web server. It returns the
+// socket as a file, which the server process inherits, and its address. The
+// judge gives the bound socket to the server, not a port number. Thus no
+// other process can take the port before the server binds it.
 func listen() (_ *os.File, _ string, err error) {
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return nil, "", err
 	}
-	defer func() { err = errors.Join(err, l.Close()) }() // the file is a duplicate of the socket
+	defer func() { err = errors.Join(err, l.Close()) }() // the file is a copy of the socket
 	f, err := l.(*net.TCPListener).File()
 	return f, l.Addr().String(), err
 }
 
-// process is a child process in its own process group, logging to a file.
+// process is a child process in its own process group. It writes its log to
+// a file.
 type process struct {
 	cmd  *exec.Cmd
-	done chan struct{} // closed once the process has exited and its log is closed
-	// Valid once done is closed: why the process exited, and the error, if
-	// any, from closing its log.
+	done chan struct{} // closed after the process exits and its log closes
+	// The fields that follow are valid after done closes. They hold the
+	// reason why the process exited, and the error from the log's close, if
+	// there is one.
 	exitErr, logErr error
 }
 
-// startProcess starts name with args, passing it files as descriptors 3 and up.
+// startProcess starts name with args. It gives files to the process as
+// descriptors 3 and higher.
 func startProcess(dir, logPath string, env []string, files []*os.File, name string, args ...string) (*process, error) {
-	log, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644) // a restart appends
+	log, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644) // a restart adds to the end of the log
 	if err != nil {
 		return nil, err
 	}
@@ -193,9 +198,9 @@ func startProcess(dir, logPath string, env []string, files []*os.File, name stri
 }
 
 // stop sends SIGTERM to the process group, then SIGKILL after a grace
-// period, and waits for the process to exit. A process that had exited
-// before it was stopped is an error: instances run until the judge stops
-// them. Once stopped, how it exited doesn't matter.
+// period, and waits for the process to exit. If the process exited before
+// stop, stop returns an error, because instances must run until the judge
+// stops them. After stop, the exit status of the process doesn't matter.
 func (p *process) stop() error {
 	select {
 	case <-p.done:
@@ -209,7 +214,7 @@ func (p *process) stop() error {
 	for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); time.Sleep(50 * time.Millisecond) {
 		err := syscall.Kill(pgid, 0)
 		if errors.Is(err, syscall.ESRCH) {
-			break // the whole group is gone
+			break // no process of the group is left
 		}
 		if err != nil {
 			return err
@@ -222,7 +227,8 @@ func (p *process) stop() error {
 	return p.logErr
 }
 
-// signalGroup sends sig to a process group that may have exited already.
+// signalGroup sends sig to a process group. The group may have exited
+// already.
 func signalGroup(pgid int, sig syscall.Signal) error {
 	if err := syscall.Kill(pgid, sig); err != nil && !errors.Is(err, syscall.ESRCH) {
 		return fmt.Errorf("sending %v to process group %d: %w", sig, -pgid, err)

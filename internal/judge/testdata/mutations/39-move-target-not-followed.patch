@@ -1,0 +1,13 @@
+Mutation: a Move unfollows the old account without following the new one.
+
+--- a/app/boxes.py	2026-11-21 02:15:07.900607157 +0000
++++ b/app/boxes.py	2026-11-21 02:15:07.915860106 +0000
+@@ -1743,7 +1743,7 @@
+             select(models.Following).where(models.Following.ap_actor_id == new_actor_id)
+         )
+     ).scalar():
+-        await _send_follow(db_session, new_actor_id)
++        pass
+     else:
+         logger.info(f"Already following target {new_actor_id}")
+ 

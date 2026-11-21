@@ -9,9 +9,9 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-// Query runs a read-only query against an instance's database while it is
-// running. The database format is part of the compatibility contract
-// (ADR 0003), so scenarios may assert on it directly.
+// Query runs a read-only query on an instance's database while the instance
+// runs. The database format is part of the compatibility contract
+// (ADR 0003), so scenarios can check the database directly.
 func Query(i Instance, query string, args ...any) (_ []map[string]any, err error) {
 	path := filepath.Join(i.DataDir(), "microblogpub.db")
 	db, err := sql.Open("sqlite", "file:"+path+"?mode=ro&_pragma=busy_timeout(5000)")
@@ -50,9 +50,9 @@ func Query(i Instance, query string, args ...any) (_ []map[string]any, err error
 	return out, rows.Err()
 }
 
-// Exec writes to an instance's database while it runs. Scenarios use it only
-// to seed state the original tests seeded directly and that no interaction
-// can produce, such as a counter that has drifted.
+// Exec writes to an instance's database while the instance runs. Scenarios
+// use it only for a state that the original tests wrote directly, and that
+// no interaction can make. An example is a counter with an incorrect value.
 func Exec(i Instance, query string, args ...any) (err error) {
 	path := filepath.Join(i.DataDir(), "microblogpub.db")
 	db, err := sql.Open("sqlite", "file:"+path+"?_pragma=busy_timeout(5000)")

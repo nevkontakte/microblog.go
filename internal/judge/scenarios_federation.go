@@ -4,8 +4,8 @@ import (
 	"net/url"
 )
 
-// FederationScenarios cover the interactions the admin UI can trigger between
-// two instances, beyond what the original test suite exercised.
+// FederationScenarios test the interactions between two instances that the
+// admin UI can start. The original test suite doesn't test all of them.
 var FederationScenarios = []Scenario{
 	{Name: "post__visibility", Run: func(t *T) {
 		follow(t, t.A, t.B)
@@ -42,10 +42,11 @@ var FederationScenarios = []Scenario{
 
 		like := t.one(t.A, `SELECT ap_id FROM outbox WHERE ap_type = 'Like'`)["ap_id"].(string)
 		act(t, t.A, "undo", url.Values{"ap_object_id": {like}})
-		// BUG(port): the original ends at -1, not 0. Its Undo handler marks the
-		// Like deleted, then recounts the remaining likes and subtracts one more
-		// (app/boxes.py:1639-1645). The port reproduces this until parity, per
-		// the kit's bug-for-bug rule; the fix comes after (prompts/06).
+		// BUG(port): the original stops at -1, not 0. Its Undo handler marks
+		// the Like as deleted, then counts the remaining likes and subtracts
+		// one more (app/boxes.py:1639-1645). The port keeps this bug until
+		// parity, as the kit's bug-for-bug rule tells. The fix comes after
+		// parity (prompts/06).
 		t.waitRows(t.B, 1, `SELECT 1 FROM outbox WHERE ap_id = ? AND likes_count = -1`, note)
 		t.waitRows(t.B, 1, `SELECT 1 FROM notifications WHERE notification_type = 'UNDO_LIKE'`)
 		t.waitRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ? AND liked_via_outbox_object_ap_id IS NULL`, note)
@@ -95,8 +96,8 @@ var FederationScenarios = []Scenario{
 		t.waitRows(t.B, 1, `SELECT 1 FROM notifications WHERE notification_type = 'UNBLOCKED'`)
 	}},
 
-	// b drops everything from a blocked actor except Undo
-	// (app/boxes.py:2328-2330), so a's Follow goes unanswered.
+	// b ignores all activities from a blocked actor, except Undo
+	// (app/boxes.py:2328-2330). Thus a's Follow gets no answer.
 	{Name: "follow__peer_blocked_me", Run: func(t *T) {
 		blockedBy(t, t.A, t.B)
 		act(t, t.A, "follow", url.Values{"ap_actor_id": {BaseURL(t.B)}})
@@ -114,8 +115,8 @@ var FederationScenarios = []Scenario{
 		t.expectRows(t.B, 0, `SELECT 1 FROM notifications WHERE notification_type = 'MENTION'`)
 	}},
 
-	// b boosts a note by a third actor that a has never seen: both fetch it
-	// (app/boxes.py:287-299, 2112-2212).
+	// b boosts a note by a third actor that a doesn't know. a and b both
+	// fetch the note (app/boxes.py:287-299, 2112-2212).
 	{Name: "announce__third_party_note", Run: func(t *T) {
 		c := t.NewFake("c")
 		note := c.Note("Hello from c", asPublic)
@@ -124,19 +125,20 @@ var FederationScenarios = []Scenario{
 		follow(t, t.A, t.B)
 		act(t, t.B, "announce", url.Values{"ap_object_id": {id}})
 		t.waitRows(t.B, 1, `SELECT 1 FROM inbox WHERE ap_id = ? AND announced_via_outbox_object_ap_id IS NOT NULL`, id)
-		// a stores the Announce linked to the fetched Note, in its stream
-		// since a follows b (app/boxes.py:2196-2211).
+		// a stores the Announce with a link to the fetched Note. The
+		// Announce is in a's stream, because a follows b
+		// (app/boxes.py:2196-2211).
 		t.waitRows(t.A, 1, `SELECT 1 FROM inbox AS announce JOIN inbox AS note
 			ON announce.relates_to_inbox_object_id = note.id
 			WHERE announce.ap_type = 'Announce' AND announce.is_hidden_from_stream = 0
 			AND note.ap_id = ? AND note.ap_type = 'Note'`, id)
 	}},
 
-	// The original builds an Update's body when it sends it, not when it
-	// queues it, so whether b's first Update to a counts one answer or both
-	// depends on whether b processed the second vote before sending. Those
-	// two deliveries are left out of the comparison; expectPollUpdated
-	// checks that a applied them.
+	// The original makes the body of an Update when it sends the Update, not
+	// when it adds the Update to the queue. If b processed the second vote
+	// before the send, b's first Update to a counts the two answers.
+	// Otherwise, it counts one answer. The comparison ignores these two
+	// deliveries. expectPollUpdated checks that a applied them.
 	{Name: "poll__vote_any_of", Unstable: isUpdateTo("a"), Run: func(t *T) {
 		follow(t, t.A, t.B)
 		poll := postQuestion(t, t.B, "anyOf", 5, "A", "B", "C")
@@ -148,8 +150,8 @@ var FederationScenarios = []Scenario{
 		expectPollUpdated(t, t.A, poll, "anyOf", "A", "C")
 	}},
 
-	// Bookmarking an object a doesn't have fetches and stores it
-	// (app/admin.py:1068-1083).
+	// If a bookmarks an object that it doesn't have, a fetches and stores the
+	// object (app/admin.py:1068-1083).
 	{Name: "bookmark__unknown_object", Run: func(t *T) {
 		note := newPost(t, t.B, url.Values{"content": {"Hello"}})
 		t.expectRows(t.A, 0, `SELECT 1 FROM inbox WHERE ap_id = ?`, note)
@@ -160,8 +162,8 @@ var FederationScenarios = []Scenario{
 		t.expectRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ? AND is_bookmarked = 0`, note)
 	}},
 
-	// Liking an object a doesn't have fetches and stores it first
-	// (app/boxes.py:252-263).
+	// If a likes an object that it doesn't have, a first fetches and stores
+	// the object (app/boxes.py:252-263).
 	{Name: "like__unknown_object", Run: func(t *T) {
 		note := newPost(t, t.B, url.Values{"content": {"Hello"}})
 		act(t, t.A, "like", url.Values{"ap_object_id": {note}})
@@ -170,8 +172,8 @@ var FederationScenarios = []Scenario{
 		t.waitRows(t.B, 1, `SELECT 1 FROM outbox WHERE ap_id = ? AND likes_count = 1`, note)
 	}},
 
-	// Opening the reply form for an object a doesn't have fetches and stores
-	// it (app/admin.py:173-181).
+	// If a opens the reply form for an object that it doesn't have, a fetches
+	// and stores the object (app/admin.py:173-181).
 	{Name: "reply__unknown_object", Run: func(t *T) {
 		note := newPost(t, t.B, url.Values{"content": {"Hello"}})
 		resp, err := t.Client.Get(t.Ctx, BaseURL(t.A)+"/admin/new?in_reply_to="+url.QueryEscape(note), "")
@@ -181,8 +183,8 @@ var FederationScenarios = []Scenario{
 		t.expectRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ?`, note)
 	}},
 
-	// Hiding an actor's boosts is local state, but an unknown actor is
-	// fetched first (app/admin.py:968-993).
+	// The setting that hides an actor's boosts is local state. But a fetches
+	// an unknown actor first (app/admin.py:968-993).
 	{Name: "announces__hide_and_show", Run: func(t *T) {
 		act(t, t.A, "hide_announces", url.Values{"ap_actor_id": {BaseURL(t.B)}})
 		t.sawExchange("a", "GET", BaseURL(t.B)+"/", 200)
@@ -203,9 +205,9 @@ var FederationScenarios = []Scenario{
 		t.equal("featured after unpin", featured["totalItems"], float64(0))
 	}},
 
-	// A visitor of a's site follows a from their own account on b: a finds
-	// b's subscribe template by WebFinger and sends the visitor there
-	// (app/main.py:1190-1209).
+	// A visitor of a's site follows a from the visitor's own account on b. a
+	// finds b's subscribe template with WebFinger, and sends the visitor to
+	// it (app/main.py:1190-1209).
 	{Name: "remote_follow", Run: func(t *T) {
 		resp, err := t.Client.Post(t.Ctx, t.A, "/remote_follow", url.Values{"profile": {"b@b.test"}})
 		t.Check(err)
@@ -213,8 +215,8 @@ var FederationScenarios = []Scenario{
 	}},
 
 	// BUG(port): the original sends the visitor to a's profile, not to the
-	// object: post_remote_interaction formats the template with ID instead
-	// of ap_id (app/main.py:1233-1253).
+	// object. post_remote_interaction fills the template with ID in place of
+	// ap_id (app/main.py:1233-1253).
 	{Name: "remote_interaction", Run: func(t *T) {
 		note := newPost(t, t.A, url.Values{"content": {"Hello"}})
 		resp, err := t.Client.Post(t.Ctx, t.A, "/remote_interaction", url.Values{"profile": {"@b@b.test"}, "ap_id": {note}})

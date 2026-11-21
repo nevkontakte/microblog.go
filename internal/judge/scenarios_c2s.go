@@ -4,12 +4,13 @@ import (
 	"net/url"
 )
 
-// C2SScenarios judge ActivityPub client-to-server posting (POST /outbox,
-// app/main.py:635-675) as a client app uses it, with an access token. The
-// app is the visitor, so its exchanges are on the wire.
+// C2SScenarios test the ActivityPub client-to-server publication (POST
+// /outbox, app/main.py:635-675), as a client app uses it, with an access
+// token. The app is the visitor, so its exchanges are on the wire.
 var C2SScenarios = []Scenario{
-	// A Create of each audience: answered with the object and its URL, and
-	// stored and delivered with the visibility the audience implies.
+	// A Create for each audience. The instance answers with the object and
+	// its URL. It stores and delivers the object with the visibility that
+	// the audience gives.
 	{Name: "c2s__create", Run: func(t *T) {
 		follow(t, t.B, t.A)
 		token := grantToken(t, t.A, "create")
@@ -17,12 +18,12 @@ var C2SScenarios = []Scenario{
 		for _, c := range []struct {
 			content string
 			to, cc  []string
-			served  int // to an anonymous visitor
+			served  int // the status for an anonymous visitor
 		}{
 			{"Public", []string{public}, []string{followers}, 200},
 			{"Unlisted", []string{followers}, []string{public}, 200},
-			// BUG(port): a followers-only Create is posted as direct
-			// (app/main.py:651-656).
+			// BUG(port): the original publishes a followers-only Create as
+			// direct (app/main.py:651-656).
 			{"Followers only", []string{followers}, nil, 404},
 			{"Direct", []string{BaseURL(t.B)}, nil, 404},
 		} {
@@ -33,9 +34,10 @@ var C2SScenarios = []Scenario{
 		t.equal("visibilities", t.rows(t.A, `SELECT json_extract(ap_object, '$.content') AS content, visibility FROM outbox WHERE ap_type = 'Note' ORDER BY id`), []map[string]any{
 			{"content": "<p>Public</p>\n", "visibility": "PUBLIC"}, {"content": "<p>Unlisted</p>\n", "visibility": "UNLISTED"},
 			{"content": "<p>Followers only</p>\n", "visibility": "DIRECT"}, {"content": "<p>Direct</p>\n", "visibility": "DIRECT"}})
-		// BUG(port): the client's addressing is ignored past the visibility
-		// it implies. Recipients come from the content's mentions, so a
-		// direct Create to b reaches no one (app/boxes.py, send_create).
+		// BUG(port): the original uses the client's addressing only for the
+		// visibility. The recipients come from the mentions in the content,
+		// so a direct Create to b goes to no recipient (app/boxes.py,
+		// send_create).
 		inbox := BaseURL(t.B) + "/inbox"
 		t.equal("queued", t.rows(t.A, `SELECT json_extract(o.ap_object, '$.content') AS content, a.recipient FROM outgoing_activity a
 			JOIN outbox o ON o.id = a.outbox_object_id WHERE o.ap_type = 'Note' ORDER BY a.id`),
@@ -43,7 +45,7 @@ var C2SScenarios = []Scenario{
 		t.waitRows(t.B, 2, `SELECT 1 FROM inbox WHERE ap_type = 'Note'`)
 	}},
 
-	// A reply with a content warning, marked sensitive.
+	// A reply with a content warning. The reply is sensitive.
 	{Name: "c2s__reply", Run: func(t *T) {
 		follow(t, t.A, t.B)
 		follow(t, t.B, t.A)
@@ -57,7 +59,24 @@ var C2SScenarios = []Scenario{
 			AND json_extract(ap_object, '$.summary') = 'A warning' AND json_extract(ap_object, '$.sensitive')`, peer)
 	}},
 
-	// Posting needs a valid token (app/indieauth.py:468-476).
+	// A client app reads the inbox with a token: the collection and its first
+	// page. They list what b delivered (app/main.py:1092-1150).
+	{Name: "c2s__read_inbox", Run: func(t *T) {
+		follow(t, t.A, t.B)
+		post := newPost(t, t.B, url.Values{"content": {"From b"}})
+		t.waitRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ?`, post)
+		token := grantToken(t, t.A, "read")
+		inbox := BaseURL(t.A) + "/inbox"
+		t.equal("no token", visit(t, inbox, acceptAP).Status, 401)
+		collection := fetchWithToken(t, inbox, token)
+		t.equal("collection", collection.Status, 200)
+		t.equal("total", decode(t, collection)["totalItems"], float64(1))
+		page := fetchWithToken(t, inbox+"?page=true", token)
+		t.equal("page", page.Status, 200)
+		t.equal("items", itemIDs(decode(t, page)["orderedItems"]), []any{post + "/activity"})
+	}},
+
+	// A publication needs a valid token (app/indieauth.py:468-476).
 	{Name: "c2s__unauthorized", Run: func(t *T) {
 		create := c2sCreate(t.A, c2sNote("Not posted", []string{asPublic}, nil))
 		t.equal("no token", postJSON(t, BaseURL(t.A)+"/outbox", create, "").Status, 401)
@@ -65,9 +84,9 @@ var C2SScenarios = []Scenario{
 		t.expectRows(t.A, 0, `SELECT 1 FROM outbox WHERE ap_type = 'Note'`)
 	}},
 
-	// BUG(port): anything but a Create raises ValueError("TODO"), and a
-	// Create by another actor fails an assert: both a 500, not a 4xx
-	// (app/main.py:646-669).
+	// BUG(port): an activity that isn't a Create raises ValueError("TODO").
+	// A Create by a different actor fails an assert. The two errors give a
+	// 500, not a 4xx (app/main.py:646-669).
 	{Name: "c2s__unsupported", Run: func(t *T) {
 		post := newPost(t, t.A, url.Values{"content": {"Liked"}})
 		token := grantToken(t, t.A, "create")

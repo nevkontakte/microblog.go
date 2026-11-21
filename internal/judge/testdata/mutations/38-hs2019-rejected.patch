@@ -1,0 +1,13 @@
+Mutation: HTTP signatures with the algorithm hs2019 are rejected.
+
+--- a/app/httpsig.py	2026-11-21 02:15:07.878136477 +0000
++++ b/app/httpsig.py	2026-11-21 02:15:07.890049261 +0000
+@@ -191,7 +191,7 @@
+             is_from_blocked_server=True,
+         )
+ 
+-    if alg := hsig.get("algorithm") not in ["rsa-sha256", "hs2019"]:
++    if alg := hsig.get("algorithm") not in ["rsa-sha256"]:
+         logger.info(f"Unsupported HTTP sig algorithm: {alg}")
+         return HTTPSigInfo(
+             has_valid_signature=False,

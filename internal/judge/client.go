@@ -20,12 +20,12 @@ import (
 	"golang.org/x/net/html"
 )
 
-// Client is the judge's own HTTP client. It reaches instances through the
-// proxy, so its requests are recorded too, tagged "judge".
+// Client is the judge's own HTTP client. It sends requests to instances
+// through the proxy, so the proxy records them too, with the tag "judge".
 //
-// Admin actions go through the same HTTP endpoints and form fields as the
-// admin UI. Those endpoints are therefore part of the surface the judge
-// holds both implementations to.
+// Admin actions use the same HTTP endpoints and form fields as the admin
+// UI. Thus these endpoints are part of the interface that the judge compares
+// between the two implementations.
 type Client struct {
 	http *http.Client
 }
@@ -39,14 +39,15 @@ func NewClient(proxyAddr string, roots *x509.CertPool) *Client {
 		Jar:     must(cookiejar.New(nil)),
 		Timeout: Timeout,
 		CheckRedirect: func(*http.Request, []*http.Request) error {
-			return http.ErrUseLastResponse // redirects carry results, e.g. a new object's URL
+			return http.ErrUseLastResponse // redirects hold results, for example a new object's URL
 		},
 	}}
 }
 
-// csrfToken fetches a fresh CSRF token from a page that embeds one: the login
-// page before logging in, the new-post page after (the login page then
-// redirects).
+// csrfToken fetches a new CSRF token from a page that holds one:
+//   - Before the login, the login page.
+//   - After the login, the page for new posts, because the login page then
+//     redirects.
 func (c *Client) csrfToken(ctx context.Context, i Instance, page string) (string, error) {
 	url := BaseURL(i) + page
 	resp, err := c.Get(ctx, url, "")
@@ -59,9 +60,9 @@ func (c *Client) csrfToken(ctx context.Context, i Instance, page string) (string
 	return "", fmt.Errorf("no csrf_token on %s (status %d)", url, resp.Status)
 }
 
-// inputValue returns the value of the named <input> in page. Admin pages may
-// be rendered differently by the port (ADR 0013), so only the field counts,
-// not its markup.
+// inputValue returns the value of the named <input> in page. The port can
+// render admin pages differently (ADR 0003). Thus only the field is
+// important, not its markup.
 func inputValue(page []byte, name string) string {
 	z := html.NewTokenizer(bytes.NewReader(page))
 	for {
@@ -107,8 +108,8 @@ type File struct {
 	Data        []byte
 }
 
-// Act performs an admin action, e.g. Act(ctx, a, "follow", url.Values{"ap_actor_id": ...}),
-// and returns the redirect target.
+// Act does an admin action, and returns the redirect target. For example:
+// Act(ctx, a, "follow", url.Values{"ap_actor_id": ...}).
 func (c *Client) Act(ctx context.Context, i Instance, action string, form url.Values, files ...File) (string, error) {
 	if form.Get("redirect_url") == "" {
 		form.Set("redirect_url", BaseURL(i)+"/admin")
@@ -123,7 +124,7 @@ func (c *Client) Act(ctx context.Context, i Instance, action string, form url.Va
 	return resp.Header.Get("Location"), nil
 }
 
-// A Response is a fully read HTTP response.
+// A Response is an HTTP response that the client read completely.
 type Response struct {
 	Status int
 	Header http.Header
@@ -158,8 +159,8 @@ func (c *Client) GetAP(ctx context.Context, url string) (map[string]any, error) 
 	return obj, nil
 }
 
-// Post submits a multipart form, with a fresh CSRF token, to path on i,
-// which the judge must be logged in to.
+// Post sends a multipart form, with a new CSRF token, to path on i. The judge
+// must have an admin session on i.
 func (c *Client) Post(ctx context.Context, i Instance, path string, form url.Values, files ...File) (*Response, error) {
 	token, err := c.csrfToken(ctx, i, "/admin/new")
 	if err != nil {
@@ -204,7 +205,7 @@ func (c *Client) post(ctx context.Context, i Instance, path, token string, form 
 	return c.do(req)
 }
 
-// Send makes a request as an API client would, with the given headers.
+// Send makes a request with the given headers, as an API client does.
 func (c *Client) Send(ctx context.Context, method, url string, header http.Header, body []byte) (*Response, error) {
 	req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewReader(body))
 	if err != nil {

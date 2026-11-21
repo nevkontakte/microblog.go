@@ -1,0 +1,13 @@
+Mutation: a forwarded activity is trusted without checking its LD signature.
+
+--- a/app/boxes.py	2026-11-21 02:15:07.850986690 +0000
++++ b/app/boxes.py	2026-11-21 02:15:07.864598865 +0000
+@@ -2341,7 +2341,7 @@
+ 
+         is_sig_verified = False
+         try:
+-            is_sig_verified = await ldsig.verify_signature(db_session, raw_object)
++            is_sig_verified = True
+         except Exception:
+             logger.exception("Failed to verify LD sig")
+ 

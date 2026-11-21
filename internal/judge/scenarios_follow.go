@@ -4,8 +4,10 @@ import (
 	"net/url"
 )
 
-// FollowScenarios cover following between the two instances: automatic
-// acceptance, unfollowing, and manual approval either way.
+// FollowScenarios test follows between the two instances:
+//   - Automatic acceptance.
+//   - The end of a follow.
+//   - Manual approval, with acceptance or rejection.
 var FollowScenarios = []Scenario{
 	{Name: "follow", Run: func(t *T) {
 		follow(t, t.A, t.B)

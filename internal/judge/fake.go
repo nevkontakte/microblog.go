@@ -2,6 +2,7 @@ package judge
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"crypto"
 	"crypto/rand"
@@ -23,29 +24,29 @@ import (
 	"time"
 )
 
-// A Fake is a minimal remote actor under the judge's control, living at
-// https://<name>.test. It sends crafted activities that a microblog.pub peer
-// never would, as the original test suite's fixtures did, and later replays
-// captured Mastodon traffic. It keeps the protocol model small on purpose:
-// the paired instances, not the fake, are the main judge (ADR 0010).
+// A Fake is a minimal remote actor that the judge controls, at
+// https://<name>.test. It sends special activities that a microblog.pub peer
+// never sends, as the fixtures of the original test suite did. The fake keeps
+// its protocol model small on purpose. The pair, not the fake, is the main
+// judge (ADR 0010).
 type Fake struct {
 	Name        string
 	AlsoKnownAs []string
-	AutoAccept  bool // answer Follow with Accept
-	Gone        bool // answer every GET with 410, like a deleted account
+	AutoAccept  bool // answer each Follow with an Accept
+	Gone        bool // answer each GET with 410, as for a deleted account
 
-	t       *T // reports what goes wrong in the background
+	t       *T // reports the errors of background work
 	key     *rsa.PrivateKey
 	client  *http.Client
-	sending atomic.Int32 // Accepts being sent in the background
-	accepts atomic.Int32 // Accepts started, ever
+	sending atomic.Int32 // the number of Accepts that background work sends now
+	accepts atomic.Int32 // the number of Accepts that the fake started in total
 
 	mu       sync.Mutex
-	seq      int // numbers activity ids, so they are the same on every run
+	seq      int // gives numbers to activity ids, so the ids are the same in all runs
 	inbox    []map[string]any
 	objects  map[string]map[string]any
-	pages    map[string]string // HTML by URL
-	mentions []url.Values      // webmentions received, see ServeHTTP
+	pages    map[string]string // the HTML of each page, by URL
+	mentions []url.Values      // the webmentions that the fake received, see ServeHTTP
 }
 
 // NewFake creates a fake actor and puts it on t's network.
@@ -72,7 +73,7 @@ func (t *T) NewFake(name string) *Fake {
 	return f
 }
 
-// ID is the actor's id, also its base URL, as with microblog.pub.
+// ID is the actor's id. As with microblog.pub, the id is also the base URL.
 func (f *Fake) ID() string { return "https://" + f.Name + ".test" }
 
 // Inbox returns the activities delivered to the fake so far.
@@ -82,8 +83,8 @@ func (f *Fake) Inbox() []map[string]any {
 	return append([]map[string]any(nil), f.inbox...)
 }
 
-// Webmentions returns the webmentions sent to the fake's endpoint,
-// /webmention, so far: each with its source and target.
+// Webmentions returns the webmentions that instances sent to the fake's
+// endpoint, /webmention, so far. Each webmention has its source and target.
 func (f *Fake) Webmentions() []url.Values {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -97,16 +98,24 @@ func (f *Fake) Publish(obj map[string]any) {
 	f.objects[obj["id"].(string)] = obj
 }
 
-// PublishPage serves html at url, as a web page about an object.
+// PublishPage serves html at url, as the web page of an object.
 func (f *Fake) PublishPage(url, html string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.pages[url] = html
 }
 
-// Send delivers activity to inst's inbox, signed like Mastodon signs.
+// Send delivers activity to inst's inbox, with a signature in Mastodon's
+// form.
 func (f *Fake) Send(ctx context.Context, inst Instance, activity map[string]any) (*Response, error) {
 	return f.post(ctx, BaseURL(inst)+"/inbox", activity, signing{key: f.key})
+}
+
+// SendHS2019 delivers activity with an HTTP signature that names the
+// algorithm "hs2019", as some servers other than Mastodon do. The signature
+// is the same RSA-SHA256 signature with a different name (see signRequest).
+func (f *Fake) SendHS2019(ctx context.Context, inst Instance, activity map[string]any) (*Response, error) {
+	return f.post(ctx, BaseURL(inst)+"/inbox", activity, signing{key: f.key, algorithm: "hs2019"})
 }
 
 // SendUnsigned delivers activity without an HTTP signature.
@@ -114,21 +123,22 @@ func (f *Fake) SendUnsigned(ctx context.Context, inst Instance, activity map[str
 	return f.post(ctx, BaseURL(inst)+"/inbox", activity, signing{})
 }
 
-// SendBadDigest delivers activity with a validly signed Digest header that
-// doesn't match the body.
+// SendBadDigest delivers activity with a Digest header that doesn't match the
+// body. The HTTP signature over this header is correct.
 func (f *Fake) SendBadDigest(ctx context.Context, inst Instance, activity map[string]any) (*Response, error) {
 	return f.post(ctx, BaseURL(inst)+"/inbox", activity, signing{key: f.key, signedDigest: zeroDigest})
 }
 
-// SendWrongDigestHeader delivers activity signed over the body's real
-// digest, with a Digest header that doesn't match it.
+// SendWrongDigestHeader delivers activity with a signature over the body's
+// real digest, and with a Digest header that doesn't match the body.
 func (f *Fake) SendWrongDigestHeader(ctx context.Context, inst Instance, activity map[string]any) (*Response, error) {
 	return f.post(ctx, BaseURL(inst)+"/inbox", activity, signing{key: f.key, sentDigest: zeroDigest})
 }
 
 var zeroDigest = "SHA-256=" + base64.StdEncoding.EncodeToString(make([]byte, 32))
 
-// SendWrongKey delivers activity signed by a key that isn't the fake's.
+// SendWrongKey delivers activity with a signature from a key that isn't the
+// fake's key.
 func (f *Fake) SendWrongKey(ctx context.Context, inst Instance, activity map[string]any) (*Response, error) {
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -137,8 +147,9 @@ func (f *Fake) SendWrongKey(ctx context.Context, inst Instance, activity map[str
 	return f.post(ctx, BaseURL(inst)+"/inbox", activity, signing{key: key})
 }
 
-// Fetch GETs an ActivityPub object as the fake, with an HTTP signature if
-// signed, the way servers fetch objects whose visibility is restricted.
+// Fetch fetches an ActivityPub object as the fake. If signed is true, the
+// request has an HTTP signature, as servers use to fetch objects with
+// restricted visibility.
 func (f *Fake) Fetch(ctx context.Context, url string, signed bool) (*Response, error) {
 	var key *rsa.PrivateKey
 	if signed {
@@ -147,7 +158,8 @@ func (f *Fake) Fetch(ctx context.Context, url string, signed bool) (*Response, e
 	return f.fetch(ctx, url, key)
 }
 
-// FetchWrongKey GETs url signed by a key that isn't the fake's.
+// FetchWrongKey fetches url with a signature from a key that isn't the fake's
+// key.
 func (f *Fake) FetchWrongKey(ctx context.Context, url string) (*Response, error) {
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -171,11 +183,14 @@ func (f *Fake) fetch(ctx context.Context, url string, key *rsa.PrivateKey) (*Res
 	return f.do(req)
 }
 
-// signing says how post signs a request: not at all without a key, and
-// with the body's digest unless signedDigest replaces it. A sentDigest
-// replaces the Digest header after signing.
+// signing tells how post signs a request:
+//   - Without a key, post doesn't sign the request.
+//   - post signs the body's digest, or signedDigest if it isn't empty.
+//   - After the signature, sentDigest replaces the Digest header if it isn't
+//     empty.
 type signing struct {
 	key                      *rsa.PrivateKey
+	algorithm                string // the HTTP signature's algorithm parameter, rsa-sha256 if empty
 	signedDigest, sentDigest string
 }
 
@@ -196,7 +211,8 @@ func (f *Fake) post(ctx context.Context, inbox string, activity map[string]any, 
 		if s.signedDigest != "" {
 			req.Header.Set("Digest", s.signedDigest)
 		}
-		if err := f.sign(req, s.key, "(request-target) host date digest content-type"); err != nil {
+		algorithm := cmp.Or(s.algorithm, "rsa-sha256")
+		if err := signRequest(req, s.key, f.ID()+"#main-key", algorithm, "(request-target) host date digest content-type"); err != nil {
 			return nil, err
 		}
 		if s.sentDigest != "" {
@@ -218,6 +234,20 @@ func (f *Fake) do(req *http.Request) (_ *Response, err error) {
 
 // sign adds a draft-cavage HTTP signature with key over the given headers.
 func (f *Fake) sign(req *http.Request, key *rsa.PrivateKey, headers string) error {
+	return signRequest(req, key, f.ID()+"#main-key", "rsa-sha256", headers)
+}
+
+// signRequest adds a draft-cavage HTTP signature with key over the given
+// headers, in that order. The signature names keyID and algorithm.
+//
+// signRequest always signs with RSASSA-PKCS1-v1_5 and SHA-256, which
+// "rsa-sha256" names. The draft gives a different definition of "hs2019":
+// the algorithm that the key's metadata names. For an RSA key, that is
+// RSASSA-PSS with SHA-512 (draft-cavage-http-signatures-12, appendix E.2).
+// But servers send "hs2019" with the same RSA-SHA256 signature. The original
+// verifies all signatures with RSA-SHA256, and ignores the algorithm
+// (app/httpsig.py:79-83, 194).
+func signRequest(req *http.Request, key *rsa.PrivateKey, keyID, algorithm, headers string) error {
 	var lines []string
 	for _, h := range strings.Fields(headers) {
 		switch h {
@@ -234,8 +264,8 @@ func (f *Fake) sign(req *http.Request, key *rsa.PrivateKey, headers string) erro
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Signature", fmt.Sprintf(`keyId="%s#main-key",algorithm="rsa-sha256",headers="%s",signature="%s"`,
-		f.ID(), headers, base64.StdEncoding.EncodeToString(sig)))
+	req.Header.Set("Signature", fmt.Sprintf(`keyId="%s",algorithm="%s",headers="%s",signature="%s"`,
+		keyID, algorithm, headers, base64.StdEncoding.EncodeToString(sig)))
 	return nil
 }
 
@@ -278,7 +308,7 @@ func (f *Fake) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		f.mu.Unlock()
 		w.WriteHeader(http.StatusAccepted)
 		if f.AutoAccept && activity["type"] == "Follow" {
-			f.sending.Add(1) // before the Follow is answered, see settle
+			f.sending.Add(1) // before the fake answers the Follow, see settle
 			f.accepts.Add(1)
 			go func() {
 				defer f.sending.Add(-1)
@@ -346,8 +376,8 @@ func (f *Fake) accept(follow map[string]any) {
 	}
 }
 
-// Activity builds an activity from the fake, shaped like the original test
-// suite's factories (tests/factories.py).
+// Activity makes an activity from the fake, in the same shape as the
+// factories of the original test suite (tests/factories.py).
 func (f *Fake) Activity(typ string, object any) map[string]any {
 	f.mu.Lock()
 	f.seq++
@@ -362,10 +392,12 @@ func (f *Fake) Activity(typ string, object any) map[string]any {
 	}
 }
 
-// asPublic is the public collection, for addressing objects to everyone.
+// asPublic is the public collection. Address an object to it to make the
+// object public.
 const asPublic = "https://www.w3.org/ns/activitystreams#Public"
 
-// Note builds a Note by the fake, published now, addressed to to.
+// Note makes a Note by the fake, with the current time as its publication
+// time, addressed to to.
 func (f *Fake) Note(content string, to ...string) map[string]any {
 	note := f.Activity("Note", nil)
 	delete(note, "actor")
@@ -378,7 +410,7 @@ func (f *Fake) Note(content string, to ...string) map[string]any {
 	return note
 }
 
-// Create wraps obj in a Create activity, as tests/factories.py does.
+// Create puts obj in a Create activity, as tests/factories.py does.
 func (f *Fake) Create(obj map[string]any) map[string]any {
 	inner := make(map[string]any, len(obj))
 	for k, v := range obj {

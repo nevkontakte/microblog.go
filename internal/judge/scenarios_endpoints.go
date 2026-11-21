@@ -5,9 +5,10 @@ import (
 	"net/url"
 )
 
-// EndpointScenarios cover the ActivityPub documents an instance serves
-// (app/main.py, app/activitypub.py:118-163), fetched the way a remote server
-// fetches them: unauthenticated, or signed by a fake actor.
+// EndpointScenarios test the ActivityPub documents that an instance serves
+// (app/main.py, app/activitypub.py:118-163). They fetch the documents as a
+// remote server does: without authentication, or with a signature from a
+// fake actor.
 var EndpointScenarios = []Scenario{
 	{Name: "ap__actor_document",
 		Config: map[string]string{"a": `also_known_as = "https://old.test"`},
@@ -27,7 +28,8 @@ var EndpointScenarios = []Scenario{
 			t.equal("actor document", got, want)
 			key := actor["publicKey"].(map[string]any)
 			t.equal("publicKey", []any{key["id"], key["owner"]}, []any{base + "#main-key", base})
-			// The key on disk is the one served: existing keys keep working.
+			// The instance serves the key on disk, so current keys continue
+			// to work.
 			if !publicKey(t, key["publicKeyPem"].(string)).Equal(instanceKey(t, t.A)) {
 				t.Fatalf("publicKeyPem is not the public half of data/key.pem")
 			}
@@ -50,7 +52,7 @@ var EndpointScenarios = []Scenario{
 			self = self || (l.Rel == "self" && l.Type == "application/activity+json" && l.Href == BaseURL(t.A))
 		}
 		t.equal("self link", self, true)
-		resp, err = f.Fetch(t.Ctx, finger+url.QueryEscape(BaseURL(t.A)), false) // by actor id (app/main.py:1259-1263)
+		resp, err = f.Fetch(t.Ctx, finger+url.QueryEscape(BaseURL(t.A)), false) // find the actor by its id (app/main.py:1259-1263)
 		t.Check(err)
 		t.equal("by actor id", resp.Status, 200)
 		resp, err = f.Fetch(t.Ctx, finger+url.QueryEscape("acct:nobody@a.test"), false)
@@ -58,8 +60,8 @@ var EndpointScenarios = []Scenario{
 		t.equal("unknown account", resp.Status, 404)
 	}},
 
-	// Collections show the latest items first; the outbox only public notes,
-	// wrapped in their Create (app/main.py:388-632).
+	// Collections show the latest items first. The outbox shows only public
+	// notes, each in its Create (app/main.py:388-632).
 	{Name: "ap__collections", Run: func(t *T) {
 		f := t.NewFake("f")
 		g := t.NewFake("g")
@@ -96,15 +98,17 @@ var EndpointScenarios = []Scenario{
 			f := t.NewFake("f")
 			follow(t, t.B, t.A)
 			follow(t, t.A, t.B)
-			// An IndieAuth token shows them; that belongs to part 2c.
+			// The items are visible with an IndieAuth token. Part 2c tests
+			// that.
 			for _, path := range []string{"/followers", "/following"} {
 				coll := fetchAP(t, f, BaseURL(t.A)+path, false, 200)
 				t.equal(path, []any{coll["totalItems"], coll["first"], coll["orderedItems"]}, []any{float64(1), nil, nil})
 			}
 		}},
 
-	// Followers-only objects are served to followers, direct ones to their
-	// audience, by HTTP signature (app/main.py:706-742).
+	// The instance serves followers-only objects to followers, and direct
+	// objects to their audience. The HTTP signature identifies the
+	// requester (app/main.py:706-742).
 	{Name: "ap__object_acl", Run: func(t *T) {
 		f := t.NewFake("f")
 		stranger := t.NewFake("g")
@@ -123,10 +127,10 @@ var EndpointScenarios = []Scenario{
 			fetchAP(t, c.who, c.id, c.signed, c.status)
 			fetchAP(t, c.who, c.id+"/activity", c.signed, c.status)
 		}
-		// BUG(port): the signature isn't checked for objects. The keyId's
-		// owner counts as the signer even when the signature is invalid
-		// (app/httpsig.py:256-273), so anyone claiming to be a follower gets
-		// followers-only and direct objects.
+		// BUG(port): the original doesn't verify the signature for objects.
+		// The owner of the keyId is the signer, also if the signature is
+		// incorrect (app/httpsig.py:256-273). Thus all requesters that
+		// claim to be a follower receive followers-only and direct objects.
 		for _, id := range []string{followers, direct} {
 			resp, err := f.FetchWrongKey(t.Ctx, id)
 			t.Check(err)

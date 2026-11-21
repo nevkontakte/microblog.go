@@ -1,0 +1,12 @@
+Mutation: replies to local posts are not forwarded to followers.
+
+--- a/app/boxes.py	2026-11-21 02:15:07.926321109 +0000
++++ b/app/boxes.py	2026-11-21 02:15:07.938740059 +0000
+@@ -2006,6 +2006,7 @@
+             and replied_object.is_from_outbox
+             and replied_object.ap_type != "Question"
+             and parent_activity.has_ld_signature
++            and False
+         ):
+             logger.info("Forwarding Create activity as it's a local reply")
+             skip_actors = [parent_activity.actor]

@@ -13,22 +13,25 @@ import (
 
 // Python starts instances of the reference implementation.
 type Python struct {
-	Venv string // virtualenv holding the reference's dependencies
-	App  string // runnable copy of the reference, made by PreparePython
+	Venv string // the virtualenv with the reference's dependencies
+	App  string // the copy of the reference that PreparePython makes, ready to run
 
-	// baselineDB is a database migrated once by PreparePython. Fresh
-	// instances start from a copy: migrating takes about a second per
-	// instance, and every freshly migrated database is the same.
+	// baselineDB is a database that PreparePython migrates one time. Each new
+	// instance starts from a copy of it. A migration takes approximately one
+	// second for each instance, and all new migrated databases are the same.
 	baselineDB string
 }
 
-// PreparePython copies the reference implementation from src into dst,
-// applies patches to the copy (used to validate the judge against
-// deliberately broken code), and compiles its stylesheet, which the
-// reference expects to find in app/. The reference checkout itself stays
-// untouched.
+// PreparePython copies the reference implementation from src into dst, and
+// then does these steps on the copy:
+//  1. It applies patches. The patches break the code on purpose, to test the
+//     judge.
+//  2. It compiles the stylesheet into app/, where the reference reads it.
+//
+// PreparePython doesn't change the reference checkout.
 func PreparePython(src, dst, venv string, patches ...string) (*Python, error) {
-	// Both are used from child processes running in other directories.
+	// Child processes in other directories use the two paths, so they must
+	// be absolute.
 	dst, err := filepath.Abs(dst)
 	if err != nil {
 		return nil, err
@@ -83,8 +86,8 @@ func PreparePython(src, dst, venv string, patches ...string) (*Python, error) {
 	return py, nil
 }
 
-// link makes dir runnable as an instance of the copy: the code is shared,
-// the data is dir's own.
+// link makes dir ready to run as an instance of the copy. All instances use
+// the same code, but each dir has its own data.
 func (py *Python) link(dir string) error {
 	for _, f := range []string{"app", "alembic", "alembic.ini", "tasks.py"} {
 		err := os.Symlink(filepath.Join(py.App, f), filepath.Join(dir, f))
@@ -95,7 +98,7 @@ func (py *Python) link(dir string) error {
 	return nil
 }
 
-// migrate brings the database in dir/data up to the latest migration.
+// migrate applies all migrations to the database in dir/data.
 func (py *Python) migrate(ctx context.Context, dir string, env []string) error {
 	cmd := exec.CommandContext(ctx, filepath.Join(py.Venv, "bin", "alembic"), "upgrade", "head")
 	cmd.Dir, cmd.Env = dir, env
@@ -131,9 +134,9 @@ func (i *pythonInstance) Stop() error {
 	return errors.Join(errs...)
 }
 
-// Start runs one instance the way misc/supervisord.conf does: a web server
-// plus the incoming and outgoing activity workers. Starting again on the same
-// directory restarts the instance on its existing data.
+// Start runs one instance as misc/supervisord.conf does: a web server, and the
+// workers for incoming and outgoing activities. A second Start on the same
+// directory restarts the instance with its current data.
 func (py *Python) Start(ctx context.Context, s Spec) (_ Instance, err error) {
 	data, err := writeData(s)
 	if err != nil {
@@ -142,13 +145,13 @@ func (py *Python) Start(ctx context.Context, s Spec) (_ Instance, err error) {
 	if err := py.link(s.Dir); err != nil {
 		return nil, err
 	}
-	// A fixed hash seed: app/actor.py iterates over a set of URLs, and the
-	// order of requests on the wire must not change from run to run.
+	// The hash seed is fixed, because app/actor.py loops over a set of URLs,
+	// and the order of requests on the wire must be the same in all runs.
 	env := proxyEnv(s, "PYTHONHASHSEED=0")
 	bin := func(name string) string { return filepath.Join(py.Venv, "bin", name) }
 
-	// A fresh instance's database is a copy of the baseline; a restarted
-	// one's is migrated, as an upgrade would.
+	// A new instance's database is a copy of the baseline. Start migrates the
+	// database of a restarted instance, as an upgrade does.
 	db := filepath.Join(data, "microblogpub.db")
 	if _, err := os.Stat(db); errors.Is(err, fs.ErrNotExist) {
 		baseline, err := os.ReadFile(py.baselineDB)

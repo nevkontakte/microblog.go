@@ -9,38 +9,40 @@ import (
 	"time"
 )
 
-// A Scenario is one interaction between two instances, "a" and "b", each
-// started fresh for it.
+// A Scenario is one interaction between two instances, "a" and "b". Each
+// scenario starts a new pair.
 type Scenario struct {
 	Name string
-	// Config holds extra profile.toml lines per instance name.
+	// Config holds more profile.toml lines for each instance name.
 	Config map[string]string
-	// IncomingErrors is how many incoming activities are expected to fail
-	// processing, across both instances.
+	// IncomingErrors is the number of incoming activities that must fail in
+	// processing, on the two instances in total.
 	IncomingErrors int
-	// Unstable reports the wire records left out of the comparison: those
-	// whose content depends on timing in the original. Each use says why.
+	// Unstable reports the wire records that the comparison ignores. These
+	// are records whose content depends on timing in the original. Each
+	// scenario that uses Unstable tells why.
 	Unstable func(WireRecord) bool
 	Run      func(t *T)
 }
 
-// T is a scenario's handle on the running pair, in the style of testing.T.
+// T gives a scenario access to the running pair, as testing.T does for a
+// test.
 type T struct {
 	Ctx    context.Context
 	A, B   Instance
 	Client *Client
 	Proxy  *Proxy
 
-	// Visitor is an anonymous browser or feed reader: no session, no
-	// signature. Its exchanges are on the wire as "visitor", with bodies
-	// compared as asJSON keeps them.
+	// Visitor is an anonymous browser or feed reader, without a session or
+	// a signature. Its exchanges are on the wire with the tag "visitor". The
+	// comparison uses the part of their bodies that asJSON keeps.
 	Visitor *Client
 
 	impls map[string]Impl // by instance name
 	specs map[string]Spec
 	fakes []*Fake
 
-	mu     sync.Mutex // guards failed and log, which fakes also write from their goroutines
+	mu     sync.Mutex // protects failed and log, because fakes also write them from their goroutines
 	failed bool
 	log    []string
 }
@@ -51,8 +53,8 @@ func (t *T) Logf(format string, args ...any) {
 	t.log = append(t.log, fmt.Sprintf(format, args...))
 }
 
-// Errorf records a failure and lets the scenario go on. Unlike Fatalf, any
-// goroutine may call it.
+// Errorf records a failure, and the scenario continues. Unlike Fatalf, all
+// goroutines can call it.
 func (t *T) Errorf(format string, args ...any) {
 	t.Logf("FAIL: "+format, args...)
 	t.mu.Lock()
@@ -60,7 +62,7 @@ func (t *T) Errorf(format string, args ...any) {
 	t.failed = true
 }
 
-// Fatalf records a failure and ends the scenario.
+// Fatalf records a failure and stops the scenario.
 func (t *T) Fatalf(format string, args ...any) {
 	t.Errorf(format, args...)
 	runtime.Goexit()
@@ -73,28 +75,32 @@ func (t *T) Log() []string {
 	return slices.Clone(t.log)
 }
 
-// Failed reports whether the scenario has failed.
+// Failed reports whether the scenario failed.
 func (t *T) Failed() bool {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	return t.failed
 }
 
-// Check ends the scenario if err is not nil.
+// Check stops the scenario if err is not nil.
 func (t *T) Check(err error) {
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
 }
 
-// Timeout bounds every wait: Eventually, an instance becoming ready, and
-// each HTTP request the judge makes. It is a ceiling for a stuck run, not an
-// expectation of how fast things are: scenarios wait on state, never on time,
-// and a busy CI machine can be many times slower than a laptop.
+// Timeout is the maximum time of each wait:
+//   - Eventually.
+//   - The start of an instance.
+//   - Each HTTP request of the judge.
+//
+// Timeout stops a run that can't continue. It doesn't tell how fast a
+// correct run is. Scenarios wait for a state, never for a time, and a busy
+// CI machine can be much slower than a laptop.
 var Timeout = 2 * time.Minute
 
-// Eventually polls check until it returns nil, and fails the scenario with the
-// last error if that doesn't happen in time.
+// Eventually calls check again and again until check returns nil. If Timeout
+// passes first, Eventually fails the scenario with the last error.
 func (t *T) Eventually(what string, check func() error) {
 	deadline := time.Now().Add(Timeout)
 	for {
@@ -113,8 +119,9 @@ func (t *T) Eventually(what string, check func() error) {
 	}
 }
 
-// run executes the scenario body and reports whether it passed. The body
-// runs in its own goroutine, because Fatalf ends it with runtime.Goexit.
+// run runs the scenario body and reports whether it passed. The body runs in
+// its own goroutine, because Fatalf stops the goroutine with
+// runtime.Goexit.
 func (t *T) run(f func(*T)) bool {
 	var wg sync.WaitGroup
 	wg.Go(func() {
@@ -129,7 +136,7 @@ func (t *T) run(f func(*T)) bool {
 	return !t.Failed()
 }
 
-// All returns every scenario, in a stable order.
+// All returns all scenarios, in a fixed order.
 func All() []Scenario {
 	var all []Scenario
 	for _, group := range [][]Scenario{
@@ -147,6 +154,7 @@ func All() []Scenario {
 		MicropubScenarios,
 		WebmentionScenarios,
 		C2SScenarios,
+		MastodonScenarios,
 	} {
 		all = append(all, group...)
 	}

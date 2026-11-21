@@ -1,0 +1,13 @@
+Mutation: LD signatures are computed over the hashes in the wrong order.
+
+--- a/app/ldsig.py	2026-11-21 01:46:52.943602465 +0000
++++ b/app/ldsig.py	2026-11-21 01:46:52.965710065 +0000
+@@ -87,7 +87,7 @@
+         "created": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+     }
+     doc["signature"] = options
+-    to_be_signed = _options_hash(doc) + _doc_hash(doc)
++    to_be_signed = _doc_hash(doc) + _options_hash(doc)
+     if not key.privkey:
+         raise ValueError(f"missing privkey on key {key!r}")
+ 

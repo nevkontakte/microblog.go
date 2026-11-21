@@ -5,9 +5,12 @@
 //
 //	go run ./cmd/judge -venv $(cd reference/microblog.pub && poetry env info -p)
 //
-// It is a program rather than a `go test` suite because it drives long-lived
-// external processes chosen by flags, and because `go test` is reserved for
-// the port's unit tests (see docs/adr/0013-run-the-judge-as-a-program.md).
+// The judge is a program, not a `go test` suite, for two reasons:
+//   - It controls external processes that run for a long time, and flags
+//     select these processes.
+//   - `go test` is only for the port's unit tests.
+//
+// See docs/adr/0013-run-the-judge-as-a-program.md.
 package main
 
 import (
@@ -28,13 +31,13 @@ func main() {
 		reference = flag.String("reference", "reference/microblog.pub", "checkout of the Python original")
 		venv      = flag.String("venv", os.Getenv("MICROBLOGPUB_VENV"), "virtualenv with the original's dependencies (default $MICROBLOGPUB_VENV)")
 		work      = flag.String("work", "_judge", "directory for instances, logs and recordings")
-		run       = flag.String("run", "", "run only scenarios matching this regexp")
-		golden    = flag.String("golden", "internal/judge/testdata/golden", "directory of golden wire recordings")
-		update    = flag.Bool("update-golden", false, "write the golden wire recordings instead of comparing")
-		parallel  = flag.Int("parallel", runtime.NumCPU(), "how many scenarios to play at once")
-		patch     = flag.String("patch", "", "apply this patch to the Python original's copy, to check the judge catches it")
+		run       = flag.String("run", "", "run only the scenarios that match this regexp")
+		golden    = flag.String("golden", "internal/judge/testdata/golden", "directory of golden recordings")
+		update    = flag.Bool("update-golden", false, "write the golden recordings, and don't compare with them")
+		parallel  = flag.Int("parallel", runtime.NumCPU(), "the number of scenarios that play at the same time")
+		patch     = flag.String("patch", "", "apply this patch to the copy of the Python original, to check that the judge finds it")
 	)
-	flag.DurationVar(&judge.Timeout, "timeout", judge.Timeout, "ceiling for each wait; raise it on slow machines")
+	flag.DurationVar(&judge.Timeout, "timeout", judge.Timeout, "maximum time for each wait. Increase it on slow machines")
 	flag.Parse()
 	if *venv == "" {
 		fatalf("-venv is required: run `poetry env info -p` in %s", *reference)

@@ -23,26 +23,32 @@ type Result struct {
 
 // Options configure a run.
 type Options struct {
-	A, B Impl   // implementations for instances "a" and "b"
-	Work string // scratch directory for instances, logs and recordings
-	// Golden is the directory of golden wire recordings. With UpdateGolden,
-	// the run writes them instead of comparing against them.
+	A, B Impl   // the implementations for the instances "a" and "b"
+	Work string // the temporary directory for instances, logs and recordings
+	// Golden is the directory of golden recordings. With UpdateGolden, the
+	// run writes the golden recordings, and doesn't compare with them.
 	Golden       string
 	UpdateGolden bool
-	// Parallel is how many scenarios play at once; 1 if not set. Each has
-	// its own pair, proxy and directory, so they don't share state.
+	// Parallel is the number of scenarios that play at the same time. The
+	// default is 1. Each scenario has its own pair, proxy and directory, so
+	// scenarios don't share state.
 	Parallel int
 }
 
-// Run plays each scenario on a fresh pair. A scenario passes if its body
-// does and its wire recording matches the golden one. Each scenario gets its
-// own directory under Work, named after it and emptied before it starts,
-// holding both instances, their logs, every recorded exchange
-// (exchanges.json) and the normalized wire recording (wire.jsonl). Only a
-// restart reuses an instance's directory, within its scenario. The directory
-// is deleted once the scenario passes, and kept if it fails, for debugging.
+// Run plays each scenario on a new pair. A scenario passes if its body passes
+// and its wire is equal to the golden recording.
+//
+// Each scenario has its own directory under Work, with the scenario's name.
+// Run empties the directory before the scenario starts. The directory holds:
+//   - The two instances and their logs.
+//   - All recorded exchanges (exchanges.json).
+//   - The wire (wire.jsonl).
+//
+// Only a restart uses an instance's directory again, in the same scenario.
+// Run deletes the directory after the scenario passes. If the scenario
+// fails, Run keeps the directory for debugging.
 func Run(ctx context.Context, opts Options, scenarios []Scenario) []Result {
-	work, err := filepath.Abs(opts.Work) // instances run in their own directories
+	work, err := filepath.Abs(opts.Work) // instances run in their own directories, so the path must be absolute
 	if err != nil {
 		return []Result{{Name: "setup", Log: []string{err.Error()}}}
 	}
@@ -67,7 +73,7 @@ func Run(ctx context.Context, opts Options, scenarios []Scenario) []Result {
 	return results
 }
 
-// play runs one scenario on a fresh pair in dir and judges it.
+// play runs one scenario on a new pair in dir, and gives the result.
 func play(ctx context.Context, opts Options, dir string, sc Scenario) Result {
 	start := time.Now()
 	t, err := setUp(ctx, opts.A, opts.B, dir, sc)
@@ -109,8 +115,8 @@ func play(ctx context.Context, opts Options, dir string, sc Scenario) Result {
 	return Result{Name: sc.Name, Passed: passed, Log: t.Log(), Duration: time.Since(start)}
 }
 
-// checkWire compares a scenario's wire recording to the golden one, or
-// replaces the golden one when updating.
+// checkWire compares a scenario's wire with the golden recording. With
+// UpdateGolden, it replaces the golden recording.
 func (t *T) checkWire(opts Options, name string, wire []string) bool {
 	golden := filepath.Join(opts.Golden, name+".jsonl")
 	if opts.UpdateGolden {
@@ -152,8 +158,8 @@ func truncate(s string) string {
 	return s
 }
 
-// setUp starts a fresh pair for sc in dir. If anything fails, it stops what
-// it started.
+// setUp starts a new pair for sc in dir. If a step fails, setUp stops all
+// that it started.
 func setUp(ctx context.Context, implA, implB Impl, dir string, sc Scenario) (_ *T, err error) {
 	if err := os.RemoveAll(dir); err != nil {
 		return nil, err
@@ -220,7 +226,8 @@ func setUp(ctx context.Context, implA, implB Impl, dir string, sc Scenario) (_ *
 	return t, nil
 }
 
-// start starts the named instance from its spec and routes its host to it.
+// start starts the named instance from its spec, and routes the instance's
+// host to it.
 func (t *T) start(name string) (Instance, error) {
 	inst, err := t.impls[name].Start(t.Ctx, t.specs[name])
 	if err != nil {
@@ -265,7 +272,7 @@ func writeLines(path string, lines []string) error {
 	return os.WriteFile(path, []byte(b.String()), 0o644)
 }
 
-// Summary formats results for the terminal.
+// Summary makes a text of results for the terminal.
 func Summary(results []Result) (string, bool) {
 	var b strings.Builder
 	ok := true

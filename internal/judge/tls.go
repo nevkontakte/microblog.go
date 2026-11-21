@@ -14,8 +14,8 @@ import (
 	"time"
 )
 
-// A certAuthority issues certificates for the few https hosts the judge
-// network serves. Instances are told to trust only it.
+// A certAuthority issues certificates for the few https hosts on the judge's
+// network. Instances trust only this certificate authority.
 type certAuthority struct {
 	cert *x509.Certificate
 	key  *ecdsa.PrivateKey
@@ -46,7 +46,8 @@ func newCertAuthority() (*certAuthority, error) {
 	return &certAuthority{cert: cert, key: key, leaves: make(map[string]*tls.Certificate)}, err
 }
 
-// writePEM writes the CA certificate, for SSL_CERT_FILE and the like.
+// writePEM writes the CA certificate, for SSL_CERT_FILE and similar
+// variables.
 func (ca *certAuthority) writePEM(path string) error {
 	return os.WriteFile(path, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: ca.cert.Raw}), 0o644)
 }

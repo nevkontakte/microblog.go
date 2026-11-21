@@ -2,11 +2,30 @@ package judge
 
 import "net/url"
 
-// InboxEdgeScenarios cover the rest of save_to_inbox (app/boxes.py:2282-2541):
-// every branch of its dispatch, and the requests it rejects or drops.
+// InboxEdgeScenarios test the remaining parts of save_to_inbox
+// (app/boxes.py:2282-2541): all branches of its dispatch, and the requests
+// that it rejects or ignores.
 var InboxEdgeScenarios = []Scenario{
-	// The signed string uses the body's real digest (app/httpsig.py:234), so
-	// a Digest header that doesn't match fails the signature.
+	// A Follow and a Create with a signature that names the algorithm
+	// "hs2019", as some servers other than Mastodon send it. The original
+	// accepts the name, and verifies the signature as RSA-SHA256
+	// (app/httpsig.py:79-83, 194).
+	{Name: "inbox__hs2019_signature", Run: func(t *T) {
+		f := t.NewFake("f")
+		resp, err := f.SendHS2019(t.Ctx, t.A, f.Activity("Follow", BaseURL(t.A)))
+		t.Check(err)
+		t.equal("follow", resp.Status, 202)
+		t.waitRows(t.A, 1, `SELECT 1 FROM follower WHERE ap_actor_id = ?`, f.ID())
+
+		create := f.Create(f.Note("Hello", BaseURL(t.A)))
+		resp, err = f.SendHS2019(t.Ctx, t.A, create)
+		t.Check(err)
+		t.equal("post", resp.Status, 202)
+		t.waitRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ?`, objectID(t, create))
+	}},
+
+	// The signed string uses the body's real digest (app/httpsig.py:234). Thus
+	// the signature fails if it covers a Digest header that doesn't match.
 	{Name: "inbox__bad_digest", Run: func(t *T) {
 		f := t.NewFake("f")
 		resp, err := f.SendBadDigest(t.Ctx, t.A, f.Activity("Follow", BaseURL(t.A)))
@@ -15,13 +34,13 @@ var InboxEdgeScenarios = []Scenario{
 		t.expectRows(t.A, 0, `SELECT 1 FROM incoming_activity`)
 	}},
 
-	// The other half: the Digest header itself is never compared to the
-	// body (app/httpsig.py:41-57), so a wrong header on a request signed over
-	// the real digest is accepted.
+	// The other half: the original never compares the Digest header with the
+	// body (app/httpsig.py:41-57). Thus it accepts an incorrect header if the
+	// signature covers the real digest.
 	//
-	// BUG(port): a server should reject a Digest header that doesn't match
-	// the body (RFC 3230), as Mastodon does. Nothing unsigned gets in, since
-	// the signature covers the real digest.
+	// BUG(port): a server must reject a Digest header that doesn't match the
+	// body (RFC 3230), as Mastodon does. But no unsigned content gets in,
+	// because the signature covers the real digest.
 	{Name: "inbox__digest_header_ignored", Run: func(t *T) {
 		f := t.NewFake("f")
 		follow := f.Activity("Follow", BaseURL(t.A))
@@ -50,8 +69,8 @@ var InboxEdgeScenarios = []Scenario{
 			t.expectRows(t.A, 0, `SELECT 1 FROM incoming_activity`)
 		}},
 
-	// python-federation sends the actor itself to announce a profile change
-	// (app/boxes.py:2287-2304).
+	// python-federation sends the actor document, without an activity, to
+	// tell about a profile change (app/boxes.py:2287-2304).
 	{Name: "inbox__actor_payload", Run: func(t *T) {
 		f := t.NewFake("f")
 		actor := f.actor()
@@ -60,7 +79,8 @@ var InboxEdgeScenarios = []Scenario{
 		t.waitAllProcessed(t.A, 1)
 		t.expectRows(t.A, 1, `SELECT 1 FROM actor WHERE ap_id = ? AND json_extract(ap_actor, '$.name') = 'Renamed f'`, f.ID())
 
-		// Someone else's actor is ignored (app/boxes.py:2300-2304).
+		// The instance ignores the actor document of a different actor
+		// (app/boxes.py:2300-2304).
 		g := t.NewFake("g")
 		other := g.actor()
 		other["name"] = "Renamed g"
@@ -80,8 +100,8 @@ var InboxEdgeScenarios = []Scenario{
 		t.expectRows(t.A, 1, `SELECT 1 FROM actor WHERE ap_id = ? AND json_extract(ap_actor, '$.name') = 'Renamed f'`, f.ID())
 	}},
 
-	// An object without an id is transient; Add and Remove are dropped
-	// (app/boxes.py:2266-2278, 2321-2323).
+	// An object without an id is transient. The instance ignores Add and
+	// Remove without an id (app/boxes.py:2266-2278, 2321-2323).
 	{Name: "inbox__transient_object", Run: func(t *T) {
 		f := t.NewFake("f")
 		add := f.Activity("Add", f.ID()+"/note/1")
@@ -92,9 +112,11 @@ var InboxEdgeScenarios = []Scenario{
 		t.expectRows(t.A, 0, `SELECT 1 FROM inbox`)
 	}},
 
-	// A blocked actor's Undo still goes through; anything else is dropped
-	// (app/boxes.py:2325-2330). BUG(port): undoing the Like leaves
-	// likes_count at -1, as in like__and_undo (app/boxes.py:1639-1645).
+	// The instance accepts an Undo from a blocked actor, and ignores all other
+	// activities from that actor (app/boxes.py:2325-2330).
+	//
+	// BUG(port): the Undo of the Like sets likes_count to -1, as in
+	// like__and_undo (app/boxes.py:1639-1645).
 	{Name: "inbox__blocked_actor_undo", Run: func(t *T) {
 		f := t.NewFake("f")
 		note := newPost(t, t.A, url.Values{"content": {"Hello"}})
@@ -127,8 +149,9 @@ var InboxEdgeScenarios = []Scenario{
 		t.expectRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ?`, create["id"])
 	}},
 
-	// The Create's actor must be the object's (app/boxes.py:1834-1836); the
-	// failure is recorded and nothing is stored.
+	// The actor of the Create must be the object's actor
+	// (app/boxes.py:1834-1836). The instance records the failure and stores
+	// nothing.
 	{Name: "inbox__create_actor_mismatch", IncomingErrors: 1, Run: func(t *T) {
 		f := t.NewFake("f")
 		g := t.NewFake("g")
@@ -140,8 +163,8 @@ var InboxEdgeScenarios = []Scenario{
 		t.expectRows(t.A, 0, `SELECT 1 FROM inbox WHERE ap_type IN ('Create', 'Note')`)
 	}},
 
-	// Honk propagates replies with Read; the object is fetched and stored
-	// (app/boxes.py:1867-1898).
+	// Honk sends replies to more servers with Read. The instance fetches and
+	// stores the object (app/boxes.py:1867-1898).
 	{Name: "inbox__read_activity", Run: func(t *T) {
 		f := t.NewFake("f")
 		g := t.NewFake("g")
@@ -169,8 +192,8 @@ var InboxEdgeScenarios = []Scenario{
 			AND updated_at > created_at`, note["id"])
 	}},
 
-	// An Update of an object the instance doesn't have is dropped: an edit
-	// doesn't create the object (app/boxes.py:1791-1795).
+	// The instance ignores an Update of an object that it doesn't have. An
+	// edit doesn't make the object (app/boxes.py:1791-1795).
 	{Name: "inbox__update_unknown_note", Run: func(t *T) {
 		f := t.NewFake("f")
 		followFake(t, t.A, f)
@@ -181,8 +204,8 @@ var InboxEdgeScenarios = []Scenario{
 		t.expectRows(t.A, 0, `SELECT 1 FROM inbox WHERE ap_id = ?`, note["id"])
 	}},
 
-	// Only actors and a few object types can be updated; an Update of any
-	// other type is dropped, even for an object the instance has
+	// The instance updates only actors and a few object types. It ignores an
+	// Update of a different type, also for an object that it has
 	// (app/boxes.py:1783-1808).
 	{Name: "inbox__update_unsupported_type", Run: func(t *T) {
 		f := t.NewFake("f")
@@ -219,7 +242,7 @@ var InboxEdgeScenarios = []Scenario{
 		undo := f.Activity("Undo", f.ID()+"/like/99")
 		send(t, f, t.A, undo)
 		t.waitProcessed(t.A, undo["id"])
-		t.expectRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ? AND ap_type = 'Undo'`, undo["id"]) // stored before dispatch
+		t.expectRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ? AND ap_type = 'Undo'`, undo["id"]) // the instance stores the Undo before the dispatch
 		t.expectRows(t.A, 0, `SELECT 1 FROM notifications`)
 	}},
 
@@ -233,8 +256,8 @@ var InboxEdgeScenarios = []Scenario{
 		t.expectRows(t.A, 0, `SELECT 1 FROM notifications`)
 	}},
 
-	// Reactions are unsupported: kept when they target a's object, dropped
-	// otherwise (app/boxes.py:2504-2513).
+	// The original doesn't support reactions. It keeps a reaction to an
+	// object of a, and ignores other reactions (app/boxes.py:2504-2513).
 	{Name: "inbox__emoji_react", Run: func(t *T) {
 		f := t.NewFake("f")
 		note := newPost(t, t.A, url.Values{"content": {"Hello"}})
@@ -249,7 +272,7 @@ var InboxEdgeScenarios = []Scenario{
 		t.equal("reactions kept", t.one(t.A, `SELECT ap_id FROM inbox WHERE ap_type = 'EmojiReact'`)["ap_id"], known["id"])
 	}},
 
-	// PeerTube's View is dropped (app/boxes.py:2530-2532).
+	// The instance ignores PeerTube's View (app/boxes.py:2530-2532).
 	{Name: "inbox__view", Run: func(t *T) {
 		f := t.NewFake("f")
 		view := f.Activity("View", f.ID()+"/video/1")
