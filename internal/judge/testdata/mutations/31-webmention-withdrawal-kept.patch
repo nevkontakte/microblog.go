@@ -1,0 +1,12 @@
+Mutation: a withdrawn webmention stays.
+
+--- a/app/webmentions.py	2026-11-20 22:43:42.534729612 +0000
++++ b/app/webmentions.py	2026-11-20 22:43:42.548022699 +0000
+@@ -111,7 +111,6 @@
+         logger.warning(f"target {target=} not found in source")
+         if existing_webmention_in_db:
+             logger.info("Deleting existing Webmention")
+-            existing_webmention_in_db.is_deleted = True
+             await db_session.flush()
+ 
+             # Revert side effects

@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"image"
 	"image/png"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -617,4 +618,181 @@ func smallPNG() []byte {
 		panic(err) // encoding to memory can't fail
 	}
 	return b.Bytes()
+}
+
+// Client apps: IndieAuth, Micropub and other APIs, as a third-party client
+// calls them. Their requests are the visitor's, so they are on the wire.
+
+// request makes a client app's request to url with header.
+func request(t *T, method, url string, header http.Header, body []byte) *Response {
+	resp, err := t.Visitor.Send(t.Ctx, method, url, header, body)
+	t.Check(err)
+	return resp
+}
+
+// postForm sends form to url as a client app, with authorization if set.
+func postForm(t *T, url string, form url.Values, authorization string) *Response {
+	header := http.Header{"Content-Type": {"application/x-www-form-urlencoded"}}
+	if authorization != "" {
+		header.Set("Authorization", authorization)
+	}
+	return request(t, http.MethodPost, url, header, []byte(form.Encode()))
+}
+
+// postJSON sends v as JSON to url as a client app, with authorization if set.
+func postJSON(t *T, url string, v any, authorization string) *Response {
+	header := http.Header{"Content-Type": {"application/json"}}
+	if authorization != "" {
+		header.Set("Authorization", authorization)
+	}
+	return request(t, http.MethodPost, url, header, must(json.Marshal(v)))
+}
+
+// bearer is the Authorization header carrying an access token.
+func bearer(token string) string { return "Bearer " + token }
+
+// fetchWithToken fetches an ActivityPub document from url as the holder of
+// an access token.
+func fetchWithToken(t *T, url, token string) *Response {
+	return request(t, http.MethodGet, url, http.Header{"Accept": {acceptAP}, "Authorization": {bearer(token)}}, nil)
+}
+
+// decode parses resp's JSON body, failing the scenario if it isn't JSON.
+func decode(t *T, resp *Response) map[string]any {
+	var v map[string]any
+	if err := json.Unmarshal(resp.Body, &v); err != nil {
+		t.Fatalf("%d response isn't a JSON object: %v: %.200q", resp.Status, err, resp.Body)
+	}
+	return v
+}
+
+// stringField returns v's field key, failing the scenario if it isn't a
+// string.
+func stringField(t *T, v map[string]any, key string) string {
+	s, ok := v[key].(string)
+	if !ok {
+		t.Fatalf("%s is %#v, not a string", key, v[key])
+	}
+	return s
+}
+
+// registerClient registers an OAuth client app on i (RFC 7591) and returns
+// its id and secret.
+func registerClient(t *T, i Instance, redirectURI string) (id, secret string) {
+	body := must(json.Marshal(map[string]any{"client_name": "Judge app", "redirect_uris": redirectURI}))
+	resp := request(t, http.MethodPost, BaseURL(i)+"/oauth/register", http.Header{"Content-Type": {"application/json"}}, body)
+	t.equal("registration", resp.Status, 201)
+	client := decode(t, resp)
+	return stringField(t, client, "client_id"), stringField(t, client, "client_secret")
+}
+
+// pkce returns a code verifier and its S256 challenge (RFC 7636).
+func pkce(verifier string) (string, string) {
+	sum := sha256.Sum256([]byte(verifier))
+	return verifier, base64.RawURLEncoding.EncodeToString(sum[:])
+}
+
+// approve has i's admin approve clientID's authorization request on the
+// consent page, and returns where the browser is sent: redirectURI with the
+// code, the state and the issuer.
+func approve(t *T, i Instance, clientID, redirectURI, challenge string, scopes ...string) *url.URL {
+	resp, err := t.Client.Post(t.Ctx, i, "/admin/indieauth", url.Values{
+		"client_id": {clientID}, "redirect_uri": {redirectURI}, "state": {"judge-state"}, "scopes": scopes,
+		"code_challenge": {challenge}, "code_challenge_method": {"S256"}, "me": {BaseURL(i) + "/"},
+	})
+	t.Check(err)
+	// A page that redirects with a Refresh header, as the CSP forbids
+	// redirecting a form submission to another origin (app/redirect.py).
+	t.equal("approval", resp.Status, 200)
+	target, ok := strings.CutPrefix(resp.Header.Get("Refresh"), "0;url=")
+	if !ok {
+		t.Fatalf("approval doesn't redirect: Refresh %q", resp.Header.Get("Refresh"))
+	}
+	u, err := url.Parse(target)
+	t.Check(err)
+	return u
+}
+
+// redeemCode exchanges an authorization code at i's token endpoint.
+func redeemCode(t *T, i Instance, clientID, redirectURI, code, verifier string) *Response {
+	return postForm(t, BaseURL(i)+"/token", url.Values{"grant_type": {"authorization_code"}, "code": {code},
+		"client_id": {clientID}, "redirect_uri": {redirectURI}, "code_verifier": {verifier}}, "")
+}
+
+// refresh exchanges a refresh token at i's token endpoint.
+func refresh(t *T, i Instance, clientID, refreshToken string) *Response {
+	return postForm(t, BaseURL(i)+"/token", url.Values{"grant_type": {"refresh_token"},
+		"refresh_token": {refreshToken}, "client_id": {clientID}}, "")
+}
+
+// introspect asks i about token as the registered client (RFC 7662).
+func introspect(t *T, i Instance, clientID, secret, token string) map[string]any {
+	resp := postForm(t, BaseURL(i)+"/token_introspection", url.Values{"token": {token}}, basicAuth(clientID, secret))
+	t.equal("introspection", resp.Status, 200)
+	return decode(t, resp)
+}
+
+// basicAuth is the Authorization header of HTTP Basic authentication.
+func basicAuth(user, password string) string {
+	return "Basic " + base64.StdEncoding.EncodeToString([]byte(user+":"+password))
+}
+
+// revoke revokes token at i (RFC 7009).
+func revoke(t *T, i Instance, token string) {
+	t.equal("revocation", postForm(t, BaseURL(i)+"/revoke_token", url.Values{"token": {token}}, "").Status, 200)
+}
+
+// objectField returns v's field key, failing the scenario if it isn't a
+// JSON object.
+func objectField(t *T, v map[string]any, key string) map[string]any {
+	o, ok := v[key].(map[string]any)
+	if !ok {
+		t.Fatalf("%s is %#v, not an object", key, v[key])
+	}
+	return o
+}
+
+// grantToken has a client app registered on i get an access token with
+// scopes: the IndieAuth flow that indieauth__authorization_code judges step
+// by step, as the setup of a scenario that uses the token.
+func grantToken(t *T, i Instance, scopes ...string) string {
+	const redirectURI = "https://app.test/callback"
+	clientID, _ := registerClient(t, i, redirectURI)
+	verifier, challenge := pkce("judge-code-verifier-0123456789abcdef0123456789")
+	code := approve(t, i, clientID, redirectURI, challenge, scopes...).Query().Get("code")
+	resp := redeemCode(t, i, clientID, redirectURI, code, verifier)
+	t.equal("token status", resp.Status, 200)
+	return stringField(t, decode(t, resp), "access_token")
+}
+
+// sendWebmention tells i, as a site would, that source mentions target.
+func sendWebmention(t *T, i Instance, source, target string) *Response {
+	return postForm(t, BaseURL(i)+"/webmentions", url.Values{"source": {source}, "target": {target}}, "")
+}
+
+// mentionPage is the HTML of an h-entry at source, by an author with a name
+// and a photo, that links to target with class kind: u-in-reply-to,
+// u-like-of, u-repost-of, or none for a plain mention.
+func mentionPage(source, target, kind string) string {
+	return `<html><body><div class="h-entry">` +
+		`<div class="p-author h-card"><img class="u-photo" src="/photo.png" alt=""><span class="p-name">Judge site</span></div>` +
+		`<p class="e-content">About <a class="` + kind + `" href="` + target + `">this post</a></p>` +
+		`<a class="u-url" href="` + source + `">Permalink</a></div></body></html>`
+}
+
+// c2sNote is a Note as a client app posts it, addressed to to and cc
+// (left out if empty).
+func c2sNote(content string, to, cc []string) map[string]any {
+	note := map[string]any{"type": "Note", "content": content, "to": to}
+	if len(cc) > 0 {
+		note["cc"] = cc
+	}
+	return note
+}
+
+// c2sCreate is a Create of note by i's actor, as a client app posts it to
+// i's outbox.
+func c2sCreate(i Instance, note map[string]any) map[string]any {
+	return map[string]any{"@context": "https://www.w3.org/ns/activitystreams", "type": "Create",
+		"actor": BaseURL(i), "object": note}
 }

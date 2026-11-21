@@ -1,0 +1,13 @@
+Mutation: the outbox accepts posts without an access token.
+
+--- a/app/indieauth.py	2026-11-20 22:52:09.578077886 +0000
++++ b/app/indieauth.py	2026-11-20 22:52:09.594440830 +0000
+@@ -471,7 +471,7 @@
+ ) -> AccessTokenInfo:
+     maybe_access_token_info = await check_access_token(request, db_session)
+     if not maybe_access_token_info:
+-        raise HTTPException(status_code=401, detail="access token required")
++        pass
+ 
+     return maybe_access_token_info
+ 

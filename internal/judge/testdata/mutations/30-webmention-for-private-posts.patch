@@ -1,0 +1,13 @@
+Mutation: followers-only posts send webmentions.
+
+--- a/app/boxes.py	2026-11-20 22:43:42.511523310 +0000
++++ b/app/boxes.py	2026-11-20 22:43:42.522886639 +0000
+@@ -727,7 +727,7 @@
+         await new_outgoing_activity(db_session, rcp, outbox_object.id)
+ 
+     # If the note is public, check if we need to send any webmentions
+-    if visibility == ap.VisibilityEnum.PUBLIC:
++    if True:
+         possible_targets = await opengraph.external_urls(db_session, outbox_object)
+         logger.info(f"webmentions possible targert {possible_targets}")
+         for target in possible_targets:

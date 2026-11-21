@@ -387,3 +387,144 @@ scenarios, passed twice in a row (297 s and 282 s, four scenarios at a time).
 | 20 | Tag pages list followers-only posts | `public__visibility` |
 
 6 of 6 caught.
+
+## Part 2c: client protocols — IndieAuth
+
+`scenarios_indieauth.go` judges the authorization server (`app/indieauth.py`) as a third-party
+app uses it. The app is the `visitor`, so its exchanges are on the wire; tokens, client secrets
+and their timestamps are masked. The admin's consent is the one step a browser takes, through
+the judge's logged-in client.
+
+| Scenario | Judges |
+|---|---|
+| `indieauth__discovery` | The authorization server metadata |
+| `indieauth__authorization_code` | Registration (RFC 7591), consent with state and issuer, code redemption with PKCE, introspection, a token unlocking the outbox and a followers-only post, refresh, and revocation |
+| `indieauth__rejected_codes` | A code reused, redeemed for another redirect URI or by another client, unknown, older than two minutes, or granting no scope: each `invalid_grant` |
+| `indieauth__token_expiry` | An access token older than an hour is inactive and unlocks nothing |
+| `indieauth__introspection_auth` | Introspection answers only the token's own client, and only with its secret |
+| `indieauth__client_url` | An unregistered app named by its URL: the consent page fetches its `h-app` |
+| `indieauth__hidden_collections` | A token sees the followers and following an instance hides |
+
+**Found in the original,** marked `BUG(port)`:
+
+- **Security:** the PKCE verifier is never checked against the challenge
+  (`app/indieauth.py:191-227` takes it and ignores it), so an intercepted code is redeemable
+  without it. Kept until parity per ADR 0013; worth fixing first after it.
+- A refresh token used twice raises `ValueError`: a 500, not `invalid_grant`
+  (`app/indieauth.py:318-319`). So does an unknown grant type.
+- Also pinned, without a marker since it's a TODO rather than a bug: a token's scopes are never
+  checked; any token unlocks every private object (`app/main.py:719`).
+
+**Clean run:** 7/7 pass, recording the goldens, and again against them.
+
+**Mutations,** run on the IndieAuth scenarios:
+
+| # | Mutation | Caught by |
+|---|---|---|
+| 21 | Access tokens never expire | `indieauth__token_expiry` |
+| 22 | Revoked access tokens stay valid | `indieauth__authorization_code` |
+| 23 | A code can be redeemed more than once | `indieauth__rejected_codes` |
+| 24 | A code is redeemed for any redirect URI | `indieauth__rejected_codes` |
+
+4 of 4 caught.
+
+## Part 2c: client protocols — Micropub
+
+`scenarios_micropub.go` judges the Micropub endpoint (`app/micropub.py`) as a client app uses
+it, with a token it was granted through IndieAuth (`grantToken`, the flow
+`indieauth__authorization_code` judges step by step, as setup).
+
+| Scenario | Judges |
+|---|---|
+| `micropub__create` | A post from a form, from JSON, and with the token in the form: 201, served at its `Location`, delivered to followers |
+| `micropub__query` | `q=config`, `q=source` (the Markdown source), and the source of an unknown post |
+| `micropub__delete` | A deleted post is gone and its deletion reaches followers |
+| `micropub__update` | See below |
+| `micropub__unauthorized` | Create, delete and update each need their scope; no token, or an unknown one, is refused |
+| `micropub__invalid` | An `h-card`, an unsupported action, an unknown post |
+
+**Found in the original,** marked `BUG(port)`: an update answers 200 and changes nothing
+(`app/micropub.py:104-112`).
+
+**Judge fix on the way:** the masker missed ids inside URL-encoded query values
+(`q=source&url=…`), which made those goldens differ from run to run. The full suite (118
+scenarios) still passes against its goldens.
+
+**Clean run:** 6/6 pass, recording the goldens, and again against them.
+
+**Mutations,** run on the Micropub scenarios:
+
+| # | Mutation | Caught by |
+|---|---|---|
+| 25 | Micropub creates posts without the `create` scope | `micropub__unauthorized` |
+| 26 | A post deleted through Micropub isn't deleted for followers | `micropub__delete` |
+| 27 | Micropub reads JSON content as a form | `micropub__create` |
+| 28 | Micropub returns a post's HTML as its source | `micropub__query` |
+
+4 of 4 caught.
+
+## Part 2c: client protocols — Webmention
+
+`scenarios_webmention.go` judges Webmention both ways (`app/webmentions.py`,
+`app/utils/webmentions.py`). Incoming mentions are sent by the visitor, about pages a fake
+serves; outgoing ones reach a fake's new endpoint, `/webmention`, which records each mention's
+source and target.
+
+| Scenario | Judges |
+|---|---|
+| `webmention__incoming` | A plain mention, a reply, a like and a repost: each fetched and verified, counted by kind, shown on the post's page |
+| `webmention__update` | A source that stops linking withdraws its mention and its like; linking again restores both |
+| `webmention__article` | An article mentioned by its page's URL |
+| `webmention__invalid` | Source equal to target, an unknown target, a source that doesn't link, URLs that aren't: each 400, nothing stored |
+| `webmention__gone_source` | See below |
+| `webmention__outgoing` | A public post sends one mention to the page it links to, found from the page's `<link rel="webmention">`; a followers-only post sends none |
+
+**Found in the original,** marked `BUG(port)`: a mention whose source is gone (404 or 410)
+fails with a 500, not a withdrawal: the handler reads the fetch's result, which the 404 left
+unset (`app/webmentions.py:97-104`).
+
+**Clean run:** 6/6 pass, recording the goldens, and again against them.
+
+**Mutations,** run on the Webmention scenarios:
+
+| # | Mutation | Caught by |
+|---|---|---|
+| 29 | A mention is accepted whether or not its source links to the target | `webmention__update`, `webmention__invalid` |
+| 30 | Followers-only posts send webmentions | `webmention__outgoing` |
+| 31 | A withdrawn mention stays | `webmention__update` |
+| 32 | A like is counted as a plain mention | `webmention__incoming`, `webmention__update` |
+
+4 of 4 caught.
+
+## Part 2c: client protocols — C2S posting
+
+`scenarios_c2s.go` judges ActivityPub client-to-server posting (`POST /outbox`,
+`app/main.py:635-675`) as a client app uses it, with an IndieAuth token.
+
+| Scenario | Judges |
+|---|---|
+| `c2s__create` | A Create addressed publicly, unlisted, to followers, and to one actor: 201 with the object and its URL, the visibility each audience implies, and who it is delivered to |
+| `c2s__reply` | A reply with a content warning, marked sensitive, delivered as such |
+| `c2s__unauthorized` | No token, or an unknown one: 401, nothing posted |
+| `c2s__unsupported` | See below |
+
+**Found in the original,** marked `BUG(port)`:
+
+- A followers-only Create is posted as direct (`app/main.py:651-656`).
+- The client's addressing is ignored past the visibility it implies: recipients come from the
+  content's @-mentions, so a Create addressed to one actor reaches no one.
+- Anything but a Create raises `ValueError("TODO")`, and a Create by another actor fails an
+  `assert`: both a 500, not a 4xx (`app/main.py:646-669`).
+
+**Clean run:** 4/4 pass, recording the goldens, and again against them. The full suite, now 128
+scenarios, passes against its goldens.
+
+**Mutations,** run on the C2S scenarios:
+
+| # | Mutation | Caught by |
+|---|---|---|
+| 33 | The outbox accepts posts without an access token | `c2s__unauthorized` |
+| 34 | An unlisted Create is posted as public | `c2s__create` |
+| 35 | A posted Create loses its content warning | `c2s__reply` |
+
+3 of 3 caught.

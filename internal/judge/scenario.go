@@ -143,6 +143,10 @@ func All() []Scenario {
 		CLIScenarios,
 		SwapScenarios,
 		PublicScenarios,
+		IndieAuthScenarios,
+		MicropubScenarios,
+		WebmentionScenarios,
+		C2SScenarios,
 	} {
 		all = append(all, group...)
 	}

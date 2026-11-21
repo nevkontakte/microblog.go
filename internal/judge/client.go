@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"mime/multipart"
 	"net/http"
 	"net/http/cookiejar"
@@ -200,6 +201,16 @@ func (c *Client) post(ctx context.Context, i Instance, path, token string, form 
 		return nil, err
 	}
 	req.Header.Set("Content-Type", w.FormDataContentType())
+	return c.do(req)
+}
+
+// Send makes a request as an API client would, with the given headers.
+func (c *Client) Send(ctx context.Context, method, url string, header http.Header, body []byte) (*Response, error) {
+	req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	maps.Copy(req.Header, header)
 	return c.do(req)
 }
 

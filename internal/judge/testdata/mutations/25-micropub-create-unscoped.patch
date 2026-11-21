@@ -1,0 +1,13 @@
+Mutation: Micropub creates posts without the create scope.
+
+--- a/app/micropub.py	2026-11-20 21:16:33.434323179 +0000
++++ b/app/micropub.py	2026-11-20 21:16:33.457596658 +0000
+@@ -121,7 +121,7 @@
+                 status_code=400,
+             )
+ 
+-    if "create" not in access_token_info.scopes:
++    if False:
+         return insufficient_scope_resp
+ 
+     if is_json:

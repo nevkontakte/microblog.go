@@ -1,0 +1,14 @@
+Mutation: a post deleted through Micropub isn't deleted for followers.
+
+--- a/app/micropub.py	2026-11-20 21:16:33.434323179 +0000
++++ b/app/micropub.py	2026-11-20 21:16:33.481703363 +0000
+@@ -98,7 +98,8 @@
+                 if "delete" not in access_token_info.scopes:
+                     return insufficient_scope_resp
+                 logger.info(f"Deleting object {outbox_object.ap_id}")
+-                await send_delete(db_session, outbox_object.ap_id)  # type: ignore
++                outbox_object.is_deleted = True
++                await db_session.commit()
+                 return JSONResponse(content={}, status_code=200)
+ 
+             elif form_data["action"] == "update":

@@ -1,0 +1,13 @@
+Mutation: an authorization code can be redeemed more than once.
+
+--- a/app/indieauth.py	2026-11-20 21:12:29.439495871 +0000
++++ b/app/indieauth.py	2026-11-20 21:12:29.504378883 +0000
+@@ -204,7 +204,7 @@
+     ).one_or_none()
+     if not auth_code_req:
+         return False, None
+-    if auth_code_req.is_used:
++    if False:
+         logger.info("code was already used")
+         return False, None
+     #

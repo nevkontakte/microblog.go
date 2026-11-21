@@ -1,0 +1,13 @@
+Mutation: an unlisted Create is posted as public.
+
+--- a/app/main.py	2026-11-20 22:52:09.604759598 +0000
++++ b/app/main.py	2026-11-20 22:52:09.618637959 +0000
+@@ -648,7 +648,7 @@
+         obj = payload["object"]
+ 
+         to_and_cc = obj.get("to", []) + obj.get("cc", [])
+-        if ap.AS_PUBLIC in obj.get("to", []) and ID + "/followers" in to_and_cc:
++        if ap.AS_PUBLIC in to_and_cc and ID + "/followers" in to_and_cc:
+             visibility = ap.VisibilityEnum.PUBLIC
+         elif ap.AS_PUBLIC in to_and_cc and ID + "/followers" in to_and_cc:
+             visibility = ap.VisibilityEnum.UNLISTED

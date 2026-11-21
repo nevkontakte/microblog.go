@@ -1,0 +1,3 @@
+{"from":"a","method":"GET","url":"https://f.test/mention","accept":"*/*","status":200,"respType":"text/html; charset=utf-8"}
+{"from":"visitor","method":"GET","url":"https://a.test/o/\u003cid1\u003e","accept":"text/html","status":301}
+{"from":"visitor","method":"POST","url":"https://a.test/webmentions","contentType":"application/x-www-form-urlencoded","body":"\u003c99 bytes\u003e","status":200,"respType":"application/json","response":{}}

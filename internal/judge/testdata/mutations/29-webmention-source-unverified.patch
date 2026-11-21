@@ -1,0 +1,13 @@
+Mutation: a webmention is accepted whether or not its source links to the target.
+
+--- a/app/webmentions.py	2026-11-20 22:43:42.483819071 +0000
++++ b/app/webmentions.py	2026-11-20 22:43:42.498329520 +0000
+@@ -104,7 +104,7 @@
+         raise HTTPException(status_code=500, detail=f"Fetch to process {source}")
+ 
+     data, html = data_and_html
+-    is_target_found_in_source = is_source_containing_target(html, target)
++    is_target_found_in_source = True
+ 
+     data, html = data_and_html
+     if is_webmention_deleted or not is_target_found_in_source:

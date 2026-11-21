@@ -40,11 +40,12 @@ type Fake struct {
 	sending atomic.Int32 // Accepts being sent in the background
 	accepts atomic.Int32 // Accepts started, ever
 
-	mu      sync.Mutex
-	seq     int // numbers activity ids, so they are the same on every run
-	inbox   []map[string]any
-	objects map[string]map[string]any
-	pages   map[string]string // HTML by URL
+	mu       sync.Mutex
+	seq      int // numbers activity ids, so they are the same on every run
+	inbox    []map[string]any
+	objects  map[string]map[string]any
+	pages    map[string]string // HTML by URL
+	mentions []url.Values      // webmentions received, see ServeHTTP
 }
 
 // NewFake creates a fake actor and puts it on t's network.
@@ -79,6 +80,14 @@ func (f *Fake) Inbox() []map[string]any {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return append([]map[string]any(nil), f.inbox...)
+}
+
+// Webmentions returns the webmentions sent to the fake's endpoint,
+// /webmention, so far: each with its source and target.
+func (f *Fake) Webmentions() []url.Values {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return append([]url.Values(nil), f.mentions...)
 }
 
 // Publish makes obj fetchable at its id.
@@ -276,6 +285,15 @@ func (f *Fake) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				f.accept(activity)
 			}()
 		}
+	case r.Method == http.MethodPost && r.URL.Path == "/webmention":
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		f.mu.Lock()
+		f.mentions = append(f.mentions, r.PostForm)
+		f.mu.Unlock()
+		w.WriteHeader(http.StatusAccepted)
 	case r.URL.Path == "/" || r.URL.Path == "":
 		writeAP(w, f.actor())
 	case r.URL.Path == "/.well-known/webfinger":

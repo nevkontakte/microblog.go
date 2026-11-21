@@ -1,0 +1,13 @@
+Mutation: Micropub returns a post's HTML as its source.
+
+--- a/app/micropub.py	2026-11-20 21:16:33.434323179 +0000
++++ b/app/micropub.py	2026-11-20 21:16:33.519519148 +0000
+@@ -48,7 +48,7 @@
+                 "published": [
+                     outbox_object.ap_published_at.isoformat()  # type: ignore
+                 ],
+-                "content": [outbox_object.source],
++                "content": [outbox_object.content],
+                 **extra_props,
+             },
+         }

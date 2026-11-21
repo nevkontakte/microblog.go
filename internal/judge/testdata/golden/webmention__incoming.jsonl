@@ -1,0 +1,9 @@
+{"from":"a","method":"GET","url":"https://f.test/mention-plain","accept":"*/*","status":200,"respType":"text/html; charset=utf-8"}
+{"from":"a","method":"GET","url":"https://f.test/mention-u-in-reply-to","accept":"*/*","status":200,"respType":"text/html; charset=utf-8"}
+{"from":"a","method":"GET","url":"https://f.test/mention-u-like-of","accept":"*/*","status":200,"respType":"text/html; charset=utf-8"}
+{"from":"a","method":"GET","url":"https://f.test/mention-u-repost-of","accept":"*/*","status":200,"respType":"text/html; charset=utf-8"}
+{"from":"visitor","method":"GET","url":"https://a.test/o/\u003cid1\u003e","accept":"text/html","status":200,"respType":"text/html; charset=utf-8","response":["h-card https://a.test/","h-entry https://a.test/o/\u003cid1\u003e","h-card https://a.test/","h-card https://f.test/mention-u-in-reply-to"]}
+{"from":"visitor","method":"POST","url":"https://a.test/webmentions","contentType":"application/x-www-form-urlencoded","body":"\u003c110 bytes\u003e","status":200,"respType":"application/json","response":{}}
+{"from":"visitor","method":"POST","url":"https://a.test/webmentions","contentType":"application/x-www-form-urlencoded","body":"\u003c114 bytes\u003e","status":200,"respType":"application/json","response":{}}
+{"from":"visitor","method":"POST","url":"https://a.test/webmentions","contentType":"application/x-www-form-urlencoded","body":"\u003c116 bytes\u003e","status":200,"respType":"application/json","response":{}}
+{"from":"visitor","method":"POST","url":"https://a.test/webmentions","contentType":"application/x-www-form-urlencoded","body":"\u003c118 bytes\u003e","status":200,"respType":"application/json","response":{}}

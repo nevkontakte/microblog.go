@@ -1,0 +1,14 @@
+Mutation: a code is redeemed for any redirect URI.
+
+--- a/app/indieauth.py	2026-11-20 21:12:29.439495871 +0000
++++ b/app/indieauth.py	2026-11-20 21:12:29.523958001 +0000
+@@ -215,8 +215,7 @@
+         return False, None
+ 
+     if (
+-        auth_code_req.redirect_uri != redirect_uri
+-        or auth_code_req.client_id != client_id
++        auth_code_req.client_id != client_id
+     ):
+         logger.info("redirect_uri/client_id does not match request")
+         return False, None
