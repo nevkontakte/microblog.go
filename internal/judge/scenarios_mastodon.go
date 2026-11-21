@@ -60,10 +60,22 @@ var MastodonScenarios = []Scenario{
 			"MENTION", "NEW_FOLLOWER", "UNDO_ANNOUNCE", "UNDO_LIKE"})
 	}},
 
-	{Name: "mastodon__vote", Run: func(t *T) {
+	// The original makes the body of a delivery when it sends it
+	// (app/outgoing_activities.py:220). The scenario waits until the Create
+	// of the poll reaches Mastodon before the vote. Otherwise the Create can
+	// go out as an Update with the vote's count.
+	//
+	// The vote then adds a delivery of the poll. Its body can still be an
+	// Update or a second, equal Create. The outgoing worker keeps one
+	// database session (app/utils/workers.py:48) that doesn't expire its
+	// objects (app/database.py:24), so it can reuse the poll that it loaded
+	// for the Create. That depends on Python's garbage collector. The
+	// comparison ignores the Update, and the wire counts an equal Create once.
+	{Name: "mastodon__vote", Unstable: isUpdateTo("m"), Run: func(t *T) {
 		mastodon := t.NewReplay()
 		followEachOther(t, mastodon)
 		mastodon.SetPlaceholder("a_question", postQuestion(t, t.A, "oneOf", 60, "Yes", "No"))
+		t.settle(0)
 		mastodon.Play(t.A, mastodon.Step("vote"))
 		t.equal("votes", t.rows(t.A, `SELECT name FROM poll_answer`), []map[string]any{{"name": "Yes"}})
 	}},
