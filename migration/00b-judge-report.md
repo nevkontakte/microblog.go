@@ -734,7 +734,35 @@ twice more against them. The full suite, now 141 scenarios, passes against its g
 | 40 | The instance doesn't forward replies to local posts to its followers | `mastodon__forwarded_reply` |
 
 3 of 3 caught. Mutation 38 belongs to the `hs2019` scenario, which a fake actor plays (next
-part).
+section).
+
+## Part 3: `hs2019` signatures
+
+Mastodon signs with `rsa-sha256`, so the replay set has no `hs2019` signature. Other servers
+send `algorithm="hs2019"` over the same RSA-SHA256 signature, and the original accepts both
+names (`app/httpsig.py:194`). It checks every signature as RSA-SHA256, whatever the name
+(`app/httpsig.py:79-83`).
+
+`inbox__hs2019_signature` judges this with a fake actor, not with Mastodon's traffic. The fake
+signs a Follow and a post as usual, but names the algorithm `hs2019` (`Fake.SendHS2019`). a
+must accept both: it records the fake as a follower and stores the post.
+
+The draft that defines `hs2019` (draft-cavage-http-signatures-12, appendix E.2) names a
+different algorithm for an RSA key: RSASSA-PSS with SHA-512. The scenario judges what servers
+send in practice and what the port must accept, not the draft. Mastodon's own verifier does the
+same: it accepts `rsa-sha256` and `hs2019`, and checks both with the actor's RSA key
+(`app/lib/signed_request.rb`).
+
+**Clean run:** 1/1 passes, recording the golden, and again against it. The full suite, now 142
+scenarios, passes against its goldens.
+
+**Mutation:**
+
+| # | Mutation | Caught by |
+|---|---|---|
+| 38 | The instance rejects HTTP signatures with the algorithm `hs2019` | `inbox__hs2019_signature` |
+
+1 of 1 caught.
 
 ## The 00b gate
 
@@ -746,6 +774,6 @@ With part 3, the judge covers everything that the plan at the top of this report
 - the client protocols,
 - a real Mastodon's traffic, replayed with fresh signatures.
 
-One row of the coverage inventory waits for the next part: `hs2019` signatures, which a fake
-actor judges. The judge runs 141 scenarios against the Python original. Each of mutations
-1-37, 39 and 40 fails at least one. The gate closes on the owner's review of the last part.
+No row of the coverage inventory waits for a later part. The judge runs 142 scenarios against
+the Python original, and each of mutations 1-40 fails at least one. The gate closes on the
+owner's review of the last part.

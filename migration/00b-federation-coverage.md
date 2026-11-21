@@ -68,7 +68,7 @@ Status: **covered** (by the scenarios named), **2c** (client protocols, part 2c)
 | View (PeerTube, dropped) | `inbox__view` | covered |
 | Block | `inbox__block_activity`, `block__and_unblock` | covered |
 | Forwarded activity with an LD signature: valid, and failing (the receiver fetches it from its origin instead). A reply to a local post, which the instance forwards to its followers | `mastodon__forwarded_by_third_party`, `mastodon__forwarded_bad_signature`, `mastodon__forwarded_reply` | covered |
-| `hs2019` signatures | — | 3 (with a fake actor, next part) |
+| `hs2019` signatures | `inbox__hs2019_signature` | covered |
 | Everything a real Mastodon (v4.7.6) delivers. Relationships: follow, accept, unfollow, block, unblock. Posts: each visibility, mention, content warning, attachment, poll, edit, pin, unpin, delete. Interactions: like, boost, their undos, reply, vote. Account: profile update, move, deletion | `mastodon__*` | covered |
 
 ## Lookup (`/admin/lookup`)

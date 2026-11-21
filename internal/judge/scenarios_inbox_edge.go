@@ -6,6 +6,24 @@ import "net/url"
 // (app/boxes.py:2282-2541): all branches of its dispatch, and the requests
 // that it rejects or ignores.
 var InboxEdgeScenarios = []Scenario{
+	// A Follow and a Create with a signature that names the algorithm
+	// "hs2019", as some servers other than Mastodon send it. The original
+	// accepts the name, and verifies the signature as RSA-SHA256
+	// (app/httpsig.py:79-83, 194).
+	{Name: "inbox__hs2019_signature", Run: func(t *T) {
+		f := t.NewFake("f")
+		resp, err := f.SendHS2019(t.Ctx, t.A, f.Activity("Follow", BaseURL(t.A)))
+		t.Check(err)
+		t.equal("follow", resp.Status, 202)
+		t.waitRows(t.A, 1, `SELECT 1 FROM follower WHERE ap_actor_id = ?`, f.ID())
+
+		create := f.Create(f.Note("Hello", BaseURL(t.A)))
+		resp, err = f.SendHS2019(t.Ctx, t.A, create)
+		t.Check(err)
+		t.equal("post", resp.Status, 202)
+		t.waitRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ?`, objectID(t, create))
+	}},
+
 	// The signed string uses the body's real digest (app/httpsig.py:234). Thus
 	// the signature fails if it covers a Digest header that doesn't match.
 	{Name: "inbox__bad_digest", Run: func(t *T) {

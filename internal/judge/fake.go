@@ -2,6 +2,7 @@ package judge
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"crypto"
 	"crypto/rand"
@@ -110,6 +111,13 @@ func (f *Fake) Send(ctx context.Context, inst Instance, activity map[string]any)
 	return f.post(ctx, BaseURL(inst)+"/inbox", activity, signing{key: f.key})
 }
 
+// SendHS2019 delivers activity with an HTTP signature that names the
+// algorithm "hs2019", as some servers other than Mastodon do. The signature
+// is the same RSA-SHA256 signature with a different name (see signRequest).
+func (f *Fake) SendHS2019(ctx context.Context, inst Instance, activity map[string]any) (*Response, error) {
+	return f.post(ctx, BaseURL(inst)+"/inbox", activity, signing{key: f.key, algorithm: "hs2019"})
+}
+
 // SendUnsigned delivers activity without an HTTP signature.
 func (f *Fake) SendUnsigned(ctx context.Context, inst Instance, activity map[string]any) (*Response, error) {
 	return f.post(ctx, BaseURL(inst)+"/inbox", activity, signing{})
@@ -182,6 +190,7 @@ func (f *Fake) fetch(ctx context.Context, url string, key *rsa.PrivateKey) (*Res
 //     empty.
 type signing struct {
 	key                      *rsa.PrivateKey
+	algorithm                string // the HTTP signature's algorithm parameter, rsa-sha256 if empty
 	signedDigest, sentDigest string
 }
 
@@ -202,7 +211,8 @@ func (f *Fake) post(ctx context.Context, inbox string, activity map[string]any, 
 		if s.signedDigest != "" {
 			req.Header.Set("Digest", s.signedDigest)
 		}
-		if err := f.sign(req, s.key, "(request-target) host date digest content-type"); err != nil {
+		algorithm := cmp.Or(s.algorithm, "rsa-sha256")
+		if err := signRequest(req, s.key, f.ID()+"#main-key", algorithm, "(request-target) host date digest content-type"); err != nil {
 			return nil, err
 		}
 		if s.sentDigest != "" {
