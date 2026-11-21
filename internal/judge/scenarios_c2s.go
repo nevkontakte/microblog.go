@@ -57,6 +57,23 @@ var C2SScenarios = []Scenario{
 			AND json_extract(ap_object, '$.summary') = 'A warning' AND json_extract(ap_object, '$.sensitive')`, peer)
 	}},
 
+	// A client app reads the inbox with a token: the collection and its first
+	// page, which list what b delivered (app/main.py:1092-1150).
+	{Name: "c2s__read_inbox", Run: func(t *T) {
+		follow(t, t.A, t.B)
+		post := newPost(t, t.B, url.Values{"content": {"From b"}})
+		t.waitRows(t.A, 1, `SELECT 1 FROM inbox WHERE ap_id = ?`, post)
+		token := grantToken(t, t.A, "read")
+		inbox := BaseURL(t.A) + "/inbox"
+		t.equal("no token", visit(t, inbox, acceptAP).Status, 401)
+		collection := fetchWithToken(t, inbox, token)
+		t.equal("collection", collection.Status, 200)
+		t.equal("total", decode(t, collection)["totalItems"], float64(1))
+		page := fetchWithToken(t, inbox+"?page=true", token)
+		t.equal("page", page.Status, 200)
+		t.equal("items", itemIDs(decode(t, page)["orderedItems"]), []any{post + "/activity"})
+	}},
+
 	// Posting needs a valid token (app/indieauth.py:468-476).
 	{Name: "c2s__unauthorized", Run: func(t *T) {
 		create := c2sCreate(t.A, c2sNote("Not posted", []string{asPublic}, nil))

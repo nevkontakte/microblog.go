@@ -37,8 +37,8 @@ Status: **covered** (by the scenarios named), **2c** (client protocols, part 2c)
 | Follow every account of a Mastodon export | `inv import-mastodon-following-accounts` | `import_following` | covered |
 | Remote follow / remote interaction (webfinger subscribe template) | public `POST /remote_follow`, `/remote_interaction` | `remote_follow`, `remote_interaction` | covered |
 | `send_update` of an object | none: `app/boxes.py:825` has no caller | — | n/a |
-| Webmention delivery (an `outgoing_activity` with a target) | admin `new` with links | — | 2c |
-| C2S `POST /outbox`, `GET /inbox` | IndieAuth token | — | 2c |
+| Webmention delivery (an `outgoing_activity` with a target) | admin `new` with links | `webmention__outgoing` | covered |
+| C2S `POST /outbox`, `GET /inbox` | IndieAuth token | `c2s__*`, `c2s__read_inbox` | covered |
 | Hide / show an actor's boosts (fetches an unknown actor) | admin `hide_announces`, `show_announces` | `announces__hide_and_show` | covered |
 | Force delete, pin / unpin | admin actions | `pin__featured` (served below) | n/a: local state, nothing is sent |
 
@@ -67,8 +67,9 @@ Status: **covered** (by the scenarios named), **2c** (client protocols, part 2c)
 | Like, Announce of my note; Announce of a note I don't have (fetched) | `like__and_undo`, `announce__and_undo`, `announce__third_party_note` | covered |
 | View (PeerTube, dropped) | `inbox__view` | covered |
 | Block | `inbox__block_activity`, `block__and_unblock` | covered |
-| Forwarded activity with an LD signature | — | 3 |
-| `hs2019` signatures | — | 3 |
+| Forwarded activity with an LD signature: valid, and failing (fetched from its origin instead); a reply to a local post forwarded to followers | `mastodon__forwarded_by_third_party`, `mastodon__forwarded_bad_signature`, `mastodon__forwarded_reply` | covered |
+| `hs2019` signatures | — | 3 (with a fake actor, next part) |
+| Everything a real Mastodon (v4.7.6) delivers: follow, accept, posts of each visibility, mention, content warning, attachment, poll, like, boost, their undos, reply, vote, edit, pin, unpin, delete, profile update, unfollow, block, unblock, move, account deletion | `mastodon__*` | covered |
 
 ## Lookup (`/admin/lookup`)
 
@@ -91,7 +92,7 @@ Status: **covered** (by the scenarios named), **2c** (client protocols, part 2c)
 | Actor document, incl. `alsoKnownAs`, `movedTo` | every scenario (on the wire), `ap__actor_document`, `move__to_other_account` | covered |
 | WebFinger by account and by actor id, unknown resource | every scenario, `ap__webfinger` | covered |
 | `outbox` empty, with items | `outbox__no_activities`, `ap__collections` | covered |
-| `followers`, `following` (newest first), `hides_followers` / `hides_following` | `ap__collections`, `ap__hidden_collections` | covered; the token bypass is 2c |
+| `followers`, `following` (newest first), `hides_followers` / `hides_following` | `ap__collections`, `ap__hidden_collections`, `indieauth__hidden_collections` (the token bypass) | covered |
 | `featured`, after pinning and unpinning | `pin__featured` | covered |
 | Object ACL: followers-only and direct, signed, unsigned, and signed by the wrong key (served: `BUG(port)`); deleted object | `ap__object_acl`, `ap__deleted_object` | covered |
 | `/o/<id>/activity` | `ap__object_activity` | covered |

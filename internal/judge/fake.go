@@ -218,6 +218,18 @@ func (f *Fake) do(req *http.Request) (_ *Response, err error) {
 
 // sign adds a draft-cavage HTTP signature with key over the given headers.
 func (f *Fake) sign(req *http.Request, key *rsa.PrivateKey, headers string) error {
+	return signRequest(req, key, f.ID()+"#main-key", "rsa-sha256", headers)
+}
+
+// signRequest adds a draft-cavage HTTP signature with key over the given
+// headers, in that order, naming keyID and algorithm. It always signs with
+// RSASSA-PKCS1-v1_5 and SHA-256, which is what "rsa-sha256" names. The draft
+// defines "hs2019" differently, as the algorithm the key's metadata names
+// (RSASSA-PSS with SHA-512 for an RSA key, draft-cavage-http-signatures-12,
+// appendix E.2), but servers send it over the same RSA-SHA256 signature, and
+// the original verifies every signature that way, whatever its algorithm
+// says (app/httpsig.py:79-83, 194).
+func signRequest(req *http.Request, key *rsa.PrivateKey, keyID, algorithm, headers string) error {
 	var lines []string
 	for _, h := range strings.Fields(headers) {
 		switch h {
@@ -234,8 +246,8 @@ func (f *Fake) sign(req *http.Request, key *rsa.PrivateKey, headers string) erro
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Signature", fmt.Sprintf(`keyId="%s#main-key",algorithm="rsa-sha256",headers="%s",signature="%s"`,
-		f.ID(), headers, base64.StdEncoding.EncodeToString(sig)))
+	req.Header.Set("Signature", fmt.Sprintf(`keyId="%s",algorithm="%s",headers="%s",signature="%s"`,
+		keyID, algorithm, headers, base64.StdEncoding.EncodeToString(sig)))
 	return nil
 }
 

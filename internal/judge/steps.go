@@ -796,3 +796,10 @@ func c2sCreate(i Instance, note map[string]any) map[string]any {
 	return map[string]any{"@context": "https://www.w3.org/ns/activitystreams", "type": "Create",
 		"actor": BaseURL(i), "object": note}
 }
+
+// lastFollow returns the id of the Follow i sent last: the outbox's row ids
+// increase with each insert (SQLite gives a new row one more than the
+// largest), while two rows can share a creation time.
+func lastFollow(t *T, i Instance) string {
+	return stringField(t, t.one(i, `SELECT ap_id FROM outbox WHERE ap_type = 'Follow' ORDER BY id DESC LIMIT 1`), "ap_id")
+}

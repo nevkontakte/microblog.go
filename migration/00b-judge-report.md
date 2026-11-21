@@ -507,6 +507,7 @@ unset (`app/webmentions.py:97-104`).
 | `c2s__reply` | A reply with a content warning, marked sensitive, delivered as such |
 | `c2s__unauthorized` | No token, or an unknown one: 401, nothing posted |
 | `c2s__unsupported` | See below |
+| `c2s__read_inbox` | Reading the inbox with a token, as a collection and its first page; without a token, 401. Added with part 3c: the coverage inventory listed `GET /inbox`, which this part had left out |
 
 **Found in the original,** marked `BUG(port)`:
 
@@ -621,3 +622,58 @@ only change is the added verdict, `ok` in all of them.
 | # | Mutation | Caught by |
 |---|---|---|
 | 36 | LD signatures are computed over the two hashes in the wrong order | every scenario with an LD-signed delivery (verdict `bad`) |
+
+## Part 3c: replaying the Mastodon set
+
+`replay.go` puts the recorded Mastodon server back on the fake network for a scenario: it serves
+the documents Mastodon served (step by step, so an actor is never served in a later version than
+the step has reached), takes deliveries to its inboxes, and delivers what Mastodon delivered,
+with the scenario's ids bound to the placeholders. Everything is signed again with the replay's
+own key, which the actors it serves carry in place of Mastodon's:
+
+- HTTP signatures with the recorded key id (`<actor>#rsa-<hash>`), algorithm and header list,
+  in Mastodon's order, sending the extra headers Mastodon signed (its
+  `collection-synchronization`) as recorded;
+- LD signatures over the delivered payload, with the recorded creator and creation time, made
+  by the signer of part 3b, which the Python instances verify with PyLD.
+
+| Scenario | Replays |
+|---|---|
+| `mastodon__follow` | Mastodon's Follow and a's accept, a's Follow and Mastodon's Accept |
+| `mastodon__posts` | Posts that are public, unlisted, followers-only, direct, with mention and hashtag, behind a content warning, with an image, and a poll: stored with their visibility, warning and attachment, mentions notified |
+| `mastodon__interactions` | Like, boost and their undos, and a reply, of a's note |
+| `mastodon__vote` | A vote in a's poll |
+| `mastodon__edit_pin_delete` | An edit, a pin and an unpin (processed and dropped: `Add` and `Remove` carry no id, which the replay waits on by count), and a delete |
+| `mastodon__profile` | A profile update |
+| `mastodon__unfollow_block` | Unfollow, block (which Mastodon pairs with a Reject of a's follow) and unblock |
+| `mastodon__move` | A move: a follows the new account, which accepts |
+| `mastodon__delete_account` | Account deletion |
+| `mastodon__forwarded_reply` | A reply to a's note, which a forwards to its follower b with Mastodon's LD signature; b checks it |
+| `mastodon__forwarded_by_third_party` | A post forwarded by a fake, trusted for its LD signature |
+| `mastodon__forwarded_bad_signature` | The same, altered after signing: a fetches the post from Mastodon instead, and keeps Mastodon's text |
+
+**Found in the original:** nothing new. The undone like leaves `likes_count` at -1, already
+pinned by `like__and_undo`; the replay pins it for Mastodon's Like too (`BUG(port)`).
+
+**Clean run:** 12/12 replay scenarios and `c2s__read_inbox` pass, recording the goldens and
+twice more against them. The full suite, now 141 scenarios, passes against its goldens.
+
+**Mutations,** run on the replay scenarios:
+
+| # | Mutation | Caught by |
+|---|---|---|
+| 37 | A forwarded activity is trusted without checking its LD signature | `mastodon__forwarded_bad_signature` |
+| 39 | A Move unfollows the old account without following the new one | `mastodon__move` |
+| 40 | Replies to local posts aren't forwarded to followers | `mastodon__forwarded_reply` |
+
+3 of 3 caught. Mutation 38 belongs to the `hs2019` scenario, which a fake actor plays (next
+part).
+
+## The 00b gate
+
+With part 3, the judge covers everything the plan at the top of this report listed: every
+ActivityPub interaction of the coverage inventory, the on-disk swap, the public read surface,
+the client protocols, and a real Mastodon's traffic, replayed with fresh signatures. One row
+of the coverage inventory waits for the next part: `hs2019` signatures, which a fake actor
+judges. It runs 141 scenarios against the Python original; mutations 1-37, 39 and 40 each fail
+at least one. The gate closes on the owner's review of the last part.
