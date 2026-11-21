@@ -4,16 +4,19 @@ go 1.26.0
 
 require (
 	github.com/google/go-cmp v0.7.0
+	github.com/piprate/json-gold v0.9.1
 	golang.org/x/crypto v0.59.0
 	golang.org/x/net v0.63.0
 	modernc.org/sqlite v1.62.0
 )
 
 require (
+	github.com/cayleygraph/quad v1.3.0 // indirect
 	github.com/dustin/go-humanize v1.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/ncruces/go-strftime v1.1.0 // indirect
+	github.com/pquerna/cachecontrol v0.2.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	golang.org/x/sys v0.50.0 // indirect
 	modernc.org/libc v1.80.1 // indirect

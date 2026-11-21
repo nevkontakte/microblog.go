@@ -9,4 +9,5 @@ The judge proxy serves them at the URLs the Python original fetches
 |---|---|---|
 | `activitystreams.jsonld` | `https://www.w3.org/ns/activitystreams` | same |
 | `security-v1.jsonld` | `https://w3id.org/security/v1` | redirect to `https://w3c-ccg.github.io/security-vocab/contexts/security-v1.jsonld` |
+| `webfinger.jsonld` | `https://purl.archive.org/socialweb/webfinger` | redirect to `https://evanp.github.io/socialweb/webfinger.jsonld`, captured 2026-11-21; Mastodon 4.7's actors name it |
 | `identity-v1.jsonld` | `https://w3id.org/identity/v1` and `https://raw.githubusercontent.com/web-payments/web-payments.org/master/contexts/identity-v1.jsonld` | the latter (the original rewrites the former to it) |

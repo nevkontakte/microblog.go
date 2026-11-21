@@ -21,6 +21,7 @@ var jsonLDContexts = map[string]map[string]string{
 	"raw.githubusercontent.com": {
 		"/web-payments/web-payments.org/master/contexts/identity-v1.jsonld": "identity-v1.jsonld",
 	},
+	"purl.archive.org": {"/socialweb/webfinger": "webfinger.jsonld"},
 }
 
 // contextServer serves the captured documents of one host.

@@ -592,3 +592,32 @@ private key, token or personal data: only Mastodon's public keys, which a replay
 - Mastodon LD-signs every public activity it delivers (Create, Announce, Update, Delete),
   which is what a forwarded activity carries: part 3c replays them as forwarded by a third
   party, so no third server is needed in the recording.
+
+## Part 3b: LD signatures in the judge
+
+`ldsig.go` signs and verifies LD signatures (`RsaSignature2017`) as Mastodon and the original
+(`app/ldsig.py`) make them, with URDNA2015 normalization from `github.com/piprate/json-gold`
+([ADR 0015](../docs/adr/0015-use-json-gold-for-ld-signatures.md)). Contexts come from the
+captured copies, never the web; the captured set gains `https://purl.archive.org/socialweb/webfinger`,
+which Mastodon 4.7's actor documents name.
+
+It agrees with both canonicalizations that matter:
+
+- **Mastodon's:** every LD signature in the replay set that the recording didn't edit verifies
+  with the recorded actor's key (11 of 11). The other three (the boost, its undo and the reply)
+  carry a placeholder in place of an id of a's, so their payload no longer matches what Mastodon
+  signed; the replay signs every payload again anyway. Checked with a throwaway program, since
+  `go test` is reserved; the replay's scenarios (3c) check the signer against PyLD on every run.
+- **PyLD's:** the original's own LD signatures verify on the wire (below).
+
+The wire records now carry a verdict on each LD-signed body, `ldSignature`, like the one on
+HTTP signatures: `RsaSignature2017 <creator> ok`, `bad`, or `unverified` when the creator's host
+isn't an instance. The signature value itself stays masked. This settles reviewer finding 6
+(section 4), deferred to part 3. Every golden with an LD-signed delivery was re-recorded; the
+only change is the added verdict, `ok` in all of them.
+
+**Mutation:**
+
+| # | Mutation | Caught by |
+|---|---|---|
+| 36 | LD signatures are computed over the two hashes in the wrong order | every scenario with an LD-signed delivery (verdict `bad`) |

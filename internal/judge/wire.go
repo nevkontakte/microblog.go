@@ -48,10 +48,13 @@ type WireRecord struct {
 	Date      string `json:"date,omitempty"`
 	Digest    string `json:"digest,omitempty"`
 	Signature string `json:"signature,omitempty"`
-	Body      any    `json:"body,omitempty"`
-	Status    int    `json:"status"`
-	RespType  string `json:"respType,omitempty"`
-	Response  any    `json:"response,omitempty"`
+	// LDSignature is the verdict on the body's LD signature, if it has one;
+	// its value is masked in Body.
+	LDSignature string `json:"ldSignature,omitempty"`
+	Body        any    `json:"body,omitempty"`
+	Status      int    `json:"status"`
+	RespType    string `json:"respType,omitempty"`
+	Response    any    `json:"response,omitempty"`
 }
 
 var (
@@ -176,6 +179,7 @@ func normalize(exchanges []Exchange, keys map[string]*rsa.PublicKey) []WireRecor
 		if s := e.ReqHeader.Get("Signature"); s != "" {
 			r.Signature = m.str(checkSignature(e, s, keys))
 		}
+		r.LDSignature = checkLDSignature(e.ReqBody, keys)
 		r.RespType = e.RespHeader.Get("Content-Type")
 		if strings.Contains(r.RespType, "json") || e.From == "visitor" {
 			r.Response = m.json(e.RespBody)
@@ -293,6 +297,29 @@ func checkSignature(e Exchange, header string, keys map[string]*rsa.PublicKey) s
 	sig, err := base64.StdEncoding.DecodeString(params["signature"])
 	sum := sha256.Sum256([]byte(strings.Join(lines, "\n")))
 	if err != nil || rsa.VerifyPKCS1v15(keys[keyURL.Host], crypto.SHA256, sum[:], sig) != nil {
+		return desc + " bad"
+	}
+	return desc + " ok"
+}
+
+// checkLDSignature verifies the LD signature of a JSON body, if it has one,
+// with the key of its creator's host: "<type> <creator> ok|bad|unverified".
+func checkLDSignature(body string, keys map[string]*rsa.PublicKey) string {
+	var doc map[string]any
+	if json.Unmarshal([]byte(body), &doc) != nil {
+		return ""
+	}
+	sig, ok := doc["signature"].(map[string]any)
+	if !ok {
+		return ""
+	}
+	creator, _ := sig["creator"].(string)
+	desc := fmt.Sprint(sig["type"], " ", creator)
+	u, err := url.Parse(creator)
+	if err != nil || keys[u.Host] == nil {
+		return desc + " unverified"
+	}
+	if err := ldVerify(doc, keys[u.Host]); err != nil {
 		return desc + " bad"
 	}
 	return desc + " ok"
