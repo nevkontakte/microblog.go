@@ -528,3 +528,67 @@ scenarios, passes against its goldens.
 | 35 | A posted Create loses its content warning | `c2s__reply` |
 
 3 of 3 caught.
+
+## Part 3a: recording the Mastodon replay set
+
+Per [ADR 0014](../docs/adr/0014-record-the-mastodon-replay-set-from-a-real-server.md),
+`cmd/record-mastodon` runs a real Mastodon (`ghcr.io/mastodon/mastodon:v4.7.6`, the latest
+release when recorded) in Docker next to a Python instance, both behind the judge proxy, and
+records what Mastodon sends. The ADR expected the recording to need the owner's machine; this
+session's environment can start a Docker daemon, so it was recorded here.
+
+How it runs (`mastodon.go`, `mastodon_record.go`):
+
+- Mastodon, Postgres and Redis run on the host's network. The proxy routes `m.test` to
+  Mastodon's web server, and Mastodon sends through its own listener (`http_proxy`), trusting
+  the judge CA (`SSL_CERT_FILE`). Mastodon needs no patch to use the proxy.
+- Users and API tokens come from `mastodon_setup.rb`, since Mastodon refuses `.test` email
+  domains (no mail servers). The script then drives Mastodon through its REST API, and
+  through `rails runner` for the account move: Mastodon offers moves and aliases only on its
+  settings pages (`config/routes/settings.rb`), not in its REST API, and doesn't implement
+  ActivityPub's client-to-server protocol. The runner calls the same `MoveService` the
+  settings page does.
+- After each step it waits until Mastodon has delivered, the network has been quiet for five
+  seconds (Mastodon delivers from background jobs), and a has processed every delivery.
+
+The script, in order: follow (and Mastodon's Accept of a's follow back); posts that are public,
+unlisted, followers-only, direct, with a mention and hashtag, behind a content warning, with an
+image, and a poll; like and its undo, boost and its undo, and a reply, all of a's note; a vote
+in a's poll; an edit, a pin and an unpin, and a delete; a profile update; an unfollow; a block
+and its undo; the Accept of a's new follow; a move to another account (and that account's
+Accept of the follow a sends it); and account deletion. All 30 deliveries were accepted (202).
+
+The replay set (`internal/judge/testdata/mastodon.json`) keeps, per step, each activity Mastodon
+delivered (with its content type and its HTTP signature's key id, algorithm and header list) and each
+document a fetched from Mastodon meanwhile (actors, WebFinger, outboxes, statuses). The ids of
+a's objects are replaced by named placeholders (`{{a_note}}`, `{{a_follow}}`, …), which a
+replay binds to its own; the recorder fails if an id of a's is left unnamed. It holds no
+private key, token or personal data: only Mastodon's public keys, which a replay replaces.
+
+**Found on the way:**
+
+- **Recent Mastodon can't fetch a microblog.pub actor it hasn't seen before.** When Mastodon
+  fetches an actor or a key, it requires the response's URL to equal the one it asked for
+  (`app/helpers/json_ld_helper.rb`, `fetch_resource_without_id_validation`), and its HTTP client
+  normalizes `https://a.test` to `https://a.test/` before sending, so for microblog.pub's id, a
+  bare origin, the two never match. Mastodon's own `Request` class shows it against a local
+  server, with or without a proxy. The check first appears in v4.4.27 (built 2026-10-29; not in
+  v4.4.26, v4.3.8 or v4.2.x) and is in the current 4.5, 4.6 and 4.7 releases. It only bites on
+  first contact: a server that already knows the account finds it in search and verifies its
+  deliveries with the stored key, which is why the owner's instance still federates with the
+  servers it knows. A fresh Mastodon here could neither resolve a nor accept its signed Follow
+  (`401 Unable to fetch key JSON`). The recorder mounts an initializer that normalizes the id
+  first (`mastodon_patch.rb`); it changes only what Mastodon accepts, never what it sends. The
+  port keeps the original's ids, so it shares this: worth confirming against a live server that
+  has never seen an instance, and deciding on after parity. The investigation, the Mastodon
+  change behind it and the options are in
+  [post-parity/mastodon-bare-origin.md](post-parity/mastodon-bare-origin.md).
+- Mastodon signs with `rsa-sha256`, headers `host date content-type digest
+  (request-target)`, and a key id of the form `<actor>#rsa-<hash>` rather than `#main-key`;
+  not with `hs2019` as ADR 0014 assumed. The replay set keeps all three, and the replay signs
+  every delivery in exactly that form; only the key and so the signature's value differ, since
+  no private key is kept (ADR 0014). `hs2019`, which other servers send, is judged
+  separately, with a fake actor (see "Part 3: `hs2019` signatures").
+- Mastodon LD-signs every public activity it delivers (Create, Announce, Update, Delete),
+  which is what a forwarded activity carries: part 3c replays them as forwarded by a third
+  party, so no third server is needed in the recording.
