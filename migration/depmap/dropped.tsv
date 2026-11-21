@@ -1,0 +1,7 @@
+from	to	reason
+app/config.py	app/customization.py	ADR 0004: the port has no stream visibility hook, so config keeps no callback. boxes calls the default rule directly.
+app/customization.py	app/actor.py	ADR 0004: only the custom page handler, which the port drops, uses it.
+app/customization.py	app/config.py	ADR 0004: only the custom page handler, which the port drops, uses it.
+app/customization.py	app/database.py	ADR 0004: only the custom page handler, which the port drops, uses it.
+app/customization.py	app/templates.py	ADR 0004: only the custom page handler, which the port drops, uses it.
+app/utils/emoji.py	app/activitypub.py	Type only (under TYPE_CHECKING): RawObject, an alias of dict[str, Any]. The Go file uses the map type.

@@ -1,0 +1,42 @@
+# migration order: one batch per line, dependencies first
+app/__init__.py
+app/utils/datetime.py
+app/utils/__init__.py
+app/utils/version.py
+app/key.py
+app/activitypub.py	app/actor.py	app/ap_object.py	app/config.py	app/customization.py	app/database.py	app/httpsig.py	app/media.py	app/models.py	app/source.py	app/templates.py	app/utils/emoji.py	app/utils/highlight.py	app/utils/privacy_replace.py	app/utils/url.py	app/utils/webmentions.py	app/webfinger.py
+app/ldsig.py
+app/utils/workers.py
+app/uploads.py
+app/utils/facepile.py
+app/utils/opengraph.py
+app/utils/text.py
+app/boxes.py	app/outgoing_activities.py
+app/lookup.py
+app/utils/pagination.py
+app/utils/microformats.py
+app/webmentions.py
+app/admin.py
+app/incoming_activities.py
+app/redirect.py
+app/utils/indieauth.py
+app/indieauth.py
+app/micropub.py
+app/main.py
+app/prune.py
+app/utils/favicon.py
+app/utils/mastodon.py
+app/utils/stats.py
+app/utils/yunohost.py
+scripts/config_wizard.py
+tasks.py
+tests/__init__.py
+tests/factories.py
+tests/conftest.py
+tests/test_actor.py
+tests/test_admin.py
+tests/test_httpsig.py
+tests/test_ldsig.py
+tests/test_process_outgoing_activities.py
+tests/test_utils.py
+tests/utils.py
