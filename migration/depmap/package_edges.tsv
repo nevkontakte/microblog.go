@@ -1,0 +1,87 @@
+from	to
+cmd/microblogpub	internal/app
+cmd/microblogpub	internal/config
+cmd/microblogpub	internal/database
+cmd/microblogpub	internal/favicon
+cmd/microblogpub	internal/key
+cmd/microblogpub	internal/mastodon
+cmd/microblogpub	internal/prune
+cmd/microblogpub	internal/stats
+cmd/microblogpub	internal/version
+cmd/microblogpub	internal/web
+cmd/microblogpub	internal/webfinger
+cmd/microblogpub	internal/yunohost
+internal/app	internal/config
+internal/app	internal/database
+internal/app	internal/datetime
+internal/app	internal/emoji
+internal/app	internal/key
+internal/app	internal/media
+internal/app	internal/text
+internal/app	internal/urlcheck
+internal/app	internal/webfinger
+internal/app	internal/webmention
+internal/app	internal/workers
+internal/app (test)	internal/app
+internal/app (test)	internal/apptest
+internal/app (test)	internal/database
+internal/app (test)	internal/key
+internal/apptest	internal/app
+internal/apptest	internal/config
+internal/apptest	internal/database
+internal/apptest	internal/datetime
+internal/apptest	internal/web
+internal/config	internal/emoji
+internal/config	internal/version
+internal/database	internal/config
+internal/highlight	internal/config
+internal/indieauthclient	internal/microformats
+internal/indieauthclient	internal/urlcheck
+internal/lookup	internal/app
+internal/lookup	internal/database
+internal/lookup	internal/webfinger
+internal/mastodon	internal/webfinger
+internal/media	internal/config
+internal/microformats	internal/config
+internal/privacyreplace	internal/config
+internal/prune	internal/app
+internal/prune	internal/config
+internal/prune	internal/database
+internal/prune	internal/datetime
+internal/stats	internal/app
+internal/stats	internal/config
+internal/stats	internal/database
+internal/stats	internal/datetime
+internal/templates	internal/app
+internal/templates	internal/config
+internal/templates	internal/database
+internal/templates	internal/datetime
+internal/templates	internal/highlight
+internal/templates	internal/media
+internal/templates	internal/privacyreplace
+internal/urlcheck	internal/config
+internal/urlcheck (test)	internal/apptest
+internal/urlcheck (test)	internal/urlcheck
+internal/web	internal/app
+internal/web	internal/config
+internal/web	internal/database
+internal/web	internal/datetime
+internal/web	internal/emoji
+internal/web	internal/highlight
+internal/web	internal/indieauthclient
+internal/web	internal/lookup
+internal/web	internal/media
+internal/web	internal/microformats
+internal/web	internal/pagination
+internal/web	internal/templates
+internal/web	internal/urlcheck
+internal/web	internal/webfinger
+internal/web (test)	internal/apptest
+internal/web (test)	internal/web
+internal/webfinger	internal/config
+internal/webfinger	internal/urlcheck
+internal/webmention	internal/config
+internal/webmention	internal/datetime
+internal/webmention	internal/urlcheck
+internal/workers	internal/database
+internal/yunohost	internal/key

@@ -21,3 +21,4 @@ To add one, copy [template.md](template.md) to the next number and add it to thi
 | [0013](0013-run-the-judge-as-a-program.md) | Run the judge as a program | Accepted |
 | [0014](0014-record-the-mastodon-replay-set-from-a-real-server.md) | Record the Mastodon replay set from a real server | Accepted |
 | [0015](0015-use-json-gold-for-ld-signatures.md) | Use json-gold for LD signatures | Accepted |
+| [0016](0016-define-the-port-scope-and-layout.md) | Define the port's scope and package layout | Accepted |
