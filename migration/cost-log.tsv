@@ -6,3 +6,4 @@ step	timestamp	wall_clock_min	tokens	subagents	model
 00b-part2	2026-11-21T01:08Z	755	626265994	1	claude-opus-5-5
 00b-part3-gate	2026-11-21T19:39Z	210	258245992	1	claude-opus-5-5
 1-depmap	2026-11-21T23:55Z	67	47826500	6	claude-opus-5-5
+1-rulebook-draft	2026-11-22T02:25Z	15	14053368	0	claude-opus-5-5

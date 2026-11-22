@@ -22,3 +22,8 @@ To add one, copy [template.md](template.md) to the next number and add it to thi
 | [0014](0014-record-the-mastodon-replay-set-from-a-real-server.md) | Record the Mastodon replay set from a real server | Accepted |
 | [0015](0015-use-json-gold-for-ld-signatures.md) | Use json-gold for LD signatures | Accepted |
 | [0016](0016-define-the-port-scope-and-layout.md) | Define the port's scope and package layout | Accepted |
+| [0017](0017-access-sqlite-through-database-sql.md) | Access SQLite through database/sql | Accepted |
+| [0018](0018-serve-http-with-the-standard-library.md) | Serve HTTP with the standard library | Accepted |
+| [0019](0019-run-the-server-and-the-workers-in-one-process.md) | Run the server and the workers in one process | Accepted |
+| [0020](0020-adopt-the-go-dependency-set.md) | Adopt the Go dependency set | Accepted |
+| [0021](0021-render-markdown-with-goldmark.md) | Render Markdown with goldmark | Accepted |
