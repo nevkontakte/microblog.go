@@ -1,0 +1,25 @@
+file	source_construct_key	verdict	cite	finding
+app/indieauth.py	L37	CONFIRM	indieauth.py:36-49; starlette/requests.py:175-178; fastapi/routing.py:367; probe: HEAD gives 405 Allow: GET {"detail":"Method Not Allowed"} (error.html via main.py:226-254 for Accept text/html, as for any HTTPError)	
+app/indieauth.py	L62	REFUTE	fastapi/routing.py:188-218; probe: body b'{"client_name":"\xff"}' gives 400; body '{bad' with Early-Data: 1 gives 422, '{}' with Early-Data: 1 gives 425	Two body cases are missing. (1) A body that json.loads cannot decode as text (for example invalid UTF-8) raises an error that is not JSONDecodeError, so FastAPI returns 400 {"detail":"There was an error parsing the body"}. Go's encoding/json accepts invalid UTF-8, so the handler must check for it. (2) FastAPI parses the body before the app-wide 0-RTT dependency runs, so a JSON decode error gives 422 even with Early-Data: 1. Only a body that parses, valid or not, gets the 425. Body parsing must happen before the 0-RTT check, or the 0-RTT middleware must let the 422 and 400 cases go first.
+app/indieauth.py	L97	CONFIRM	indieauth.py:96-144; admin.py:52-66; starlette/datastructures.py:271; probe: query 'scope=a%1Cb+c%C2%A0d&me=1&me=2&state=' gives me '2', state '', scope ['a','b','c','d']; Location login?redirect=http%3A//testserver/auth%3Fa%3D1; httpx get(None) raises TypeError	
+app/indieauth.py	L147	CONFIRM	config.py:259-273; admin.py:52-57; fastapi/dependencies/utils.py:476-519, :653-663; probe: missing csrf + no session gives 302 (deps run 0rtt,session); empty csrf + session gives 422; bad csrf gives 403 before session; text/plain body gives empty form; starlette Response 'é' becomes b'\xe9', '€' raises UnicodeEncodeError	
+app/indieauth.py	L231	CONFIRM	indieauth.py:230-267, :191-227 (code_verifier unused, commit :224-225); starlette/datastructures.py:271	
+app/indieauth.py	L271	CONFIRM	indieauth.py:270-350; models.py:443-481; only creator of IndieAuthAccessToken is indieauth.py:330, so every token has its authorization request	
+app/indieauth.py	L480	CONFIRM	indieauth.py:479-497; fastapi/dependencies/utils.py:653-663; probe: token='', no body, JSON body all give 422 loc [body,token]; token=a&token=b gives 200 {}	
+app/indieauth.py	L501	CONFIRM	fastapi/security/http.py:67-97, security/utils.py:4-8; probe: no header/Bearer gives 401 Not authenticated; 'dXNl cjpw!YXNz' decodes; 'dXNlcjpwYXN', no colon, non-ASCII, bare 'Basic' give Invalid authentication credentials; valid creds + empty token give 422; 'u:p:q' gives password 'p:q'	
+tests/test_httpsig.py	L28	CONFIRM	test_httpsig.py:17-31, :92-138, :142-179; httpsig.py:167-277; layout.tsv:55	
+tests/test_httpsig.py	L35	CONFIRM	test_httpsig.py:34-55, :59-89; httpsig.py:171, :280-308; probe: HTTPException(202).detail is 'Accepted'	
+app/boxes.py	L779	CONFIRM	boxes.py:779, :797-810, :811-813, :817-819	
+app/boxes.py	L846	CONFIRM	boxes.py:835-844, :846, :866, :869, :873-875	
+app/boxes.py	L1908	CONFIRM	boxes.py:1906-1908, :1943, :1858, :1893; incoming_activities.py:113-134; probe: isoparse(None)/isoparse(123) TypeError, isoparse('') ValueError	
+app/boxes.py	L2098	CONFIRM	boxes.py:2098-2100, :2107-2109	
+app/boxes.py	L2380	CONFIRM	boxes.py:2378-2380, :2405; incoming_activities.py:116-134	
+app/boxes.py	L2587	CONFIRM	boxes.py:2581-2587, :2597; callers boxes.py:257 (send_like), :292 (send_announce), :2561 (caught :2483-2486); admin.py:179, :1080 (no try)	
+app/boxes.py	L600	REFUTE	boxes.py:689-690; source.py:95-105	The translation and the classification are right, but two evidence lines are wrong. The "tag" key of the Note is at boxes.py:690, not :689 (:689 is "url"). render_hashtag is at source.py:95-105, not :94-104.
+app/boxes.py	L847	CONFIRM	boxes.py:847-875; _compute_recipients boxes.py:897-903 reads only to/cc/bto/bcc, so the Mention tags add no recipients	
+app/boxes.py	L675	REFUTE	boxes.py:687, :689	noteID[:7] (ASCII_BYTES) is right, but the evidence cites the wrong line for the object's url. boxes.py:687 is "context". "url": url is at boxes.py:689.
+app/boxes.py	L711	REFUTE	source.py:24, :95-105	The translation and the classification are right, but two evidence lines are wrong. _HASHTAG_REGEX (#[\d\w]+) is at source.py:24, not :23 (:23 is _FORMATTER). render_hashtag is at source.py:95-105, not :94-104.
+app/boxes.py	L2552	CONFIRM	boxes.py:2551-2566; activitypub.py:238-242 (orderedItems/items returned as is); catch boxes.py:2483-2486	
+app/httpsig.py	L62	CONFIRM	httpsig.py:58-63, :229-236, :330-336	
+app/httpsig.py	L75	REFUTE	httpsig.py:179, :194, :230, :257, :266	The guarded byte slice is right, but three use sites are cited at the wrong lines. keyId is read at httpsig.py:179 (not :178, which is try:), algorithm at :194 (not :190), and signature at :257 and :266 (not :255).
+app/models.py	L296	CONFIRM	models.py:165, :295-296; boxes.py:64-65, :86-87; all 13 save_outbox_object callers pass allocate_outbox_id() (grep)	

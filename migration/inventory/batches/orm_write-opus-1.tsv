@@ -1,0 +1,35 @@
+file	line	category	symbol	construct
+app/boxes.py	104	ORM_WRITE	save_outbox_object	db_session.add(outbox_object)
+app/boxes.py	133	ORM_WRITE	send_block	actor.is_blocked = True
+app/boxes.py	188	ORM_WRITE	send_block	db_session.add(notif)
+app/boxes.py	219	ORM_WRITE	send_delete	outbox_object_to_delete.is_deleted = True
+app/boxes.py	245	ORM_WRITE	send_delete	replied_object.replies_count = new_replies_count
+app/boxes.py	279	ORM_WRITE	send_like	inbox_object.liked_via_outbox_object_ap_id = outbox_object.ap_id
+app/boxes.py	325	ORM_WRITE	send_announce	inbox_object.announced_via_outbox_object_ap_id = outbox_object.ap_id
+app/boxes.py	395	ORM_WRITE	_send_undo	outbox_object_to_undo.undone_by_outbox_object_id = outbox_object.id
+app/boxes.py	396	ORM_WRITE	_send_undo	outbox_object_to_undo.is_deleted = True
+app/boxes.py	422	ORM_WRITE	_send_undo	liked_object.liked_via_outbox_object_ap_id = None
+app/boxes.py	439	ORM_WRITE	_send_undo	announced_object.announced_via_outbox_object_ap_id = None
+app/boxes.py	456	ORM_WRITE	_send_undo	blocked_actor.is_blocked = False
+app/boxes.py	470	ORM_WRITE	_send_undo	db_session.add(notif)
+app/boxes.py	714	ORM_WRITE	send_create	db_session.add(tagged_object)
+app/boxes.py	723	ORM_WRITE	send_create	db_session.add(outbox_object_attachment)
+app/boxes.py	791	ORM_WRITE	send_vote	in_reply_to_object.voted_for_answers = names
+app/boxes.py	869	ORM_WRITE	send_update	outbox_object.ap_object = note
+app/boxes.py	870	ORM_WRITE	send_update	outbox_object.source = source
+app/boxes.py	871	ORM_WRITE	send_update	outbox_object.revisions = revisions
+app/boxes.py	1168	ORM_WRITE	_handle_delete_activity	ap_object_to_delete.is_deleted = True
+app/boxes.py	1204	ORM_WRITE	_handle_delete_activity	follow_activity.is_deleted = True
+app/boxes.py	1218	ORM_WRITE	_handle_delete_activity	ap_object_to_delete.is_deleted = True
+app/boxes.py	1236	ORM_WRITE	_handle_delete_activity	inbox_object.is_deleted = True
+app/boxes.py	1471	ORM_WRITE	_handle_follow_follow_activity	db_session.add(notif)
+app/boxes.py	1505	ORM_WRITE	send_accept	notif.is_accepted = True
+app/boxes.py	1522	ORM_WRITE	_send_accept	db_session.add(follower)
+app/boxes.py	1548	ORM_WRITE	_send_accept	db_session.add(notif)
+app/boxes.py	1562	ORM_WRITE	send_reject	notif.is_rejected = True
+app/boxes.py	1592	ORM_WRITE	_send_reject	db_session.add(notif)
+app/boxes.py	1623	ORM_WRITE	_handle_undo_activity	db_session.add(notif)
+app/boxes.py	1639	ORM_WRITE	_handle_undo_activity	liked_obj.likes_count = await _get_outbox_likes_count(db_session, liked_obj) - 1
+app/boxes.py	1653	ORM_WRITE	_handle_undo_activity	db_session.add(notif)
+app/boxes.py	1668	ORM_WRITE	_handle_undo_activity	announced_obj_from_outbox.announces_count = models.OutboxObject.announces_count - 1
+app/boxes.py	1678	ORM_WRITE	_handle_undo_activity	db_session.add(notif)

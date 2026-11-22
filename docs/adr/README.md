@@ -27,3 +27,5 @@ To add one, copy [template.md](template.md) to the next number and add it to thi
 | [0019](0019-run-the-server-and-the-workers-in-one-process.md) | Run the server and the workers in one process | Accepted |
 | [0020](0020-adopt-the-go-dependency-set.md) | Adopt the Go dependency set | Accepted |
 | [0021](0021-render-markdown-with-goldmark.md) | Render Markdown with goldmark | Accepted |
+| [0022](0022-allow-lossy-image-re-encodes-to-differ.md) | Allow lossy image re-encodes to differ | Accepted |
+| [0023](0023-store-go-error-text-instead-of-tracebacks.md) | Store Go error text instead of tracebacks | Accepted |

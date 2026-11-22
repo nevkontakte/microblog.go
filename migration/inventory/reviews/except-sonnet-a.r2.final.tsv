@@ -1,0 +1,8 @@
+file	source_construct_key	verdict	cite	finding
+app/activitypub.py	L210	CONFIRM	httpx _models.py:738-743	
+app/actor.py	L32	CONFIRM	actor.py:32-41	
+app/admin.py	L109	CONFIRM	lookup.py:38,43	
+app/admin.py	L1160	CONFIRM	admin.py:1154-1165	
+app/admin.py	L1182	CONFIRM	uploads.py:99-100	
+app/incoming_activities.py	L123	REFUTE	incoming_activities.py:108-112	Evidence still has a wrong line: the tries commit is at :110 (the increment is :108-110); :112 is the `if next_activity.ap_object` line. Cite :108-110 for the commit.
+app/incoming_activities.py	L129	CONFIRM	incoming_activities.py:129-141	

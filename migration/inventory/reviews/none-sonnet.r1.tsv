@@ -1,0 +1,88 @@
+file	source_construct_key	verdict	cite	finding
+app/activitypub.py	L57	CONFIRM	activitypub.py:56-63	
+app/activitypub.py	L168	CONFIRM	lookup.py:23-25	
+app/activitypub.py	L175	CONFIRM	activitypub.py:175-190	
+app/activitypub.py	L214	CONFIRM	activitypub.py:214-228	
+app/actor.py	L78	REFUTE	activitypub.py:128	Evidence cites activitypub.py:122 for the local actor name; the key is at activitypub.py:128 ("name": config.CONFIG.name). Translation is right; fix the line.
+app/actor.py	L82	REFUTE	activitypub.py:129	Evidence cites activitypub.py:123 for the local summary; the key is at activitypub.py:129 ("summary": _LOCAL_ACTOR_SUMMARY). Fix the line.
+app/actor.py	L86	CONFIRM	actor.py:86-88	
+app/actor.py	L120	CONFIRM	actor.py:120-124	
+app/actor.py	L126	CONFIRM	actor.py:126-130	
+app/actor.py	L132	CONFIRM	actor.py:132-136	
+app/actor.py	L164	CONFIRM	actor.py:164-166	
+app/actor.py	L172	CONFIRM	actor.py:172-174	
+app/actor.py	L181	CONFIRM	actor.py:181-189	
+app/admin.py	L48	CONFIRM	admin.py:48-70	
+app/admin.py	L92	CONFIRM	admin.py:92-110	
+app/admin.py	L161	CONFIRM	admin.py:161-216	
+app/admin.py	L270	CONFIRM	admin.py:270-281	
+app/admin.py	L341	CONFIRM	admin.py:341-369	
+app/admin.py	L429	CONFIRM	admin.py:429-432	
+app/admin.py	L617	CONFIRM	admin.py:617-632	
+app/admin.py	L690	CONFIRM	admin.py:690-698	
+app/admin.py	L794	CONFIRM	admin.py:794-820	
+app/admin.py	L1135	REFUTE	boxes.py:580-700	Claim that sendCreate tests in_reply_to, content_warning and name only by truth is false. send_create writes them into the object: "summary": content_warning and "inReplyTo": in_reply_to (boxes.py:~690-692), and the call passes `or None`, so absent must federate as JSON null, not "". Go must pass *string (nil) or convert "" to nil at the call, and name is also stored as the Article "name" (boxes.py:676).
+app/ap_object.py	L51	REFUTE	ap_object.py:51-57	Evidence is wrong: no code stores the Object.ap_published_at property. models.py:85/179 and admin.py:313 read the model columns, which shadow the property, and boxes.py:1906-1908, 2378-2380 and 2585-2587 recompute the value from ap_object. The property has no live caller; keep (time.Time, bool) for one-to-one, but drop the NOT NULL column claim.
+app/ap_object.py	L68	CONFIRM	ap_object.py:68-69	
+app/ap_object.py	L161	CONFIRM	ap_object.py:161-174	
+app/ap_object.py	L176	CONFIRM	ap_object.py:176-186	
+app/ap_object.py	L188	CONFIRM	ap_object.py:188-190	
+app/ap_object.py	L192	CONFIRM	ap_object.py:192-194	
+app/ap_object.py	L206	CONFIRM	ap_object.py:206-211	
+app/ap_object.py	L213	CONFIRM	ap_object.py:213-215	
+app/ap_object.py	L226	REFUTE	ap_object.py:226-231	Classification is wrong. The only use is a truth test (templates/utils.html:547) and the translation itself uses a plain bool with false for None. That is ZERO_VALUE, not POINTER.
+app/ap_object.py	L243	CONFIRM	ap_object.py:243-245	
+app/ap_object.py	L247	CONFIRM	ap_object.py:247-253	
+app/ap_object.py	L255	REFUTE	templates/utils.html:687	Claim that nil is reachable only from other callers is false: templates/utils.html:687 prints object.poll_voters_count for every Question, with or without poll items, so a Question without items prints "None voters" in Jinja. nil is reachable from a template; the evidence cites only :605-609.
+app/ap_object.py	L317	REFUTE	ap_object.py:317-338	Evidence is false: from_raw_object has only two callers, boxes.py:84 and lookup.py:46, and neither passes an actor; no caller passes one. Also missing: when actor_id == LOCAL_ACTOR.ap_id the function uses LOCAL_ACTOR first (ap_object.py:324-325), so a given actor is ignored in that case.
+app/ap_object.py	L340	CONFIRM	ap_object.py:340-342	
+app/config.py	L61	CONFIRM	config.py:61-65	
+app/config.py	L259	REFUTE	config.py:259-272	Wrong line: the HTTPException detail is at config.py:272, not :269.
+app/customization.py	L105	CONFIRM	customization.py:105-108	
+app/database.py	L30	CONFIRM	database.py:24-35	
+app/incoming_activities.py	L22	CONFIRM	incoming_activities.py:22-48	
+app/incoming_activities.py	L56	CONFIRM	incoming_activities.py:56-66	
+app/incoming_activities.py	L70	REFUTE	incoming_activities.py:70-94	Wrong lines: the `return None` is at incoming_activities.py:85 (if not q_count at :83), not :82-84, and .scalar_one() is at :94, not :90.
+app/incoming_activities.py	L153	CONFIRM	incoming_activities.py:153-157	
+app/key.py	L25	REFUTE	key.py:25-50	Translation offers two signatures (id *string, or two constructors, or string with ""). Pick one: key_id uses `self.id_ or ...` (key.py:49-50) and every caller passes a string, so use id string with "" for absent. Also pubkey_pem/privkey_pem are str | None (key.py:27-28) and to_dict emits publicKeyPem unconditionally, so say whether they are *string.
+app/main.py	L286	REFUTE	main.py:286-339	Wrong lines: `page = page or 1` is main.py:295 (not :301), offset is :307 (not :309-310), has_previous_page is :339 (not :347-352). Translation itself is right.
+app/main.py	L345	CONFIRM	main.py:345-349	
+app/main.py	L389	REFUTE	main.py:389-439	Wrong lines: `not page and not next_cursor` is main.py:398 (not :397), `if next_cursor` :408 and :438-439 (not :407/:433), reassignments :415 and :425 (not :417/:427), callers :483-488 (not :476-482). Translation is right.
+app/main.py	L459	REFUTE	main.py:459-488	Wrong lines: the forwarding of page and next_cursor is main.py:487-488, not :479-480. Params are :461-463.
+app/main.py	L523	CONFIRM	main.py:523-552	
+app/main.py	L1093	REFUTE	main.py:1093-1159	Wrong lines: `not page and not next_cursor` is main.py:1111 (not :1112), `if next_cursor` :1127 (not :1118-1119), reassignment :1135 (not :1136).
+app/outgoing_activities.py	L100	REFUTE	outgoing_activities.py:100-119	Wrong callers: boxes.py:1469 and :1518 are not new_outgoing_activity calls (they build a Notification and a Follower). The inbox-ID callers are boxes.py:1445-1449 and :2019-2023. Translation is right.
+app/outgoing_activities.py	L127	CONFIRM	outgoing_activities.py:127-139	
+app/outgoing_activities.py	L147	CONFIRM	outgoing_activities.py:147-158	
+app/outgoing_activities.py	L161	CONFIRM	outgoing_activities.py:161-190	
+app/outgoing_activities.py	L280	CONFIRM	outgoing_activities.py:280-284	
+app/templates.py	L60	CONFIRM	templates.py:60-63	
+app/templates.py	L83	CONFIRM	templates.py:83-134	
+app/uploads.py	L105	CONFIRM	uploads.py:105-122	
+app/utils/facepile.py	L35	REFUTE	facepile.py:35-84	Wrong evidence: the callers of Face.from_webmention are app/webmentions.py:185 and :190 (not utils/webmentions.py), plus main.py:902. None return is at facepile.py:84 (not :85); the first try is :39-62 and the second :65-82.
+app/utils/facepile.py	L95	REFUTE	facepile.py:95-121	Wrong lines: try is facepile.py:98-119 (not :98-117), final None :121 (not :120), caller :139 (not :140), `if not face` :140-145. Translation is right.
+app/utils/facepile.py	L134	REFUTE	facepile.py:133-172	Wrong evidence: callers are app/webmentions.py:180 (not utils/webmentions.py:180) and main.py:919. try is facepile.py:138-170 (not :139-173), break on no face :140-145, final None :172 (not :176).
+app/utils/indieauth.py	L25	REFUTE	indieauth.py:25-53	Misclassified: the function never returns None (indieauth.py:28-32, 43-47, 49-53 all return a client), so OK_RESULT is wrong; the None-able value is IndieAuthClient.name (POINTER, indieauth.py:45). Return lines are :43-47 and :49-53, not :44-48 and :50-54. Also print(props) at :41 is dead debug output.
+app/utils/opengraph.py	L36	REFUTE	opengraph.py:36-72	Wrong lines: raw dict is opengraph.py:46-52 with title at :48 (not :50), the dead title check is :58-59 (not :65-66), parse_obj :72. is_url_valid at :65 can also raise (DNS error from _getaddrinfo), which the translation omits; the caller catch is :146-153.
+app/utils/opengraph.py	L75	CONFIRM	opengraph.py:75-76	
+app/utils/opengraph.py	L131	CONFIRM	opengraph.py:131-153	
+app/utils/url.py	L12	CONFIRM	url.py:12-21	
+app/utils/url.py	L24	CONFIRM	url.py:24-28	
+app/utils/webmentions.py	L16	CONFIRM	webmentions.py:16-41	
+app/utils/webmentions.py	L44	CONFIRM	webmentions.py:44-57	
+app/utils/webmentions.py	L68	CONFIRM	webmentions.py:68-92	
+app/utils/workers.py	L22	REFUTE	workers.py:22-35	Wrong lines: the `return None` in outgoing_activities.py is :176 (not :171-173).
+app/webfinger.py	L12	CONFIRM	webfinger.py:12-53	
+app/webfinger.py	L56	REFUTE	webfinger.py:56-127	Claim that a JSON null body cannot give nil is false: resp.json() returns None for `null` (webfinger.py:125), which callers treat as not found (`data is None`, :132, :147). Go must return nil, nil for JSON null, not an error. Non-object JSON is returned as is by Python.
+app/webfinger.py	L130	CONFIRM	webfinger.py:130-137	
+app/webfinger.py	L140	CONFIRM	webfinger.py:140-155	
+tasks.py	L203	REFUTE	tasks.py:202-214	Classification is wrong: ADR 0016 (lines 45-48) already decides that developer-only inv tasks have no Go counterpart, and embed_version serves only build_docs (tasks.py:145) and build_docker_image (:219). Not UNKNOWN: out of scope, no TODO(port) question needed.
+tests/factories.py	L25	CONFIRM	factories.py:25-36	
+tests/factories.py	L39	CONFIRM	factories.py:39-54	
+tests/factories.py	L57	REFUTE	factories.py:57-68	Wrong line: the uuid branch in build_accept_activity is tests/factories.py:65, not :63.
+tests/factories.py	L71	CONFIRM	factories.py:71-82	
+tests/factories.py	L85	CONFIRM	factories.py:85-97	
+tests/factories.py	L100	REFUTE	factories.py:100-128	Wrong line: `note_id = outbox_public_id or uuid4().hex` is tests/factories.py:111, not :113.
+tests/factories.py	L245	CONFIRM	factories.py:245-270	
+tests/utils.py	L172	CONFIRM	utils.py:172-192	
+tests/utils.py	L195	CONFIRM	utils.py:195-216	

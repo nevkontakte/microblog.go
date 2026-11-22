@@ -1,0 +1,709 @@
+file	line	category	symbol	construct
+app/activitypub.py	57	NONE	FetchError.__init__	__init__(resp)
+app/activitypub.py	168	NONE	NotAnObjectError.__init__	__init__(resp)
+app/activitypub.py	175	NONE	fetch	fetch(params)
+app/activitypub.py	197	EXCEPT	fetch	raise ObjectIsGoneError(url, resp)
+app/activitypub.py	199	EXCEPT	fetch	raise ObjectUnavailableError(url, resp)
+app/activitypub.py	201	EXCEPT	fetch	raise ObjectNotFoundError(url, resp)
+app/activitypub.py	205	EXCEPT	fetch	except httpx.HTTPError
+app/activitypub.py	206	EXCEPT	fetch	raise FetchError(url, resp)
+app/activitypub.py	210	EXCEPT	fetch	except json.JSONDecodeError
+app/activitypub.py	211	EXCEPT	fetch	raise NotAnObjectError(url, resp)
+app/activitypub.py	214	NONE	parse_collection	parse_collection(url, payload)
+app/activitypub.py	222	EXCEPT	parse_collection	raise ValueError('recursion limit exceeded')
+app/activitypub.py	229	EXCEPT	parse_collection	raise ValueError('must at least prove a payload or an URL')
+app/activitypub.py	233	EXCEPT	parse_collection	raise ValueError(f'Missing type: payload={payload!r}')
+app/activitypub.py	236	EXCEPT	parse_collection	raise ValueError(f'Unexpected type {ap_type}')
+app/activitypub.py	273	EXCEPT	parse_collection	raise ValueError('unexpected activity type {}'.format(payload['type']))
+app/activitypub.py	290	EXCEPT	get_id	raise ValueError(f'Invalid ID type: {val}')
+app/activitypub.py	318	EXCEPT	get_object	raise ValueError(f'No object in {activity}')
+app/activitypub.py	326	EXCEPT	get_object	raise ValueError(f'Unexpected object {raw_activity_object}')
+app/activitypub.py	331	EXCEPT	get_object_id	raise ValueError(f'No object in {activity}')
+app/activitypub.py	377	EXCEPT	unwrap_activity	raise ValueError(f'Unwrapped object actor does not match activity: {activity}')
+app/actor.py	32	EXCEPT	_handle	raise ValueError(f'Invalid actor ID {ap_id}')
+app/actor.py	47	TEXT_INDEX	_handle	handle[1:]
+app/actor.py	55	EXCEPT	_handle	except Exception
+app/actor.py	63	EXCEPT	_handle	except Exception
+app/actor.py	71	EXCEPT	Actor.ap_actor	raise NotImplementedError()
+app/actor.py	78	NONE	Actor.name	name() -> None-able
+app/actor.py	82	NONE	Actor.summary	summary() -> None-able
+app/actor.py	86	NONE	Actor.url	url() -> None-able
+app/actor.py	105	EXCEPT	Actor.ap_type	raise NotImplementedError()
+app/actor.py	120	NONE	Actor.icon_url	icon_url() -> None-able
+app/actor.py	126	NONE	Actor.icon_media_type	icon_media_type() -> None-able
+app/actor.py	132	NONE	Actor.image_url	image_url() -> None-able
+app/actor.py	164	NONE	Actor.followers_collection_id	followers_collection_id() -> None-able
+app/actor.py	172	NONE	Actor.moved_to	moved_to() -> None-able
+app/actor.py	181	NONE	RemoteActor.__init__	__init__(handle)
+app/actor.py	183	EXCEPT	RemoteActor.__init__	raise ValueError(f'Unexpected actor type: {ap_type}')
+app/actor.py	217	EXCEPT	save_actor	raise ValueError(f'Invalid type {ap_type} for actor {ap_actor}')
+app/actor.py	225	ORM_WRITE	save_actor	db_session.add(actor)
+app/actor.py	237	EXCEPT	fetch_actor	raise ValueError('local actor should not be fetched')
+app/actor.py	249	EXCEPT	fetch_actor	raise ap.ObjectNotFoundError(f'{actor_id} was deleted')
+app/actor.py	263	EXCEPT	fetch_actor	except Exception
+app/actor.py	292	EXCEPT	fetch_actor	raise ap.ObjectNotFoundError(actor_id)
+app/actor.py	302	ORM_WRITE	update_actor_if_needed	actor_in_db.ap_actor = ra.ap_actor
+app/actor.py	303	ORM_WRITE	update_actor_if_needed	actor_in_db.handle = ra.handle
+app/actor.py	304	ORM_WRITE	update_actor_if_needed	actor_in_db.ap_type = ra.ap_type
+app/actor.py	306	ORM_WRITE	update_actor_if_needed	actor_in_db.updated_at = now()
+app/actor.py	386	EXCEPT	get_actors_metadata	raise ValueError('Should never happen')
+app/actor.py	395	EXCEPT	get_actors_metadata	except ap.ObjectNotFoundError
+app/actor.py	397	EXCEPT	get_actors_metadata	except Exception
+app/admin.py	48	NONE	user_session_or_redirect	user_session_or_redirect(session)
+app/admin.py	70	EXCEPT	user_session_or_redirect	raise _RedirectToLoginPage
+app/admin.py	73	EXACT_OUTPUT	user_session_or_redirect	session_serializer.loads(session, max_age=SESSION_TIMEOUT)
+app/admin.py	74	EXCEPT	user_session_or_redirect	except Exception
+app/admin.py	76	EXCEPT	user_session_or_redirect	raise _RedirectToLoginPage
+app/admin.py	80	EXCEPT	user_session_or_redirect	raise _RedirectToLoginPage
+app/admin.py	92	NONE	get_lookup	get_lookup(query)
+app/admin.py	92	ROUTE	get_lookup	router.get('/lookup')
+app/admin.py	103	EXCEPT	get_lookup	except httpx.TimeoutException
+app/admin.py	105	EXCEPT	get_lookup	except (ap.ObjectNotFoundError, ap.ObjectIsGoneError)
+app/admin.py	107	EXCEPT	get_lookup	except ap.ObjectUnavailableError
+app/admin.py	109	EXCEPT	get_lookup	except Exception
+app/admin.py	118	EXCEPT	get_lookup	except ap.ObjectNotFoundError
+app/admin.py	161	NONE	admin_new	admin_new(query, in_reply_to, with_content, with_visibility)
+app/admin.py	161	ROUTE	admin_new	router.get('/new')
+app/admin.py	187	EXCEPT	admin_new	raise ValueError(f'Unknown object in_reply_to={in_reply_to!r}')
+app/admin.py	195	EXCEPT	admin_new	except Exception
+app/admin.py	219	DICT_ORDER	admin_new	EMOJIS_BY_NAME.items()
+app/admin.py	227	ROUTE	admin_bookmarks	router.get('/bookmarks')
+app/admin.py	270	NONE	admin_stream	admin_stream(cursor)
+app/admin.py	270	ROUTE	admin_stream	router.get('/stream')
+app/admin.py	341	NONE	admin_inbox	admin_inbox(filter_by, cursor)
+app/admin.py	341	ROUTE	admin_inbox	router.get('/inbox')
+app/admin.py	429	NONE	admin_direct_messages	admin_direct_messages(cursor)
+app/admin.py	429	ROUTE	admin_direct_messages	router.get('/direct_messages')
+app/admin.py	521	DICT_ORDER	admin_direct_messages	convos.items()
+app/admin.py	617	NONE	admin_outbox	admin_outbox(filter_by, cursor)
+app/admin.py	617	ROUTE	admin_outbox	router.get('/outbox')
+app/admin.py	690	NONE	get_notifications	get_notifications(cursor)
+app/admin.py	690	ROUTE	get_notifications	router.get('/notifications')
+app/admin.py	763	ORM_WRITE	get_notifications	notif.is_new = False
+app/admin.py	770	ROUTE	admin_object	router.get('/object')
+app/admin.py	777	EXCEPT	admin_object	raise HTTPException(status_code=404)
+app/admin.py	794	NONE	admin_profile	admin_profile(cursor)
+app/admin.py	794	ROUTE	admin_profile	router.get('/profile')
+app/admin.py	807	EXCEPT	admin_profile	raise HTTPException(status_code=404)
+app/admin.py	871	ROUTE	admin_actions_force_delete	router.post('/actions/force_delete')
+app/admin.py	880	EXCEPT	admin_actions_force_delete	raise ValueError(f'Cannot find {ap_object_id}')
+app/admin.py	889	ORM_WRITE	admin_actions_force_delete	ap_object_to_delete.is_deleted = True
+app/admin.py	895	ROUTE	admin_actions_force_delete_webmention	router.post('/actions/force_delete_webmention')
+app/admin.py	904	EXCEPT	admin_actions_force_delete_webmention	raise ValueError(f'Cannot find {webmention_id}')
+app/admin.py	906	EXCEPT	admin_actions_force_delete_webmention	raise ValueError(f'Missing related outbox object for {webmention_id}')
+app/admin.py	910	ORM_WRITE	admin_actions_force_delete_webmention	webmention.is_deleted = True
+app/admin.py	931	ROUTE	admin_actions_follow	router.post('/actions/follow')
+app/admin.py	944	ROUTE	admin_actions_block	router.post('/actions/block')
+app/admin.py	956	ROUTE	admin_actions_unblock	router.post('/actions/unblock')
+app/admin.py	969	ROUTE	admin_actions_hide_announces	router.post('/actions/hide_announces')
+app/admin.py	977	ORM_WRITE	admin_actions_hide_announces	actor.are_announces_hidden_from_stream = True
+app/admin.py	983	ROUTE	admin_actions_show_announces	router.post('/actions/show_announces')
+app/admin.py	991	ORM_WRITE	admin_actions_show_announces	actor.are_announces_hidden_from_stream = False
+app/admin.py	997	ROUTE	admin_actions_delete	router.post('/actions/delete')
+app/admin.py	1009	ROUTE	admin_actions_accept_incoming_follow	router.post('/actions/accept_incoming_follow')
+app/admin.py	1021	ROUTE	admin_actions_reject_incoming_follow	router.post('/actions/reject_incoming_follow')
+app/admin.py	1033	ROUTE	admin_actions_like	router.post('/actions/like')
+app/admin.py	1045	ROUTE	admin_actions_undo	router.post('/actions/undo')
+app/admin.py	1057	ROUTE	admin_actions_announce	router.post('/actions/announce')
+app/admin.py	1069	ROUTE	admin_actions_bookmark	router.post('/actions/bookmark')
+app/admin.py	1081	ORM_WRITE	admin_actions_bookmark	inbox_object.is_bookmarked = True
+app/admin.py	1087	ROUTE	admin_actions_unbookmark	router.post('/actions/unbookmark')
+app/admin.py	1096	EXCEPT	admin_actions_unbookmark	raise ValueError('Should never happen')
+app/admin.py	1097	ORM_WRITE	admin_actions_unbookmark	inbox_object.is_bookmarked = False
+app/admin.py	1103	ROUTE	admin_actions_pin	router.post('/actions/pin')
+app/admin.py	1112	EXCEPT	admin_actions_pin	raise ValueError('Should never happen')
+app/admin.py	1113	ORM_WRITE	admin_actions_pin	outbox_object.is_pinned = True
+app/admin.py	1119	ROUTE	admin_actions_unpin	router.post('/actions/unpin')
+app/admin.py	1128	EXCEPT	admin_actions_unpin	raise ValueError('Should never happen')
+app/admin.py	1129	ORM_WRITE	admin_actions_unpin	outbox_object.is_pinned = False
+app/admin.py	1135	NONE	admin_actions_new	admin_actions_new(content, in_reply_to, content_warning, poll_type, name)
+app/admin.py	1135	ROUTE	admin_actions_new	router.post('/actions/new')
+app/admin.py	1150	EXCEPT	admin_actions_new	raise HTTPException(status_code=422, detail='Error: object must have a content')
+app/admin.py	1160	EXCEPT	admin_actions_new	raise HTTPException(status_code=422, detail='Error: objec must have a content')
+app/admin.py	1182	EXCEPT	admin_actions_new	raise ValueError('Question must have at least 2 answers')
+app/admin.py	1209	ROUTE	admin_actions_vote	router.post('/actions/vote')
+app/admin.py	1228	ROUTE	login	unauthenticated_router.get('/login')
+app/admin.py	1247	NONE	login_validation	login_validation(redirect)
+app/admin.py	1247	ROUTE	login_validation	unauthenticated_router.post('/login')
+app/admin.py	1271	EXACT_OUTPUT	login_validation	session_serializer.dumps({'is_logged_in': True})
+app/admin.py	1277	ROUTE	logout	router.get('/logout')
+app/admin.py	1281	EXACT_OUTPUT	logout	session_serializer.dumps({'is_logged_in': False})
+app/ap_object.py	40	EXCEPT	Object.ap_object	raise NotImplementedError
+app/ap_object.py	51	NONE	Object.ap_published_at	ap_published_at() -> None-able
+app/ap_object.py	54	DATETIME_FORMAT	Object.ap_published_at	parse_isoformat(self.ap_object['published'])
+app/ap_object.py	56	DATETIME_FORMAT	Object.ap_published_at	parse_isoformat(self.ap_object['created'])
+app/ap_object.py	61	EXCEPT	Object.actor	raise NotImplementedError()
+app/ap_object.py	68	NONE	Object.ap_context	ap_context() -> None-able
+app/ap_object.py	161	NONE	Object.url	url() -> None-able
+app/ap_object.py	176	NONE	Object.content	content() -> None-able
+app/ap_object.py	183	EXACT_OUTPUT	Object.content	markdown(content)
+app/ap_object.py	188	NONE	Object.summary	summary() -> None-able
+app/ap_object.py	192	NONE	Object.name	name() -> None-able
+app/ap_object.py	206	NONE	Object.activity_object_ap_id	activity_object_ap_id() -> None-able
+app/ap_object.py	213	NONE	Object.in_reply_to	in_reply_to() -> None-able
+app/ap_object.py	226	NONE	Object.is_in_reply_to_from_inbox	is_in_reply_to_from_inbox() -> None-able
+app/ap_object.py	243	NONE	Object.poll_items	poll_items() -> None-able
+app/ap_object.py	247	NONE	Object.poll_end_time	poll_end_time() -> None-able
+app/ap_object.py	250	DATETIME_FORMAT	Object.poll_end_time	parse_isoformat(self.ap_object['endTime'])
+app/ap_object.py	255	NONE	Object.poll_voters_count	poll_voters_count() -> None-able
+app/ap_object.py	275	TEXT_INDEX	_to_camel	cased[0:1]
+app/ap_object.py	275	TEXT_INDEX	_to_camel	cased[1:]
+app/ap_object.py	314	EXCEPT	RemoteObject.__init__	raise ValueError(f'Invalid actor {self._actor.ap_id}')
+app/ap_object.py	317	NONE	RemoteObject.from_raw_object	from_raw_object(actor)
+app/ap_object.py	328	EXCEPT	RemoteObject.from_raw_object	raise ValueError(f'Invalid actor, got {actor.ap_id}, expected {actor_id}')
+app/ap_object.py	340	NONE	RemoteObject.og_meta	og_meta() -> None-able
+app/boxes.py	72	NONE	save_outbox_object	save_outbox_object(relates_to_inbox_object_id, relates_to_outbox_object_id, relates_to_actor_id, source, conversation, slug)
+app/boxes.py	104	ORM_WRITE	save_outbox_object	db_session.add(outbox_object)
+app/boxes.py	123	EXCEPT	send_unblock	raise ValueError(f'No Block activity for {ap_actor_id}')
+app/boxes.py	133	ORM_WRITE	send_block	actor.is_blocked = True
+app/boxes.py	177	EXCEPT	send_block	raise ValueError('Should never happen')
+app/boxes.py	188	ORM_WRITE	send_block	db_session.add(notif)
+app/boxes.py	196	EXCEPT	send_delete	raise ValueError(f'{ap_object_id} not found in the outbox')
+app/boxes.py	217	EXCEPT	send_delete	raise ValueError('Should never happen')
+app/boxes.py	219	ORM_WRITE	send_delete	outbox_object_to_delete.is_deleted = True
+app/boxes.py	245	ORM_WRITE	send_delete	replied_object.replies_count = new_replies_count
+app/boxes.py	263	EXCEPT	send_like	raise ValueError('Should never happen')
+app/boxes.py	277	EXCEPT	send_like	raise ValueError('Should never happen')
+app/boxes.py	279	ORM_WRITE	send_like	inbox_object.liked_via_outbox_object_ap_id = outbox_object.ap_id
+app/boxes.py	298	EXCEPT	send_announce	raise ValueError('Should never happen')
+app/boxes.py	304	EXCEPT	send_announce	raise ValueError('Cannot announce non-public object')
+app/boxes.py	323	EXCEPT	send_announce	raise ValueError('Should never happen')
+app/boxes.py	325	ORM_WRITE	send_announce	inbox_object.announced_via_outbox_object_ap_id = outbox_object.ap_id
+app/boxes.py	355	EXCEPT	_send_follow	raise ValueError('Should never happen')
+app/boxes.py	370	EXCEPT	_send_undo	raise ValueError(f'{ap_object_id} not found in the outbox')
+app/boxes.py	373	EXCEPT	_send_undo	raise ValueError(f'Cannot build Undo for {outbox_object_to_undo.ap_type} activity')
+app/boxes.py	393	EXCEPT	_send_undo	raise ValueError('Should never happen')
+app/boxes.py	395	ORM_WRITE	_send_undo	outbox_object_to_undo.undone_by_outbox_object_id = outbox_object.id
+app/boxes.py	396	ORM_WRITE	_send_undo	outbox_object_to_undo.is_deleted = True
+app/boxes.py	400	EXCEPT	_send_undo	raise ValueError('Should never happen')
+app/boxes.py	418	EXCEPT	_send_undo	raise ValueError('Should never happen')
+app/boxes.py	421	EXCEPT	_send_undo	raise ValueError(f'Cannot find liked object {liked_object_ap_id}')
+app/boxes.py	422	ORM_WRITE	_send_undo	liked_object.liked_via_outbox_object_ap_id = None
+app/boxes.py	433	EXCEPT	_send_undo	raise ValueError('Should never happen')
+app/boxes.py	438	EXCEPT	_send_undo	raise ValueError(f'Cannot find announced object {announced_object_ap_id}')
+app/boxes.py	439	ORM_WRITE	_send_undo	announced_object.announced_via_outbox_object_ap_id = None
+app/boxes.py	449	EXCEPT	_send_undo	raise ValueError(f'Invalid block activity {outbox_object_to_undo.ap_id}')
+app/boxes.py	456	ORM_WRITE	_send_undo	blocked_actor.is_blocked = False
+app/boxes.py	470	ORM_WRITE	_send_undo	db_session.add(notif)
+app/boxes.py	473	EXCEPT	_send_undo	raise ValueError('Should never happen')
+app/boxes.py	508	EXCEPT	fetch_conversation_root	except (ap.FetchError, ap.NotAnObjectError)
+app/boxes.py	515	EXCEPT	fetch_conversation_root	except httpx.HTTPStatusError
+app/boxes.py	545	EXCEPT	send_move	raise ValueError('Should never happen')
+app/boxes.py	573	EXCEPT	send_self_destruct	raise ValueError('Should never happen')
+app/boxes.py	582	NONE	send_create	send_create(uploads, in_reply_to, content_warning, poll_type, poll_answers, poll_duration_in_minutes, name)
+app/boxes.py	597	DATETIME_FORMAT	send_create	now().replace(microsecond=0).isoformat()
+app/boxes.py	600	EXACT_OUTPUT	send_create	markdownify(db_session, source)
+app/boxes.py	607	EXCEPT	send_create	raise ValueError(f'Invalid in reply to in_reply_to={in_reply_to!r}')
+app/boxes.py	615	EXCEPT	send_create	except Exception
+app/boxes.py	640	EXCEPT	send_create	raise ValueError(f'Unhandled visibility {visibility}')
+app/boxes.py	648	EXCEPT	send_create	raise ValueError('Question must have at least 2 possible answers')
+app/boxes.py	651	EXCEPT	send_create	raise ValueError('Mising poll_type')
+app/boxes.py	654	EXCEPT	send_create	raise ValueError('Missing poll_duration_in_minutes')
+app/boxes.py	658	DATETIME_FORMAT	send_create	(now() + timedelta(minutes=poll_duration_in_minutes)).isoformat()
+app/boxes.py	672	EXCEPT	send_create	raise ValueError('Article must have a name')
+app/boxes.py	675	TEXT_INDEX	send_create	note_id[:7]
+app/boxes.py	706	EXCEPT	send_create	raise ValueError('Should never happen')
+app/boxes.py	711	TEXT_INDEX	send_create	tag['name'][1:]
+app/boxes.py	714	ORM_WRITE	send_create	db_session.add(tagged_object)
+app/boxes.py	723	ORM_WRITE	send_create	db_session.add(outbox_object_attachment)
+app/boxes.py	779	DATETIME_FORMAT	send_vote	now().replace(microsecond=0).isoformat()
+app/boxes.py	783	EXCEPT	send_vote	raise ValueError(f'Invalid in reply to in_reply_to={in_reply_to!r}')
+app/boxes.py	785	EXCEPT	send_vote	raise ValueError('Object has no context')
+app/boxes.py	791	ORM_WRITE	send_vote	in_reply_to_object.voted_for_answers = names
+app/boxes.py	815	EXCEPT	send_vote	raise ValueError('Should never happen')
+app/boxes.py	832	EXCEPT	send_update	raise ValueError(f'{ap_id} not found')
+app/boxes.py	846	DATETIME_FORMAT	send_update	now().replace(microsecond=0).isoformat()
+app/boxes.py	847	EXACT_OUTPUT	send_update	markdownify(db_session, source)
+app/boxes.py	869	ORM_WRITE	send_update	outbox_object.ap_object = note
+app/boxes.py	870	ORM_WRITE	send_update	outbox_object.source = source
+app/boxes.py	871	ORM_WRITE	send_update	outbox_object.revisions = revisions
+app/boxes.py	977	NONE	_get_followers_recipients	_get_followers_recipients(skip_actors)
+app/boxes.py	994	NONE	get_notification_by_id	get_notification_by_id() -> None-able
+app/boxes.py	1010	NONE	get_inbox_object_by_ap_id	get_inbox_object_by_ap_id() -> None-able
+app/boxes.py	1026	NONE	get_inbox_delete_for_activity_object_ap_id	get_inbox_delete_for_activity_object_ap_id() -> None-able
+app/boxes.py	1045	NONE	get_outbox_object_by_ap_id	get_outbox_object_by_ap_id() -> None-able
+app/boxes.py	1073	NONE	get_outbox_object_by_slug_and_short_id	get_outbox_object_by_slug_and_short_id() -> None-able
+app/boxes.py	1099	NONE	get_anybox_object_by_ap_id	get_anybox_object_by_ap_id() -> None-able
+app/boxes.py	1108	NONE	get_webmention_by_id	get_webmention_by_id() -> None-able
+app/boxes.py	1122	NONE	_handle_delete_activity	_handle_delete_activity(relates_to_inbox_object, forwarded_by_actor)
+app/boxes.py	1141	EXCEPT	_handle_delete_activity	except ap.ObjectNotFoundError
+app/boxes.py	1168	ORM_WRITE	_handle_delete_activity	ap_object_to_delete.is_deleted = True
+app/boxes.py	1204	ORM_WRITE	_handle_delete_activity	follow_activity.is_deleted = True
+app/boxes.py	1218	ORM_WRITE	_handle_delete_activity	ap_object_to_delete.is_deleted = True
+app/boxes.py	1236	ORM_WRITE	_handle_delete_activity	inbox_object.is_deleted = True
+app/boxes.py	1238	EXCEPT	_handle_delete_activity	raise ValueError('Should never happen')
+app/boxes.py	1327	NONE	_revert_side_effect_for_deleted_object	_revert_side_effect_for_deleted_object(delete_activity, forwarded_by_actor)
+app/boxes.py	1471	ORM_WRITE	_handle_follow_follow_activity	db_session.add(notif)
+app/boxes.py	1483	EXCEPT	_get_incoming_follow_from_notification_id	raise ValueError(f'Notification notification_id={notification_id!r} not found')
+app/boxes.py	1486	EXCEPT	_get_incoming_follow_from_notification_id	raise ValueError('Should never happen')
+app/boxes.py	1489	EXCEPT	_get_incoming_follow_from_notification_id	raise ValueError(f'Unexpected ap_type={ap_type!r}')
+app/boxes.py	1505	ORM_WRITE	send_accept	notif.is_accepted = True
+app/boxes.py	1522	ORM_WRITE	_send_accept	db_session.add(follower)
+app/boxes.py	1524	EXCEPT	_send_accept	except IntegrityError
+app/boxes.py	1540	EXCEPT	_send_accept	raise ValueError('Should never happen')
+app/boxes.py	1548	ORM_WRITE	_send_accept	db_session.add(notif)
+app/boxes.py	1562	ORM_WRITE	send_reject	notif.is_rejected = True
+app/boxes.py	1584	EXCEPT	_send_reject	raise ValueError('Should never happen')
+app/boxes.py	1592	ORM_WRITE	_send_reject	db_session.add(notif)
+app/boxes.py	1608	ORM_WRITE	_handle_undo_activity	ap_activity_to_undo.undone_by_inbox_object_id = undo_activity.id
+app/boxes.py	1609	ORM_WRITE	_handle_undo_activity	ap_activity_to_undo.is_deleted = True
+app/boxes.py	1623	ORM_WRITE	_handle_undo_activity	db_session.add(notif)
+app/boxes.py	1627	EXCEPT	_handle_undo_activity	raise ValueError('Like without object')
+app/boxes.py	1639	ORM_WRITE	_handle_undo_activity	liked_obj.likes_count = await _get_outbox_likes_count(db_session, liked_obj) - 1
+app/boxes.py	1653	ORM_WRITE	_handle_undo_activity	db_session.add(notif)
+app/boxes.py	1657	EXCEPT	_handle_undo_activity	raise ValueError('Announce witout object')
+app/boxes.py	1668	ORM_WRITE	_handle_undo_activity	announced_obj_from_outbox.announces_count = models.OutboxObject.announces_count - 1
+app/boxes.py	1678	ORM_WRITE	_handle_undo_activity	db_session.add(notif)
+app/boxes.py	1686	ORM_WRITE	_handle_undo_activity	db_session.add(notif)
+app/boxes.py	1756	ORM_WRITE	_handle_move_activity	db_session.add(notif)
+app/boxes.py	1776	EXCEPT	_handle_update_activity	raise ValueError(f'Invalid Update activity {from_actor.ap_actor}/{updated_actor.ap_actor}')
+app/boxes.py	1804	ORM_WRITE	_handle_update_activity	existing_object.ap_object = wrapped_object
+app/boxes.py	1805	ORM_WRITE	_handle_update_activity	existing_object.updated_at = now()
+app/boxes.py	1811	NONE	_handle_create_activity	_handle_create_activity(forwarded_by_actor, relates_to_inbox_object)
+app/boxes.py	1836	EXCEPT	_handle_create_activity	raise ValueError('Object actor does not match activity')
+app/boxes.py	1854	ORM_WRITE	_handle_create_activity	create_activity.is_deleted = True
+app/boxes.py	1896	NONE	_process_note_object	_process_note_object(forwarded_by_actor)
+app/boxes.py	1904	EXCEPT	_process_note_object	raise ValueError(f'Unexpected parent activity {parent_activity.ap_id}')
+app/boxes.py	1908	DATETIME_FORMAT	_process_note_object	parse_isoformat(ro.ap_object['published'])
+app/boxes.py	1956	ORM_WRITE	_process_note_object	db_session.add(inbox_object)
+app/boxes.py	1960	ORM_WRITE	_process_note_object	parent_activity.relates_to_inbox_object_id = inbox_object.id
+app/boxes.py	2032	ORM_WRITE	_process_note_object	db_session.add(notif)
+app/boxes.py	2047	EXCEPT	_handle_vote_answer	raise ValueError('Should never happen')
+app/boxes.py	2054	ORM_WRITE	_handle_vote_answer	answer.is_transient = True
+app/boxes.py	2062	ORM_WRITE	_handle_vote_answer	db_session.add(poll_answer)
+app/boxes.py	2098	DATETIME_FORMAT	_handle_vote_answer	now().replace(microsecond=0).isoformat()
+app/boxes.py	2100	ORM_WRITE	_handle_vote_answer	question.ap_object = question_ap_object
+app/boxes.py	2112	NONE	_handle_announce_activity	_handle_announce_activity(relates_to_outbox_object, relates_to_inbox_object)
+app/boxes.py	2121	ORM_WRITE	_handle_announce_activity	relates_to_outbox_object.announces_count = models.OutboxObject.announces_count + 1
+app/boxes.py	2132	ORM_WRITE	_handle_announce_activity	db_session.add(notif)
+app/boxes.py	2168	ORM_WRITE	_handle_announce_activity	announce_activity.is_hidden_from_stream = True
+app/boxes.py	2170	ORM_WRITE	_handle_announce_activity	announce_activity.is_hidden_from_stream = not is_from_following
+app/boxes.py	2175	EXCEPT	_handle_announce_activity	raise ValueError('Should never happen')
+app/boxes.py	2205	ORM_WRITE	_handle_announce_activity	db_session.add(announced_inbox_object)
+app/boxes.py	2207	ORM_WRITE	_handle_announce_activity	announce_activity.relates_to_inbox_object_id = announced_inbox_object.id
+app/boxes.py	2208	ORM_WRITE	_handle_announce_activity	announce_activity.is_hidden_from_stream = not is_from_following or announce_activity.actor.are_announces_hidden_from_stream
+app/boxes.py	2214	NONE	_handle_like_activity	_handle_like_activity(relates_to_outbox_object, relates_to_inbox_object)
+app/boxes.py	2228	ORM_WRITE	_handle_like_activity	relates_to_outbox_object.likes_count = await _get_outbox_likes_count(db_session, relates_to_outbox_object)
+app/boxes.py	2240	ORM_WRITE	_handle_like_activity	db_session.add(notif)
+app/boxes.py	2263	ORM_WRITE	_handle_block_activity	db_session.add(notif)
+app/boxes.py	2294	EXCEPT	save_to_inbox	except ap.ObjectNotFoundError
+app/boxes.py	2299	ORM_WRITE	save_to_inbox	actor.ap_actor = updated_actor.ap_actor
+app/boxes.py	2311	EXCEPT	save_to_inbox	except ap.ObjectNotFoundError
+app/boxes.py	2314	EXCEPT	save_to_inbox	except ap.FetchError
+app/boxes.py	2345	EXCEPT	save_to_inbox	except Exception
+app/boxes.py	2356	EXCEPT	save_to_inbox	except Exception
+app/boxes.py	2357	EXCEPT	save_to_inbox	raise fastapi.HTTPException(status_code=401, detail='Invalid LD sig')
+app/boxes.py	2380	DATETIME_FORMAT	save_to_inbox	parse_isoformat(raw_object['published'])
+app/boxes.py	2418	ORM_WRITE	save_to_inbox	db_session.add(inbox_object)
+app/boxes.py	2472	ORM_WRITE	save_to_inbox	db_session.add(notif)
+app/boxes.py	2480	ORM_WRITE	save_to_inbox	db_session.add(following)
+app/boxes.py	2485	EXCEPT	save_to_inbox	except Exception
+app/boxes.py	2552	TEXT_INDEX	_prefetch_actor_outbox	outbox[:20]
+app/boxes.py	2564	ORM_WRITE	_prefetch_actor_outbox	saved_inbox_object.is_hidden_from_stream = False
+app/boxes.py	2587	DATETIME_FORMAT	save_object_to_inbox	parse_isoformat(ro.ap_object['published'])
+app/boxes.py	2607	ORM_WRITE	save_object_to_inbox	db_session.add(inbox_object)
+app/boxes.py	2638	EXCEPT	fetch_actor_collection	raise ValueError(f'internal collection for {url}) not supported')
+app/boxes.py	2658	EXCEPT	ReplyTreeNode.published_at	raise ValueError(f'Should never happen: {self}')
+app/boxes.py	2723	EXCEPT	get_replies_tree	raise ValueError(f'Invalid replies tree: {[n.ap_object for n in tree_nodes]}')
+app/boxes.py	2725	NONE	get_replies_tree._get_reply_node_children	_get_reply_node_children(index)
+app/config.py	32	EXCEPT	<module>	except ImportError
+app/config.py	40	EXCEPT	<module>	except FileNotFoundError
+app/config.py	55	EXCEPT	<module>	except FileNotFoundError
+app/config.py	61	NONE	_get_moved_to	_get_moved_to() -> None-able
+app/config.py	140	EXCEPT	load_config	except FileNotFoundError
+app/config.py	141	EXCEPT	load_config	raise ValueError(f'Please run the configuration wizard, {_CONFIG_FILE} is missing')
+app/config.py	192	EXACT_OUTPUT	<module>	markdown(CONFIG.custom_footer.replace('{version}', VERSION))
+app/config.py	232	EXCEPT	load_custom_routes	except ImportError
+app/config.py	235	DICT_ORDER	load_custom_routes	_CUSTOM_ROUTES.items()
+app/config.py	256	EXACT_OUTPUT	generate_csrf_token	csrf_serializer.dumps(secrets.token_hex(16))
+app/config.py	259	NONE	verify_csrf_token	verify_csrf_token(redirect_url)
+app/config.py	267	EXACT_OUTPUT	verify_csrf_token	csrf_serializer.loads(csrf_token, max_age=CONFIG.csrf_token_exp)
+app/config.py	268	EXCEPT	verify_csrf_token	except (itsdangerous.BadData, itsdangerous.SignatureExpired)
+app/config.py	270	EXCEPT	verify_csrf_token	raise HTTPException(status_code=403, detail=f'The security token has expired, {please_try_again}')
+app/config.py	278	EXACT_OUTPUT	hmac_sha256	hmac.new(CONFIG.secret.encode(), digestmod=hashlib.sha256)
+app/config.py	288	EXCEPT	<module>	except ImportError
+app/customization.py	56	EXCEPT	register_html_page	raise ValueError(f'{path} is already registered')
+app/customization.py	69	EXCEPT	register_raw_handler	raise ValueError(f'{path} is already registered')
+app/customization.py	105	NONE	get_custom_router	get_custom_router() -> None-able
+app/customization.py	111	DICT_ORDER	get_custom_router	_CUSTOM_ROUTES.items()
+app/database.py	30	NONE	get_db_session	get_db_session() -> None-able
+app/database.py	31	SESSION	get_db_session	async with async_session() as session
+app/httpsig.py	36	NONE	_build_signed_string	_build_signed_string(body_digest) -> None-able
+app/httpsig.py	62	TEXT_INDEX	_build_signed_string	signed_header[1:len(signed_header) - 1]
+app/httpsig.py	69	NONE	_parse_sig_header	_parse_sig_header(val) -> None-able
+app/httpsig.py	75	TEXT_INDEX	_parse_sig_header	v[1:len(v) - 1]
+app/httpsig.py	126	EXCEPT	_get_public_key	except ap.ObjectUnavailableError
+app/httpsig.py	140	EXCEPT	_get_public_key	raise ValueError(f"failed to fetch requested key {key_id}: got {actor['publicKey']}")
+app/httpsig.py	180	EXCEPT	httpsig_checker	except KeyError
+app/httpsig.py	222	EXCEPT	httpsig_checker	raise fastapi.HTTPException(status_code=202)
+app/httpsig.py	223	EXCEPT	httpsig_checker	except fastapi.HTTPException
+app/httpsig.py	224	EXCEPT	httpsig_checker	raise http_exc
+app/httpsig.py	225	EXCEPT	httpsig_checker	except Exception
+app/httpsig.py	249	EXCEPT	httpsig_checker	except (ap.ObjectIsGoneError, ap.ObjectNotFoundError)
+app/httpsig.py	252	EXCEPT	httpsig_checker	except Exception
+app/httpsig.py	268	EXCEPT	httpsig_checker	except Exception
+app/httpsig.py	287	EXCEPT	enforce_httpsig	raise fastapi.HTTPException(status_code=403, detail='Blocked')
+app/httpsig.py	298	EXCEPT	enforce_httpsig	raise fastapi.HTTPException(status_code=202)
+app/httpsig.py	306	EXCEPT	enforce_httpsig	raise fastapi.HTTPException(status_code=401, detail=detail)
+app/httpsig.py	315	NONE	HTTPXSigAuth.auth_flow	auth_flow() -> None-able
+app/httpsig.py	326	DATETIME_FORMAT	HTTPXSigAuth.auth_flow	datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
+app/httpsig.py	338	EXCEPT	HTTPXSigAuth.auth_flow	raise ValueError('Should never happen')
+app/incoming_activities.py	22	NONE	new_ap_incoming_activity	new_ap_incoming_activity() -> None-able
+app/incoming_activities.py	45	ORM_WRITE	new_ap_incoming_activity	db_session.add(incoming_activity)
+app/incoming_activities.py	56	NONE	_set_next_try	_set_next_try(next_try)
+app/incoming_activities.py	61	EXCEPT	_set_next_try	raise ValueError('Should never happen')
+app/incoming_activities.py	64	ORM_WRITE	_set_next_try	outgoing_activity.is_errored = True
+app/incoming_activities.py	65	ORM_WRITE	_set_next_try	outgoing_activity.next_try = None
+app/incoming_activities.py	67	ORM_WRITE	_set_next_try	outgoing_activity.next_try = next_try or _exp_backoff(outgoing_activity.tries)
+app/incoming_activities.py	70	NONE	fetch_next_incoming_activity	fetch_next_incoming_activity() -> None-able
+app/incoming_activities.py	108	ORM_WRITE	process_next_incoming_activity	next_activity.tries = next_activity.tries + 1
+app/incoming_activities.py	109	ORM_WRITE	process_next_incoming_activity	next_activity.last_try = now()
+app/incoming_activities.py	123	EXCEPT	process_next_incoming_activity	except asyncio.exceptions.TimeoutError
+app/incoming_activities.py	127	ORM_WRITE	process_next_incoming_activity	next_activity.error = traceback.format_exc()
+app/incoming_activities.py	129	EXCEPT	process_next_incoming_activity	except Exception
+app/incoming_activities.py	133	ORM_WRITE	process_next_incoming_activity	next_activity.error = traceback.format_exc()
+app/incoming_activities.py	137	ORM_WRITE	process_next_incoming_activity	next_activity.is_processed = True
+app/incoming_activities.py	153	NONE	IncomingActivityWorker.get_next_message	get_next_message() -> None-able
+app/indieauth.py	37	ROUTE	well_known_authorization_server	router.get('/.well-known/oauth-authorization-server')
+app/indieauth.py	62	ROUTE	oauth_registration_endpoint	router.post('/oauth/register')
+app/indieauth.py	80	ORM_WRITE	oauth_registration_endpoint	db_session.add(client)
+app/indieauth.py	97	ROUTE	indieauth_authorization_endpoint	router.get('/auth')
+app/indieauth.py	147	ROUTE	indieauth_flow	router.post('/admin/indieauth')
+app/indieauth.py	183	ORM_WRITE	indieauth_flow	db_session.add(auth_request)
+app/indieauth.py	191	NONE	_check_auth_code	_check_auth_code(code_verifier) -> None-able
+app/indieauth.py	224	ORM_WRITE	_check_auth_code	auth_code_req.is_used = True
+app/indieauth.py	231	ROUTE	indieauth_reedem_auth_code	router.post('/auth')
+app/indieauth.py	239	EXCEPT	indieauth_reedem_auth_code	raise ValueError(f'Invalid grant_type {grant_type}')
+app/indieauth.py	271	ROUTE	indieauth_token_endpoint	router.post('/token')
+app/indieauth.py	279	EXCEPT	indieauth_token_endpoint	raise ValueError(f'Invalid grant_type {grant_type}')
+app/indieauth.py	319	EXCEPT	indieauth_token_endpoint	raise ValueError('invalid refresh token')
+app/indieauth.py	322	EXCEPT	indieauth_token_endpoint	raise ValueError('invalid client ID')
+app/indieauth.py	325	ORM_WRITE	indieauth_token_endpoint	access_token.was_refreshed = True
+app/indieauth.py	328	EXCEPT	indieauth_token_endpoint	raise ValueError('Should never happen')
+app/indieauth.py	337	ORM_WRITE	indieauth_token_endpoint	db_session.add(access_token)
+app/indieauth.py	353	NONE	_check_access_token	_check_access_token() -> None-able
+app/indieauth.py	404	EXCEPT	verify_access_token	raise HTTPException(detail='Invalid access token', status_code=401)
+app/indieauth.py	410	EXCEPT	verify_access_token	raise ValueError('Should never happen')
+app/indieauth.py	429	NONE	check_access_token	check_access_token() -> None-able
+app/indieauth.py	442	EXCEPT	check_access_token	raise ValueError('Should never happen')
+app/indieauth.py	474	EXCEPT	enforce_access_token	raise HTTPException(status_code=401, detail='access token required')
+app/indieauth.py	480	ROUTE	indieauth_revocation_endpoint	router.post('/revoke_token')
+app/indieauth.py	489	EXCEPT	indieauth_revocation_endpoint	raise ValueError('Should never happen')
+app/indieauth.py	491	ORM_WRITE	indieauth_revocation_endpoint	token_info.is_revoked = True
+app/indieauth.py	501	ROUTE	oauth_introspection_endpoint	router.post('/token_introspection')
+app/indieauth.py	516	EXCEPT	oauth_introspection_endpoint	raise HTTPException(status_code=401, detail='unauthenticated')
+app/key.py	11	EXCEPT	generate_key	raise ValueError(f'Key at {key_path} already exists')
+app/key.py	25	NONE	Key.__init__	__init__(id_)
+app/key.py	64	EXCEPT	Key.from_dict	except KeyError
+app/key.py	65	EXCEPT	Key.from_dict	raise ValueError(f'bad key data {data!r}')
+app/ldsig.py	87	DATETIME_FORMAT	generate_signature	datetime.utcnow().replace(microsecond=0).isoformat()
+app/ldsig.py	92	EXCEPT	generate_signature	raise ValueError(f'missing privkey on key {key!r}')
+app/lookup.py	18	EXCEPT	lookup	raise ap.NotAnObjectError(query)
+app/lookup.py	22	EXCEPT	lookup	except ap.NotAnObjectError
+app/lookup.py	25	EXCEPT	lookup	raise ap.NotAnObjectError(query)
+app/main.py	190	EXCEPT	_check_0rtt_early_data	raise fastapi.HTTPException(status_code=425, detail='Too early')
+app/main.py	237	SESSION	custom_http_exception_handler	async with async_session() as db_session
+app/main.py	286	NONE	index	index(page)
+app/main.py	286	ROUTE	index	app.get(config.NavBarItems.NOTES_PATH)
+app/main.py	345	NONE	articles	articles(page)
+app/main.py	345	ROUTE	articles	app.get('/articles')
+app/main.py	389	NONE	_build_followx_collection	_build_followx_collection(page, next_cursor)
+app/main.py	459	NONE	followers	followers(page, next_cursor, prev_cursor)
+app/main.py	459	ROUTE	followers	app.get('/followers')
+app/main.py	493	EXCEPT	followers	raise HTTPException(status_code=404)
+app/main.py	523	NONE	following	following(page, next_cursor, prev_cursor)
+app/main.py	523	ROUTE	following	app.get('/following')
+app/main.py	557	EXCEPT	following	raise HTTPException(status_code=404)
+app/main.py	592	ROUTE	outbox	app.get('/outbox')
+app/main.py	636	ROUTE	post_outbox	app.post('/outbox')
+app/main.py	669	EXCEPT	post_outbox	raise ValueError('TODO')
+app/main.py	679	ROUTE	featured	app.get('/featured')
+app/main.py	743	EXCEPT	_check_outbox_object_acl	raise HTTPException(status_code=404)
+app/main.py	809	ROUTE	outbox_by_public_id	app.get('/o/{public_id}')
+app/main.py	834	EXCEPT	outbox_by_public_id	raise HTTPException(status_code=404)
+app/main.py	843	TEXT_INDEX	outbox_by_public_id	public_id[:7]
+app/main.py	938	ROUTE	article_by_slug	app.get('/articles/{short_id}/{slug}')
+app/main.py	949	EXCEPT	article_by_slug	raise HTTPException(status_code=404)
+app/main.py	988	ROUTE	outbox_activity_by_public_id	app.get('/o/{public_id}/activity')
+app/main.py	1003	EXCEPT	outbox_activity_by_public_id	raise HTTPException(status_code=404)
+app/main.py	1011	ROUTE	tag_by_name	app.get('/t/{tag}')
+app/main.py	1029	EXCEPT	tag_by_name	raise HTTPException(status_code=404)
+app/main.py	1083	ROUTE	emoji_by_name	app.get('/e/{name}')
+app/main.py	1086	EXCEPT	emoji_by_name	except KeyError
+app/main.py	1087	EXCEPT	emoji_by_name	raise HTTPException(status_code=404)
+app/main.py	1093	NONE	get_inbox	get_inbox(page, next_cursor)
+app/main.py	1093	ROUTE	get_inbox	app.get('/inbox')
+app/main.py	1165	ROUTE	inbox	app.post('/inbox')
+app/main.py	1178	ROUTE	get_remote_follow	app.get('/remote_follow')
+app/main.py	1191	ROUTE	post_remote_follow	app.post('/remote_follow')
+app/main.py	1203	EXCEPT	post_remote_follow	raise HTTPException(status_code=404)
+app/main.py	1213	ROUTE	remote_interaction	app.get('/remote_interaction')
+app/main.py	1223	EXCEPT	remote_interaction	raise HTTPException(status_code=404)
+app/main.py	1234	ROUTE	post_remote_interaction	app.post('/remote_interaction')
+app/main.py	1247	EXCEPT	post_remote_interaction	raise HTTPException(status_code=404)
+app/main.py	1257	ROUTE	wellknown_webfinger	app.get('/.well-known/webfinger')
+app/main.py	1265	EXCEPT	wellknown_webfinger	raise HTTPException(status_code=404)
+app/main.py	1292	ROUTE	well_known_nodeinfo	app.get('/.well-known/nodeinfo')
+app/main.py	1304	ROUTE	nodeinfo	app.get('/nodeinfo')
+app/main.py	1365	DICT_ORDER	_filter_proxy_resp_headers	proxy_resp.headers.items()
+app/main.py	1370	DICT_ORDER	_strip_content_type	headers.items()
+app/main.py	1378	ROUTE	serve_proxy_media	app.get('/proxy/media/{exp}/{sig}/{encoded_url}')
+app/main.py	1433	ROUTE	serve_proxy_media_resized	app.get('/proxy/media/{exp}/{sig}/{encoded_url}/{size}')
+app/main.py	1442	EXCEPT	serve_proxy_media_resized	raise ValueError('Unsupported size')
+app/main.py	1494	EXCEPT	serve_proxy_media_resized	raise ValueError
+app/main.py	1501	EXCEPT	serve_proxy_media_resized	except Exception
+app/main.py	1522	EXCEPT	serve_proxy_media_resized	except ValueError
+app/main.py	1527	EXCEPT	serve_proxy_media_resized	except Exception
+app/main.py	1536	ROUTE	serve_attachment	app.get('/attachments/{content_hash}/{filename}')
+app/main.py	1549	EXCEPT	serve_attachment	raise HTTPException(status_code=404)
+app/main.py	1559	ROUTE	serve_attachment_thumbnail	app.get('/attachments/thumbnails/{content_hash}/{filename}')
+app/main.py	1573	EXCEPT	serve_attachment_thumbnail	raise HTTPException(status_code=404)
+app/main.py	1592	ROUTE	robots_file	app.get('/robots.txt', response_class=PlainTextResponse)
+app/main.py	1626	ROUTE	json_feed	app.get('/feed.json')
+app/main.py	1633	EXCEPT	json_feed	raise ValueError(f'{outbox_object} has no published date')
+app/main.py	1640	DATETIME_FORMAT	json_feed	outbox_object.ap_published_at.isoformat()
+app/main.py	1669	EXACT_OUTPUT	_gen_rss_feed	FeedGenerator()
+app/main.py	1682	EXCEPT	_gen_rss_feed	raise ValueError(f'{outbox_object} has no published date')
+app/main.py	1686	EXCEPT	_gen_rss_feed	raise ValueError('Should never happen')
+app/main.py	1712	ROUTE	rss_feed	app.get('/feed.rss')
+app/main.py	1722	ROUTE	atom_feed	app.get('/feed.atom')
+app/media.py	17	EXACT_OUTPUT	proxied_media_sig	hmac_sha256()
+app/media.py	28	EXCEPT	verify_proxied_media_sig	raise InvalidProxySignatureError('invalid or expired media')
+app/media.py	46	EXCEPT	resized_media_url	raise ValueError(f'Unsupported resize {size}')
+app/micropub.py	23	ROUTE	micropub_endpoint	router.get('/micropub')
+app/micropub.py	49	DATETIME_FORMAT	micropub_endpoint	outbox_object.ap_published_at.isoformat()
+app/micropub.py	68	ROUTE	post_micropub_endpoint	router.post('/micropub')
+app/micropub.py	114	EXCEPT	post_micropub_endpoint	raise ValueError('Should never happen')
+app/models.py	53	NONE	Actor	Column(String, nullable=True, index=True)
+app/models.py	84	NONE	InboxObject	Column(String, nullable=True)
+app/models.py	89	NONE	InboxObject	Column(String, nullable=True, index=True)
+app/models.py	92	NONE	InboxObject	Column(String, nullable=True)
+app/models.py	99	NONE	InboxObject	Column(Integer, ForeignKey('inbox.id'), nullable=True)
+app/models.py	110	NONE	InboxObject	Column(Integer, ForeignKey('outbox.id'), nullable=True)
+app/models.py	121	NONE	InboxObject	Column(Integer, ForeignKey('inbox.id'), nullable=True)
+app/models.py	124	NONE	InboxObject	Column(String, nullable=True)
+app/models.py	125	NONE	InboxObject	Column(String, nullable=True)
+app/models.py	126	NONE	InboxObject	Column(JSON, nullable=True)
+app/models.py	136	NONE	InboxObject	Column(JSON, nullable=True)
+app/models.py	139	NONE	InboxObject.relates_to_anybox_object	relates_to_anybox_object() -> None-able
+app/models.py	166	NONE	OutboxObject	Column(String, nullable=True, index=True)
+app/models.py	170	NONE	OutboxObject	Column(String, nullable=True)
+app/models.py	173	NONE	OutboxObject	Column(String, nullable=True, index=True)
+app/models.py	176	NONE	OutboxObject	Column(String, nullable=True)
+app/models.py	177	NONE	OutboxObject	Column(JSON, nullable=True)
+app/models.py	181	NONE	OutboxObject	Column(String, nullable=True)
+app/models.py	191	NONE	OutboxObject	Column(JSON, nullable=True)
+app/models.py	201	NONE	OutboxObject	Column(Integer, ForeignKey('inbox.id'), nullable=True)
+app/models.py	211	NONE	OutboxObject	Column(Integer, ForeignKey('outbox.id'), nullable=True)
+app/models.py	223	NONE	OutboxObject	Column(Integer, ForeignKey('actor.id'), nullable=True)
+app/models.py	234	NONE	OutboxObject	Column(Integer, ForeignKey('outbox.id'), nullable=True)
+app/models.py	276	NONE	OutboxObject.relates_to_anybox_object	relates_to_anybox_object() -> None-able
+app/models.py	293	NONE	OutboxObject.url	url() -> None-able
+app/models.py	296	TEXT_INDEX	OutboxObject.url	self.public_id[:7]
+app/models.py	339	NONE	IncomingActivity	Column(String, nullable=True)
+app/models.py	341	NONE	IncomingActivity	Column(String, nullable=True)
+app/models.py	342	NONE	IncomingActivity	Column(String, nullable=True, index=True)
+app/models.py	343	NONE	IncomingActivity	Column(JSON, nullable=True)
+app/models.py	346	NONE	IncomingActivity	Column(DateTime(timezone=True), nullable=True, default=now)
+app/models.py	348	NONE	IncomingActivity	Column(DateTime(timezone=True), nullable=True)
+app/models.py	352	NONE	IncomingActivity	Column(String, nullable=True)
+app/models.py	363	NONE	OutgoingActivity	Column(Integer, ForeignKey('outbox.id'), nullable=True)
+app/models.py	367	NONE	OutgoingActivity	Column(Integer, ForeignKey('inbox.id'), nullable=True)
+app/models.py	371	NONE	OutgoingActivity	Column(String, nullable=True)
+app/models.py	374	NONE	OutgoingActivity	Column(DateTime(timezone=True), nullable=True, default=now)
+app/models.py	376	NONE	OutgoingActivity	Column(DateTime(timezone=True), nullable=True)
+app/models.py	377	NONE	OutgoingActivity	Column(Integer, nullable=True)
+app/models.py	378	NONE	OutgoingActivity	Column(String, nullable=True)
+app/models.py	382	NONE	OutgoingActivity	Column(String, nullable=True)
+app/models.py	391	EXCEPT	OutgoingActivity.anybox_object	raise ValueError('Should never happen')
+app/models.py	420	NONE	Upload	Column(String, nullable=True)
+app/models.py	421	NONE	Upload	Column(Integer, nullable=True)
+app/models.py	422	NONE	Upload	Column(Integer, nullable=True)
+app/models.py	435	NONE	OutboxObjectAttachment	Column(String, nullable=True)
+app/models.py	453	NONE	IndieAuthAuthorizationRequest	Column(String, nullable=True)
+app/models.py	454	NONE	IndieAuthAuthorizationRequest	Column(String, nullable=True)
+app/models.py	468	NONE	IndieAuthAccessToken	Column(Integer, ForeignKey('indieauth_authorization_request.id'), nullable=True)
+app/models.py	477	NONE	IndieAuthAccessToken	Column(String, nullable=True, unique=True, index=True)
+app/models.py	492	NONE	OAuthClient	Column(JSON, nullable=True)
+app/models.py	495	NONE	OAuthClient	Column(String, nullable=True)
+app/models.py	496	NONE	OAuthClient	Column(String, nullable=True)
+app/models.py	497	NONE	OAuthClient	Column(String, nullable=True)
+app/models.py	522	NONE	Webmention	Column(JSON, nullable=True)
+app/models.py	528	NONE	Webmention	Column(Enum(WebmentionType), nullable=True)
+app/models.py	531	NONE	Webmention.as_facepile_item	as_facepile_item() -> None-able
+app/models.py	538	EXCEPT	Webmention.as_facepile_item	except Exception
+app/models.py	622	NONE	Notification	Column(Enum(NotificationType), nullable=True)
+app/models.py	625	NONE	Notification	Column(Integer, ForeignKey('actor.id'), nullable=True)
+app/models.py	628	NONE	Notification	Column(Integer, ForeignKey('outbox.id'), nullable=True)
+app/models.py	631	NONE	Notification	Column(Integer, ForeignKey('inbox.id'), nullable=True)
+app/models.py	634	NONE	Notification	Column(Integer, ForeignKey('webmention.id', name='fk_webmention_id'), nullable=True)
+app/models.py	639	NONE	Notification	Column(Boolean, nullable=True)
+app/models.py	640	NONE	Notification	Column(Boolean, nullable=True)
+app/models.py	649	NONE	<module>	Column('summary', String, nullable=True)
+app/models.py	650	NONE	<module>	Column('name', String, nullable=True)
+app/outgoing_activities.py	100	NONE	new_outgoing_activity	new_outgoing_activity(outbox_object_id, inbox_object_id, webmention_target)
+app/outgoing_activities.py	108	EXCEPT	new_outgoing_activity	raise ValueError('Must reference at least one inbox/outbox activity')
+app/outgoing_activities.py	110	EXCEPT	new_outgoing_activity	raise ValueError('Webmentions must reference an outbox activity')
+app/outgoing_activities.py	112	EXCEPT	new_outgoing_activity	raise ValueError('Cannot reference both inbox/outbox activities')
+app/outgoing_activities.py	121	ORM_WRITE	new_outgoing_activity	db_session.add(outgoing_activity)
+app/outgoing_activities.py	127	NONE	_parse_retry_after	_parse_retry_after() -> None-able
+app/outgoing_activities.py	131	EXCEPT	_parse_retry_after	except ValueError
+app/outgoing_activities.py	147	NONE	_set_next_try	_set_next_try(next_try)
+app/outgoing_activities.py	152	EXCEPT	_set_next_try	raise ValueError('Should never happen')
+app/outgoing_activities.py	155	ORM_WRITE	_set_next_try	outgoing_activity.is_errored = True
+app/outgoing_activities.py	156	ORM_WRITE	_set_next_try	outgoing_activity.next_try = None
+app/outgoing_activities.py	158	ORM_WRITE	_set_next_try	outgoing_activity.next_try = next_try or _exp_backoff(outgoing_activity.tries)
+app/outgoing_activities.py	161	NONE	fetch_next_outgoing_activity	fetch_next_outgoing_activity() -> None-able
+app/outgoing_activities.py	197	ORM_WRITE	process_next_outgoing_activity	next_activity.tries = next_activity.tries + 1
+app/outgoing_activities.py	198	ORM_WRITE	process_next_outgoing_activity	next_activity.last_try = now()
+app/outgoing_activities.py	239	EXCEPT	process_next_outgoing_activity	except httpx.HTTPStatusError
+app/outgoing_activities.py	241	ORM_WRITE	process_next_outgoing_activity	next_activity.last_status_code = http_error.response.status_code
+app/outgoing_activities.py	242	ORM_WRITE	process_next_outgoing_activity	next_activity.last_response = http_error.response.text
+app/outgoing_activities.py	243	ORM_WRITE	process_next_outgoing_activity	next_activity.error = traceback.format_exc()
+app/outgoing_activities.py	254	ORM_WRITE	process_next_outgoing_activity	next_activity.is_errored = True
+app/outgoing_activities.py	255	ORM_WRITE	process_next_outgoing_activity	next_activity.next_try = None
+app/outgoing_activities.py	258	EXCEPT	process_next_outgoing_activity	except Exception
+app/outgoing_activities.py	260	ORM_WRITE	process_next_outgoing_activity	next_activity.error = traceback.format_exc()
+app/outgoing_activities.py	264	ORM_WRITE	process_next_outgoing_activity	next_activity.is_sent = True
+app/outgoing_activities.py	265	ORM_WRITE	process_next_outgoing_activity	next_activity.last_status_code = resp.status_code
+app/outgoing_activities.py	266	ORM_WRITE	process_next_outgoing_activity	next_activity.last_response = resp.text
+app/outgoing_activities.py	280	NONE	OutgoingActivityWorker.get_next_message	get_next_message() -> None-able
+app/prune.py	118	SESSION	run_prune_old_data	async with async_session() as db_session
+app/source.py	84	TEXT_INDEX	CustomRenderer.render_mention	mention[:-1]
+app/source.py	96	TEXT_INDEX	CustomRenderer.render_hashtag	token.target[1:]
+app/source.py	110	EXACT_OUTPUT	CustomRenderer.render_block_code	get_lexer(token.language)
+app/source.py	112	EXCEPT	CustomRenderer.render_block_code	except ClassNotFound
+app/source.py	134	TEXT_INDEX	_prefetch_mentioned_actors	mention[:-1]
+app/source.py	154	EXCEPT	_prefetch_mentioned_actors	except Exception
+app/source.py	169	EXACT_OUTPUT	hashtagify	Document(content)
+app/source.py	169	EXACT_OUTPUT	hashtagify	renderer.render(Document(content))
+app/source.py	198	EXACT_OUTPUT	markdownify	Document(content)
+app/source.py	198	EXACT_OUTPUT	markdownify	renderer.render(Document(content))
+app/source.py	204	DICT_ORDER	markdownify	mentioned_actors.values()
+app/templates.py	56	EXCEPT	_filter_domain	raise ValueError(f'No hostname for {text}')
+app/templates.py	60	NONE	_media_proxy_url	_media_proxy_url(url)
+app/templates.py	71	EXACT_OUTPUT	is_current_user_admin	session_serializer.loads(session_cookie, max_age=SESSION_TIMEOUT)
+app/templates.py	75	EXCEPT	is_current_user_admin	except Exception
+app/templates.py	83	NONE	render_template	render_template(template_args, headers)
+app/templates.py	335	EXCEPT	_clean_html	except Exception
+app/templates.py	361	DATETIME_FORMAT	_format_date	dt.strftime('%b %d, %Y, %H:%M')
+app/templates.py	377	EXCEPT	_replace_custom_emojis	except KeyError
+app/templates.py	381	DICT_ORDER	_replace_custom_emojis	idx.items()
+app/templates.py	395	TEXT_INDEX	_replace_emoji	hex(ord(c))[2:]
+app/uploads.py	67	EXACT_OUTPUT	save_upload	blurhash.encode(dest_f, x_components=4, y_components=3)
+app/uploads.py	76	EXCEPT	save_upload	except Exception
+app/uploads.py	99	ORM_WRITE	save_upload	db_session.add(new_upload)
+app/uploads.py	105	NONE	upload_to_attachment	upload_to_attachment(alt_text)
+app/utils/datetime.py	8	DATETIME_FORMAT	parse_isoformat	isoparse(isodate)
+app/utils/facepile.py	35	NONE	Face.from_webmention	from_webmention() -> None-able
+app/utils/facepile.py	58	EXCEPT	Face.from_webmention	except Exception
+app/utils/facepile.py	78	EXCEPT	Face.from_webmention	except Exception
+app/utils/facepile.py	88	TEXT_INDEX	merge_faces	sorted(faces, key=lambda f: f.created_at, reverse=True)[:10]
+app/utils/facepile.py	95	NONE	_parse_face	_parse_face() -> None-able
+app/utils/facepile.py	115	EXCEPT	_parse_face	except Exception
+app/utils/facepile.py	134	NONE	WebmentionReply.from_webmention	from_webmention() -> None-able
+app/utils/facepile.py	149	DATETIME_FORMAT	WebmentionReply.from_webmention	parse_isoformat(item['properties']['published'][0])
+app/utils/facepile.py	166	EXCEPT	WebmentionReply.from_webmention	except Exception
+app/utils/favicon.py	15	TEXT_INDEX	_get_primary_color	compiled[len(compiled) - 11:-4]
+app/utils/highlight.py	37	EXACT_OUTPUT	highlight	get_lexer_by_name(code.attrs['data-microblogpub-lexer'])
+app/utils/highlight.py	38	EXCEPT	highlight	except Exception
+app/utils/highlight.py	50	ORM_WRITE	highlight	code.name = 'div'
+app/utils/indieauth.py	25	NONE	get_client_id_data	get_client_id_data() -> None-able
+app/utils/mastodon.py	10	TEXT_INDEX	_load_mastodon_following_accounts_csv_file	Path(path).read_text().splitlines()[1:]
+app/utils/mastodon.py	24	EXCEPT	get_actor_urls_from_following_accounts_csv_file	except Exception
+app/utils/microformats.py	24	EXCEPT	fetch_and_parse	raise URLNotFoundOrGone
+app/utils/microformats.py	28	EXCEPT	fetch_and_parse	except httpx.HTTPStatusError
+app/utils/opengraph.py	36	NONE	_scrap_og_meta	_scrap_og_meta() -> None-able
+app/utils/opengraph.py	53	DICT_ORDER	_scrap_og_meta	OpenGraphMeta.__fields__.keys()
+app/utils/opengraph.py	75	NONE	scrap_og_meta	scrap_og_meta() -> None-able
+app/utils/opengraph.py	93	EXCEPT	external_urls	except (ap.FetchError, ap.NotAnObjectError)
+app/utils/opengraph.py	124	EXCEPT	external_urls	except Exception
+app/utils/opengraph.py	131	NONE	_og_meta_from_url	_og_meta_from_url() -> None-able
+app/utils/opengraph.py	148	EXCEPT	_og_meta_from_url	except TimeoutError
+app/utils/opengraph.py	151	EXCEPT	_og_meta_from_url	except Exception
+app/utils/opengraph.py	172	EXCEPT	og_meta_from_note	except asyncio.TimeoutError
+app/utils/opengraph.py	174	EXCEPT	og_meta_from_note	except Exception
+app/utils/opengraph.py	179	EXCEPT	og_meta_from_note	except httpx.HTTPError
+app/utils/pagination.py	8	DATETIME_FORMAT	encode_cursor	val.isoformat()
+app/utils/pagination.py	12	DATETIME_FORMAT	decode_cursor	isoparse(base64.urlsafe_b64decode(cursor).decode())
+app/utils/privacy_replace.py	31	EXCEPT	replace_url	raise ValueError('Missing hostname')
+app/utils/privacy_replace.py	32	EXCEPT	replace_url	except Exception
+app/utils/stats.py	124	SESSION	print_stats._get_stats	async with async_session() as db_session
+app/utils/url.py	12	NONE	make_abs	make_abs(url) -> None-able
+app/utils/url.py	24	NONE	must_make_abs	must_make_abs(url)
+app/utils/url.py	27	EXCEPT	must_make_abs	raise ValueError('missing URL')
+app/utils/url.py	39	EXCEPT	_getaddrinfo	except ValueError
+app/utils/url.py	43	EXCEPT	_getaddrinfo	except socket.gaierror
+app/utils/url.py	88	EXCEPT	check_url	raise InvalidURLError(f'"{url}" is invalid')
+app/utils/version.py	11	EXCEPT	get_version_commit	except Exception
+app/utils/webmentions.py	16	NONE	_discover_webmention_endoint	_discover_webmention_endoint() -> None-able
+app/utils/webmentions.py	27	EXCEPT	_discover_webmention_endoint	except Exception
+app/utils/webmentions.py	31	DICT_ORDER	_discover_webmention_endoint	resp.links.items()
+app/utils/webmentions.py	44	NONE	discover_webmention_endpoint	discover_webmention_endpoint() -> None-able
+app/utils/webmentions.py	68	NONE	Webmention.from_microformats	from_microformats() -> None-able
+app/utils/webmentions.py	79	DATETIME_FORMAT	Webmention.from_microformats	now().isoformat()
+app/utils/webmentions.py	89	DATETIME_FORMAT	Webmention.from_microformats	now().isoformat()
+app/utils/workers.py	20	EXCEPT	Worker.process_message	raise NotImplementedError
+app/utils/workers.py	22	NONE	Worker.get_next_message	get_next_message() -> None-able
+app/utils/workers.py	23	EXCEPT	Worker.get_next_message	raise NotImplementedError
+app/utils/workers.py	48	SESSION	Worker.run_forever	async with async_session() as db_session
+app/utils/workers.py	66	EXCEPT	Worker.run_forever	except asyncio.TimeoutError
+app/webfinger.py	12	NONE	get_webfinger_via_host_meta	get_webfinger_via_host_meta() -> None-able
+app/webfinger.py	29	EXCEPT	get_webfinger_via_host_meta	except httpx.HTTPStatusError
+app/webfinger.py	35	EXCEPT	get_webfinger_via_host_meta	except httpx.HTTPError
+app/webfinger.py	56	NONE	webfinger	webfinger(webfinger_url) -> None-able
+app/webfinger.py	80	TEXT_INDEX	webfinger	resource[5:]
+app/webfinger.py	82	TEXT_INDEX	webfinger	resource[1:]
+app/webfinger.py	102	EXCEPT	webfinger	except httpx.HTTPStatusError
+app/webfinger.py	108	EXCEPT	webfinger	except httpx.HTTPError
+app/webfinger.py	130	NONE	get_remote_follow_template	get_remote_follow_template() -> None-able
+app/webfinger.py	140	NONE	get_actor_url	get_actor_url() -> None-able
+app/webmentions.py	46	ROUTE	webmention_endpoint	router.post('/webmentions')
+app/webmentions.py	56	EXCEPT	webmention_endpoint	raise ValueError('source URL is the same as target')
+app/webmentions.py	61	EXCEPT	webmention_endpoint	except Exception
+app/webmentions.py	63	EXCEPT	webmention_endpoint	raise HTTPException(status_code=400, detail='Invalid payload')
+app/webmentions.py	86	EXCEPT	webmention_endpoint	except Exception
+app/webmentions.py	94	ORM_WRITE	webmention_endpoint	existing_webmention_in_db.is_deleted = True
+app/webmentions.py	96	EXCEPT	webmention_endpoint	raise HTTPException(status_code=400, detail='Invalid target')
+app/webmentions.py	101	EXCEPT	webmention_endpoint	except microformats.URLNotFoundOrGone
+app/webmentions.py	103	EXCEPT	webmention_endpoint	except httpx.HTTPError
+app/webmentions.py	104	EXCEPT	webmention_endpoint	raise HTTPException(status_code=500, detail=f'Fetch to process {source}')
+app/webmentions.py	114	ORM_WRITE	webmention_endpoint	existing_webmention_in_db.is_deleted = True
+app/webmentions.py	128	ORM_WRITE	webmention_endpoint	db_session.add(notif)
+app/webmentions.py	133	EXCEPT	webmention_endpoint	raise HTTPException(status_code=400, detail='target not found in source')
+app/webmentions.py	144	ORM_WRITE	webmention_endpoint	existing_webmention_in_db.is_deleted = False
+app/webmentions.py	145	ORM_WRITE	webmention_endpoint	existing_webmention_in_db.source_microformats = data
+app/webmentions.py	155	ORM_WRITE	webmention_endpoint	db_session.add(notif)
+app/webmentions.py	164	ORM_WRITE	webmention_endpoint	db_session.add(new_webmention)
+app/webmentions.py	174	ORM_WRITE	webmention_endpoint	db_session.add(notif)
+app/webmentions.py	195	ORM_WRITE	webmention_endpoint	webmention.webmention_type = webmention_type
+app/webmentions.py	212	ORM_WRITE	_handle_webmention_side_effects	mentioned_object.webmentions_count = await db_session.scalar(select(func.count(models.Webmention.id)).where(models.Webmention.is_deleted.is_(False), models.Webm
+app/webmentions.py	220	ORM_WRITE	_handle_webmention_side_effects	mentioned_object.likes_count = await _get_outbox_likes_count(db_session, mentioned_object)
+app/webmentions.py	224	ORM_WRITE	_handle_webmention_side_effects	mentioned_object.announces_count = await _get_outbox_announces_count(db_session, mentioned_object)
+app/webmentions.py	228	ORM_WRITE	_handle_webmention_side_effects	mentioned_object.replies_count = await _get_outbox_replies_count(db_session, mentioned_object)
+app/webmentions.py	232	EXCEPT	_handle_webmention_side_effects	raise ValueError(f'Unhandled {webmention.webmention_type} webmention')
+scripts/config_wizard.py	94	EXCEPT	<module>	except KeyboardInterrupt
+tasks.py	203	NONE	embed_version	embed_version() -> None-able
+tasks.py	255	EXCEPT	webfinger	except Exception
+tasks.py	284	SESSION	move_to._send_move	async with async_session() as db_session
+tasks.py	287	EXCEPT	move_to._send_move	except Exception
+tasks.py	326	SESSION	self_destruct._send_self_destruct	async with async_session() as db_session
+tasks.py	382	EXCEPT	check_config	except Exception
+tasks.py	402	SESSION	import_mastodon_following_accounts._import_following	async with async_session() as db_session
+tests/conftest.py	17	SESSION	async_db_session	async with async_session() as session
+tests/factories.py	25	NONE	build_follow_activity	build_follow_activity(outbox_public_id)
+tests/factories.py	39	NONE	build_delete_activity	build_delete_activity(outbox_public_id)
+tests/factories.py	57	NONE	build_accept_activity	build_accept_activity(outbox_public_id)
+tests/factories.py	71	NONE	build_block_activity	build_block_activity(outbox_public_id)
+tests/factories.py	85	NONE	build_move_activity	build_move_activity(outbox_public_id)
+tests/factories.py	100	NONE	build_note_object	build_note_object(outbox_public_id, in_reply_to)
+tests/factories.py	109	DATETIME_FORMAT	build_note_object	now().replace(microsecond=0).isoformat()
+tests/factories.py	245	NONE	InboxObjectFactory.from_remote_object	from_remote_object(relates_to_inbox_object_id, relates_to_outbox_object_id)
+tests/factories.py	254	DATETIME_FORMAT	InboxObjectFactory.from_remote_object	isoparse(ro.ap_object['published'])
+tests/test_httpsig.py	28	ROUTE	get_httpsig_checker	_test_app.get('/httpsig_checker')
+tests/test_httpsig.py	35	ROUTE	post_enforce_httpsig	_test_app.post('/enforce_httpsig')
+tests/test_process_outgoing_activities.py	53	EXCEPT	test_new_outgoing_activity	raise ValueError('Should never happen')
+tests/utils.py	48	EXACT_OUTPUT	generate_admin_session_cookies	session_serializer.dumps({'is_logged_in': True})
+tests/utils.py	172	NONE	setup_outbox_note	setup_outbox_note(in_reply_to)
+tests/utils.py	195	NONE	setup_inbox_note	setup_inbox_note(in_reply_to)
+tests/utils.py	237	SESSION	run_async._func	async with async_session() as db

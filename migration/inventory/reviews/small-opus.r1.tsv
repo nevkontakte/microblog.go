@@ -1,0 +1,25 @@
+file	source_construct_key	verdict	cite	finding
+app/indieauth.py	L37	CONFIRM	app/indieauth.py:36-49; app/main.py:187-195, :204; starlette/requests.py:175-178; starlette/routing.py:257-262; probe: HEAD on a GET route gives 405 Allow: GET {"detail":"Method Not Allowed"}, url_for gives http://testserver/...	
+app/indieauth.py	L62	REFUTE	fastapi/routing.py:188-215; probe: body b'{"client_name":"\xff",...}' gives 400 {"detail":"There was an error parsing the body"}; invalid JSON with Early-Data: 1 gives 422, not 425	Two body-reading branches are wrong or missing: a JSON body that json.loads cannot decode as text (invalid UTF-8) raises UnicodeDecodeError, which FastAPI turns into 400 {"detail":"There was an error parsing the body"} (Go's decoder would accept it); and the body is read before any dependency, so invalid JSON (422) and the 400 win over the 0-RTT 425, while pydantic field errors come after it. Correct: read and decode the body first (422 jsondecode / 400 parse error), then the 0-RTT check, then model validation.
+app/indieauth.py	L97	CONFIRM	app/indieauth.py:96-143; app/admin.py:48-81; starlette/datastructures.py:271; app/utils/indieauth.py:25-34; probe: urlparse(None).hostname is None, httpx get(None) raises TypeError, HTTPException(302).detail is "Found", "a\x1cb c".split() is ['a','b','c']	
+app/indieauth.py	L147	CONFIRM	app/indieauth.py:146-188; app/config.py:259-273; fastapi/dependencies/utils.py:476-517, :653-663; probe of the same dependency chain: missing csrf without session gives 302 to login?redirect=<admin_stream>, with session gives 422 loc ["body","csrf_token"], Early-Data gives 425 first, bad token gives 403 with the <a href> link, repeated redirect_uri takes the last value; starlette Response header "é" is b"\xe9", "€" raises UnicodeEncodeError	
+app/indieauth.py	L231	CONFIRM	app/indieauth.py:230-267, :191-227; starlette/requests.py:245-256; starlette/datastructures.py:271	
+app/indieauth.py	L271	CONFIRM	app/indieauth.py:270-350; app/models.py:444-481	
+app/indieauth.py	L480	CONFIRM	app/indieauth.py:479-497, :353-379; fastapi/dependencies/utils.py:653-663; probe: data {"token":""}, no body, JSON body and token=a&token= all give the 422 loc ["body","token"]; token= with Early-Data: 1 gives 425	
+app/indieauth.py	L501	CONFIRM	app/indieauth.py:500-552; fastapi/security/http.py:67-96; fastapi/security/utils.py:4-8; fastapi/dependencies/utils.py:476-517, :556-561; probe: b64decode("dXNl cjpw!YXNz") is b"user:pass", b64decode("dXNlcjpwYXN") raises Incorrect padding	
+tests/test_httpsig.py	L28	CONFIRM	tests/test_httpsig.py:17-31, :92-179; app/httpsig.py:167-277	
+tests/test_httpsig.py	L35	REFUTE	app/httpsig.py:289-306	The 401 detail is not always "Invalid HTTP sig": enforce_httpsig writes "Unsupported signature algorithm, must be rsa-sha256 or hs2019" when is_unsupported_algorithm and "Signature expired" when is_expired (httpsig.py:300-306). Correct: 403 {"detail":"Blocked"}, 202 {"detail":"Accepted"} for a gone actor, else 401 with one of those three details, as the shared enforce_httpsig middleware writes it.
+app/boxes.py	L779	CONFIRM	app/boxes.py:779, :795-819; app/utils/datetime.py:11-12	
+app/boxes.py	L846	CONFIRM	app/boxes.py:834-875	
+app/boxes.py	L1908	CONFIRM	app/boxes.py:1858, :1893, :1906-1908, :1943; app/incoming_activities.py:113-134; probe: isoparse(None), isoparse(123) raise TypeError, isoparse("") raises ValueError	
+app/boxes.py	L2098	CONFIRM	app/boxes.py:2098-2109	
+app/boxes.py	L2380	CONFIRM	app/boxes.py:2378-2405; app/incoming_activities.py:113-134	
+app/boxes.py	L2587	CONFIRM	app/boxes.py:252-257, :288-292, :2483-2486, :2561, :2581-2597; app/admin.py:179, :1080	
+app/boxes.py	L600	REFUTE	app/boxes.py:689-690; app/source.py:95-105	The translation is right, but two citations are wrong: the "tag" key of the Note is at boxes.py:690 (:689 is "url"), and render_hashtag is at source.py:95-105, not 94-104.
+app/boxes.py	L847	CONFIRM	app/boxes.py:846-875; app/source.py:178-204	
+app/boxes.py	L675	CONFIRM	app/boxes.py:64-65, :596, :675, :689; app/models.py:296; app/main.py:843	
+app/boxes.py	L711	REFUTE	app/source.py:24, :95-105	The translation is right, but the citations are off by one: _HASHTAG_REGEX (#[\d\w]+) is at source.py:24 (not :23), and render_hashtag is at source.py:95-105 (not 94-104).
+app/boxes.py	L2552	CONFIRM	app/boxes.py:2551-2569, :2483-2486; app/activitypub.py:214-260	
+app/httpsig.py	L62	CONFIRM	app/httpsig.py:58-63, :229-236, :329-336	
+app/httpsig.py	L75	REFUTE	app/httpsig.py:179, :194, :257	The translation and the guard are right, but the use-site citations are wrong: keyId is read at httpsig.py:179 (:178 is "try:"), algorithm at :194 (:190 is "server=server,"), and signature at :257 and :266 (:255 is blank).
+app/models.py	L296	CONFIRM	app/models.py:165, :295-296; app/boxes.py:64-65, :86-87; grep: every save_outbox_object caller passes allocate_outbox_id(), and no other code sets public_id	

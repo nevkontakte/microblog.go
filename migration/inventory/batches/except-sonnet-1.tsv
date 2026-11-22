@@ -1,0 +1,41 @@
+file	line	category	symbol	construct
+app/activitypub.py	205	EXCEPT	fetch	except httpx.HTTPError
+app/activitypub.py	210	EXCEPT	fetch	except json.JSONDecodeError
+app/activitypub.py	211	EXCEPT	fetch	raise NotAnObjectError(url, resp)
+app/activitypub.py	222	EXCEPT	parse_collection	raise ValueError('recursion limit exceeded')
+app/activitypub.py	229	EXCEPT	parse_collection	raise ValueError('must at least prove a payload or an URL')
+app/activitypub.py	233	EXCEPT	parse_collection	raise ValueError(f'Missing type: payload={payload!r}')
+app/activitypub.py	236	EXCEPT	parse_collection	raise ValueError(f'Unexpected type {ap_type}')
+app/activitypub.py	273	EXCEPT	parse_collection	raise ValueError('unexpected activity type {}'.format(payload['type']))
+app/activitypub.py	290	EXCEPT	get_id	raise ValueError(f'Invalid ID type: {val}')
+app/activitypub.py	318	EXCEPT	get_object	raise ValueError(f'No object in {activity}')
+app/activitypub.py	326	EXCEPT	get_object	raise ValueError(f'Unexpected object {raw_activity_object}')
+app/activitypub.py	331	EXCEPT	get_object_id	raise ValueError(f'No object in {activity}')
+app/activitypub.py	377	EXCEPT	unwrap_activity	raise ValueError(f'Unwrapped object actor does not match activity: {activity}')
+app/actor.py	32	EXCEPT	_handle	raise ValueError(f'Invalid actor ID {ap_id}')
+app/actor.py	55	EXCEPT	_handle	except Exception
+app/actor.py	63	EXCEPT	_handle	except Exception
+app/actor.py	71	EXCEPT	Actor.ap_actor	raise NotImplementedError()
+app/actor.py	105	EXCEPT	Actor.ap_type	raise NotImplementedError()
+app/actor.py	183	EXCEPT	RemoteActor.__init__	raise ValueError(f'Unexpected actor type: {ap_type}')
+app/actor.py	217	EXCEPT	save_actor	raise ValueError(f'Invalid type {ap_type} for actor {ap_actor}')
+app/actor.py	237	EXCEPT	fetch_actor	raise ValueError('local actor should not be fetched')
+app/actor.py	249	EXCEPT	fetch_actor	raise ap.ObjectNotFoundError(f'{actor_id} was deleted')
+app/actor.py	263	EXCEPT	fetch_actor	except Exception
+app/actor.py	292	EXCEPT	fetch_actor	raise ap.ObjectNotFoundError(actor_id)
+app/actor.py	386	EXCEPT	get_actors_metadata	raise ValueError('Should never happen')
+app/actor.py	395	EXCEPT	get_actors_metadata	except ap.ObjectNotFoundError
+app/actor.py	397	EXCEPT	get_actors_metadata	except Exception
+app/admin.py	70	EXCEPT	user_session_or_redirect	raise _RedirectToLoginPage
+app/admin.py	74	EXCEPT	user_session_or_redirect	except Exception
+app/admin.py	76	EXCEPT	user_session_or_redirect	raise _RedirectToLoginPage
+app/admin.py	80	EXCEPT	user_session_or_redirect	raise _RedirectToLoginPage
+app/admin.py	103	EXCEPT	get_lookup	except httpx.TimeoutException
+app/admin.py	105	EXCEPT	get_lookup	except (ap.ObjectNotFoundError, ap.ObjectIsGoneError)
+app/admin.py	107	EXCEPT	get_lookup	except ap.ObjectUnavailableError
+app/admin.py	109	EXCEPT	get_lookup	except Exception
+app/admin.py	118	EXCEPT	get_lookup	except ap.ObjectNotFoundError
+app/admin.py	187	EXCEPT	admin_new	raise ValueError(f'Unknown object in_reply_to={in_reply_to!r}')
+app/admin.py	195	EXCEPT	admin_new	except Exception
+app/admin.py	777	EXCEPT	admin_object	raise HTTPException(status_code=404)
+app/admin.py	807	EXCEPT	admin_profile	raise HTTPException(status_code=404)

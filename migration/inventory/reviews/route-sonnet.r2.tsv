@@ -1,0 +1,64 @@
+file	source_construct_key	verdict	cite	finding
+app/admin.py	L92	REFUTE	app/admin.py:101-111	Evidence cites 'try/except 105-117' but the try is at admin.py:101 and the excepts are 103-111 (else 112-145, render 147-157). Correct the line ranges; the behavior text is right.
+app/admin.py	L161	CONFIRM	admin.py:161-224	
+app/admin.py	L227	CONFIRM	admin.py:227-267	
+app/admin.py	L270	CONFIRM	admin.py:270-338	
+app/admin.py	L341	CONFIRM	admin.py:341-426	
+app/admin.py	L429	REFUTE	app/admin.py:598-599	Only mention['type'] KeyError is flagged, but line 598 also reads mention['href'] for every Mention tag, so a Mention tag without href also gives 500 (generator consumed inside in_(), probed OK in SQLAlchemy 1.4.48). Add BUG(port) for href.
+app/admin.py	L617	CONFIRM	admin.py:617-687	
+app/admin.py	L690	CONFIRM	admin.py:690-767	
+app/admin.py	L770	CONFIRM	admin.py:770-791	
+app/admin.py	L794	CONFIRM	admin.py:794-867	
+app/admin.py	L871	CONFIRM	admin.py:871-891	
+app/admin.py	L895	CONFIRM	admin.py:895-927	
+app/admin.py	L931	CONFIRM	admin.py:931-940	
+app/admin.py	L944	CONFIRM	admin.py:944-952	
+app/admin.py	L956	CONFIRM	admin.py:956-965	
+app/admin.py	L969	CONFIRM	admin.py:969-979	
+app/admin.py	L983	CONFIRM	admin.py:983-993	
+app/admin.py	L997	CONFIRM	admin.py:997-1005	
+app/admin.py	L1009	CONFIRM	admin.py:1009-1017	
+app/admin.py	L1021	CONFIRM	admin.py:1021-1029	
+app/admin.py	L1033	CONFIRM	admin.py:1033-1041	
+app/admin.py	L1045	CONFIRM	admin.py:1045-1053	
+app/admin.py	L1057	CONFIRM	admin.py:1057-1065	
+app/admin.py	L1069	CONFIRM	admin.py:1069-1083	
+app/admin.py	L1087	CONFIRM	admin.py:1087-1099	
+app/admin.py	L1103	CONFIRM	admin.py:1103-1115	
+app/admin.py	L1119	CONFIRM	admin.py:1119-1131	
+app/admin.py	L1135	REFUTE	probe p1.py: FastAPI 0.78 list[UploadFile] with text value	A plain-text value for files gives loc ["body","files",0], msg 'Expected UploadFile, received: <class 'str'>', type 'value_error' (index 0 in loc), not loc ["body","files"].
+app/admin.py	L1209	CONFIRM	admin.py:1209-1224	
+app/admin.py	L1228	CONFIRM	admin.py:1227-1244	
+app/admin.py	L1277	REFUTE	app/admin.py:1276-1282	Target text says the handler takes the DB session and responds with the render_template 200; logout has no db_session and no template: it only sets the cookie and answers 302 to url_for('index'). Remove the contradictory sentences.
+app/main.py	L286	CONFIRM	main.py:286-342	
+app/main.py	L345	CONFIRM	main.py:344-390	
+app/main.py	L459	REFUTE	main.py:257-258 (class ActivityPubResponse)	The text cites main.py:118-119 for the ActivityPubResponse JSON encoding, but those lines are inside CustomMiddleware; ActivityPubResponse is at main.py:257-258. Correct the cite.
+app/main.py	L523	CONFIRM	main.py:523-589	
+app/main.py	L592	REFUTE	main.py:257-258 (class ActivityPubResponse)	The text cites main.py:118-119 for the ActivityPubResponse JSON encoding, but those lines are inside CustomMiddleware; ActivityPubResponse is at main.py:257-258. Correct the cite.
+app/main.py	L636	REFUTE	main.py:257-258 (class ActivityPubResponse)	The text cites main.py:118-119 for the ActivityPubResponse JSON encoding, but those lines are inside CustomMiddleware; ActivityPubResponse is at main.py:257-258. Correct the cite. The sub-cites for payload, assert, visibility and send_create are also off by 2-3 lines (actual 643, 647, 650-656, 658-667).
+app/main.py	L679	REFUTE	main.py:257-258 (class ActivityPubResponse)	The text cites main.py:118-119 for the ActivityPubResponse JSON encoding, but those lines are inside CustomMiddleware; ActivityPubResponse is at main.py:257-258. Correct the cite.
+app/main.py	L809	REFUTE	main.py:257-258 (class ActivityPubResponse)	The text cites main.py:118-119 for the ActivityPubResponse JSON encoding, but those lines are inside CustomMiddleware; ActivityPubResponse is at main.py:257-258. Correct the cite.
+app/main.py	L938	CONFIRM	main.py:938-985	
+app/main.py	L988	REFUTE	main.py:257-258 (class ActivityPubResponse)	The text cites main.py:118-119 for the ActivityPubResponse JSON encoding, but those lines are inside CustomMiddleware; ActivityPubResponse is at main.py:257-258. Correct the cite.
+app/main.py	L1011	REFUTE	main.py:257-258 (class ActivityPubResponse)	The text cites main.py:118-119 for the ActivityPubResponse JSON encoding, but those lines are inside CustomMiddleware; ActivityPubResponse is at main.py:257-258. Correct the cite.
+app/main.py	L1083	REFUTE	main.py:257-258 (class ActivityPubResponse)	The text cites main.py:118-119 for the ActivityPubResponse JSON encoding, but those lines are inside CustomMiddleware; ActivityPubResponse is at main.py:257-258. Correct the cite.
+app/main.py	L1093	REFUTE	main.py:257-258 (class ActivityPubResponse)	The text cites main.py:118-119 for the ActivityPubResponse JSON encoding, but those lines are inside CustomMiddleware; ActivityPubResponse is at main.py:257-258. Correct the cite.
+app/main.py	L1178	CONFIRM	main.py:1178-1188	
+app/main.py	L1191	REFUTE	app/main.py:261-281; app/webfinger.py:130-137	Evidence cites webfinger.py:178-186 (the file ends at line 155; get_remote_follow_template is at 130-137) and main.py:122-143 for the Refresh header (that is CustomMiddleware; redirect_to_remote_instance is main.py:261-281, header at :281). Correct both cites.
+app/main.py	L1213	CONFIRM	main.py:1213-1231	
+app/main.py	L1234	CONFIRM	main.py:1234-1254	
+app/main.py	L1257	CONFIRM	main.py:1257-1289	
+app/main.py	L1292	CONFIRM	main.py:1292-1301	
+app/main.py	L1304	CONFIRM	main.py:1304-1329	
+app/main.py	L1378	CONFIRM	main.py:1332-1357	
+app/main.py	L1433	REFUTE	app/main.py:85,1491,1524-1531; httpx Response.content	Two defects. (1) Step (5) copies the streaming row's advice to pass bytes and Content-Encoding through undecoded, but this route reads proxy_resp.content (httpx-decoded: gzip, deflate, br) for Pillow and for both fallback answers, and never forwards content-encoding (header list is content-type, etag, expires, last-modified); the Go code must decompress the upstream body and send no Content-Encoding. (2) _RESIZED_CACHE is main.py:85, not :79.
+app/main.py	L1536	CONFIRM	main.py:1536-1556	
+app/main.py	L1559	CONFIRM	main.py:1559-1589	
+app/main.py	L1592	CONFIRM	main.py:1591-1598	
+app/main.py	L1626	CONFIRM	main.py:1601-1662	
+app/main.py	L1712	CONFIRM	main.py:1665-1709	
+app/main.py	L1722	CONFIRM	main.py:1722-1729,	
+app/micropub.py	L23	CONFIRM	micropub.py:22-56	
+app/micropub.py	L68	CONFIRM	micropub.py:59-66	
+app/webmentions.py	L46	CONFIRM	webmentions.py:45-202	
+app/main.py	L1165	CONFIRM	main.py:1165-1175	

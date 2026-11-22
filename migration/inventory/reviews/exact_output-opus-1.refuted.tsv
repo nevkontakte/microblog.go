@@ -1,0 +1,2 @@
+file	key	r1_verdict	r1_cite	r1_finding	r2_verdict	r2_cite	r2_finding
+app/boxes.py	L600	REFUTE	app/boxes.py:689-690; app/source.py:95-105	The translation is right, but two citations are wrong: the "tag" key of the Note is at boxes.py:690 (:689 is "url"), and render_hashtag is at source.py:95-105, not 94-104.	REFUTE	boxes.py:689-690; source.py:95-105	The translation and the classification are right, but two evidence lines are wrong. The "tag" key of the Note is at boxes.py:690, not :689 (:689 is "url"). render_hashtag is at source.py:95-105, not :94-104.

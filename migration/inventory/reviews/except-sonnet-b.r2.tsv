@@ -1,0 +1,81 @@
+file	source_construct_key	verdict	cite	finding
+app/main.py	L1003	REFUTE	app/models.py:165	Evidence cites models.py:166, which is the slug column; public_id (index only, not unique) is at models.py:165. Behavior and translation are right.
+app/main.py	L1029	CONFIRM	app/main.py:1019-1029	
+app/main.py	L1086	CONFIRM	app/main.py:1083-1087	
+app/main.py	L1087	CONFIRM	app/main.py:1085-1087	
+app/main.py	L1203	CONFIRM	app/webfinger.py:130-137	
+app/main.py	L1223	CONFIRM	app/main.py:1214-1223	
+app/main.py	L1247	CONFIRM	app/main.py:1236-1247	
+app/main.py	L1265	CONFIRM	app/main.py:1257-1265	
+app/main.py	L1442	CONFIRM	app/main.py:1441-1444	
+app/main.py	L1494	CONFIRM	app/main.py:1493-1494,1522	
+app/main.py	L1501	REFUTE	app/main.py:1497-1509	Wrong lines: the inner try is 1497-1504 (not 1498-1512) and the mimetype choice is 1507-1509 (not 1514-1516; 1511-1516 is the cache store). Also a ValueError from the fallback save at 1504 goes to the L1522 clause, not L1527 as the text says.
+app/main.py	L1522	CONFIRM	app/main.py:1522-1526	
+app/main.py	L1527	REFUTE	app/main.py:1490-1521	The try body is L1490/1491-1521, not L1473-1521 (1473-1475 is the earlier status-code early return). Rest of the row is right.
+app/main.py	L1549	CONFIRM	app/main.py:1540-1549; app/models.py:415	
+app/main.py	L1573	CONFIRM	app/main.py:1572-1573	
+app/main.py	L1633	CONFIRM	app/main.py:1631-1633; app/models.py:179	
+app/main.py	L1682	CONFIRM	app/main.py:1680-1682; app/models.py:179	
+app/main.py	L1686	CONFIRM	app/main.py:1684-1686; app/ap_object.py:176-179	
+app/media.py	L28	CONFIRM	app/media.py:23-28; app/main.py:1388,1449	
+app/media.py	L46	CONFIRM	app/media.py:44-46; app/actor.py:155	
+app/micropub.py	L114	REFUTE	app/micropub.py:84,97,104,114	Wrong lines: the outer test is micropub.py:84 (not 82), the delete branch is 97 (not 98), the update branch is 104 (not 106). Translation (unreachable panic) is right.
+app/outgoing_activities.py	L108	CONFIRM	app/outgoing_activities.py:107-108; app/boxes.py:179	
+app/outgoing_activities.py	L110	CONFIRM	app/outgoing_activities.py:109-110; app/boxes.py:737-742	
+app/outgoing_activities.py	L112	CONFIRM	app/outgoing_activities.py:111-112; app/boxes.py:1445-1450	
+app/outgoing_activities.py	L131	REFUTE	app/utils/workers.py:28-35	Wrong lines: Worker._main_loop is workers.py:28-35 (not 24-30). It also omits the effect: the escaping OverflowError ends the _main_loop task, so run_forever (workers.py:53-69) cancels everything and shuts the worker down; the Go worker must stop, not just fail one message.
+app/outgoing_activities.py	L152	CONFIRM	app/outgoing_activities.py:151-152,197	
+app/outgoing_activities.py	L239	REFUTE	app/outgoing_activities.py:268	The text says the commit is at L267; it is at L268 (267 is blank). Rest is right (httpx raise_for_status raises for every non-2xx, httpx/_models.py:701-736).
+app/outgoing_activities.py	L258	REFUTE	app/outgoing_activities.py:202-238	The try body is L202-238, not L200-238 (200 is a logger line, 201 blank). Rest is right.
+app/source.py	L112	CONFIRM	pygments/lexers/__init__.py:109-131	
+app/source.py	L154	CONFIRM	app/source.py:127-156; app/actor.py:236-249	
+app/templates.py	L56	REFUTE	app/templates.py:53-57	Go's url.URL.Hostname() does not lower-case (probe: Hostname of https://Twitter.com/a is Twitter.com) and url.Parse rejects bad escapes that urlparse accepts. The row's parenthesis can be read as saying Hostname() lower-cases. Say: call strings.ToLower on the hostname, and note the Parse strictness (dead code, so TODO is enough).
+app/templates.py	L75	CONFIRM	app/templates.py:66-80; app/admin.py:1271	
+app/templates.py	L335	CONFIRM	app/templates.py:312-336	
+app/templates.py	L377	CONFIRM	app/templates.py:371-386; app/media.py:31-41	
+app/uploads.py	L76	REFUTE	app/uploads.py:70-71	Text says width and height are read at L71; they are read at L70 (L71 is thumbnail()). Rest is right.
+app/utils/facepile.py	L58	REFUTE	app/utils/facepile.py:38-62	Wrong lines: the h-card branch with its try and handler is facepile.py:38-62 (not 50-76), and the item["type"][0] test outside the try is L38 (not L53).
+app/utils/facepile.py	L78	REFUTE	app/utils/facepile.py:63-82	Wrong lines: the h-entry branch is facepile.py:63-82 (not 71-100) and the author line outside the try is L64 (not L72). The BUG claim itself is right.
+app/utils/facepile.py	L115	REFUTE	app/utils/facepile.py:95-121	Wrong lines: _parse_face is facepile.py:95-121 (not 109-131) and the item["type"][0] test outside the try is L97 (not L112).
+app/utils/facepile.py	L166	REFUTE	app/utils/facepile.py:133-172	Wrong lines: _parse_face is 95-121 (not 109-131); the item["type"][0] test is L137 (not L136).
+app/utils/highlight.py	L38	CONFIRM	app/utils/highlight.py:35-49; pygments/lexers/__init__.py:331-339	
+app/utils/mastodon.py	L24	CONFIRM	app/utils/mastodon.py:21-30; app/webfinger.py:76,149	
+app/utils/microformats.py	L24	CONFIRM	app/utils/microformats.py:23-24; app/indieauth.py:126	
+app/utils/microformats.py	L28	CONFIRM	app/utils/microformats.py:26-32	
+app/utils/opengraph.py	L93	REFUTE	app/activitypub.py:196-201; app/actor.py:270-292	The text says fetch_actor raises ObjectNotFoundError for an unknown actor (actor.py:292). Here save_if_not_found is the default True, so actor.py:292 is unreachable; a missing actor comes from ap.fetch raising ObjectNotFoundError on a 404 (activitypub.py:200-201). Translation behavior is unchanged.
+app/utils/opengraph.py	L124	REFUTE	app/utils/opengraph.py:112; probe: urlparse('https://t.com/a%zz').hostname == 't.com'; go url.Parse errors	The row says url.Parse errors only where urlparse raises. Go's url.Parse also fails on bad percent-escapes (for example /100% or /a%zz) that urlparse accepts, so Go would skip links that Python adds. Correct answer: parse scheme and host leniently (urlparse-compatible), and take the skip path only for the cases where urlparse raises (bad bracketed IPv6) or is_url_valid errors.
+app/utils/opengraph.py	L148	REFUTE	app/utils/opengraph.py:5,76	Wrong lines: the TimeoutError import is L5 (not L4, which is import signal) and result() is L76 (not L75). The pebble behavior claim is right.
+app/utils/opengraph.py	L151	REFUTE	app/utils/opengraph.py:43,48,58,65,72	Wrong lines: soup.html.head is L43, soup.find(title) is L48, OpenGraphMeta.parse_obj is L72 and the dead title test is L58 (row says 41, 44, 71, 53). Incomplete: is_url_valid at L65 can raise the DNS error (url.py:41-45) or ValueError inside the child, which also lands in this handler as return None, so Go must treat IsURLValid errors in scrapOGMeta the same.
+app/utils/opengraph.py	L172	CONFIRM	app/utils/opengraph.py:165-175; httpx/_exceptions.py:91-100	
+app/utils/opengraph.py	L174	CONFIRM	app/utils/opengraph.py:131-153,165-178	
+app/utils/opengraph.py	L179	CONFIRM	app/utils/opengraph.py:165-180	
+app/utils/privacy_replace.py	L31	REFUTE	app/utils/privacy_replace.py:29-37; probe: urlparse('https://Twitter.com/a%zz').hostname == 'twitter.com'	Go's url.Parse fails on a bad escape in path or query (probe: /a%zz, /100%) where urlparse succeeds, so a configured host would be replaced in Python and left alone in Go. And url.Hostname() does not lower-case, while urlparse().hostname does, so the PRIVACY_REPLACE lookup at L36 would miss for Twitter.com. Correct: parse leniently and lower-case the hostname; fall back only where urlparse raises.
+app/utils/privacy_replace.py	L32	REFUTE	app/utils/privacy_replace.py:36-37; probe: go url.Parse('https://twitter.com/a%zz') errors	The row claims the output is the same where url.Parse rejects strings urlparse accepts. That holds for a space in the host, but not for a bad escape elsewhere in the URL: with a configured host Python replaces the netloc (L36-37) and Go returns u unchanged. Correct: do not use strict url.Parse; use a urlparse-compatible split.
+app/utils/url.py	L27	CONFIRM	app/utils/url.py:12-28; app/utils/facepile.py:43,51,71,102,108,159	
+app/utils/url.py	L39	CONFIRM	app/utils/url.py:36-47,72-74	
+app/utils/url.py	L43	REFUTE	app/outgoing_activities.py:258	Wrong line: the except Exception in process_next_outgoing_activity is L258, not L255 (L255 is next_activity.next_try = None). Other callers and the behavior claim are right.
+app/utils/url.py	L88	REFUTE	app/outgoing_activities.py:258	Wrong line: the generic handler that records the error and retries is outgoing_activities.py:258, not :255. Rest is right.
+app/utils/version.py	L11	CONFIRM	app/utils/version.py:4-12; app/config.py:30-33	
+app/utils/webmentions.py	L27	CONFIRM	app/utils/webmentions.py:16-29,44-57	
+app/utils/workers.py	L20	CONFIRM	app/utils/workers.py:19-20; app/outgoing_activities.py:273-278	
+app/utils/workers.py	L23	CONFIRM	app/utils/workers.py:22-23,31	
+app/utils/workers.py	L66	CONFIRM	app/utils/workers.py:53-69	
+app/webfinger.py	L29	CONFIRM	app/webfinger.py:29-43,75	
+app/webfinger.py	L35	CONFIRM	app/webfinger.py:35-46	
+app/webfinger.py	L102	CONFIRM	app/webfinger.py:63-77,102-122	
+app/webfinger.py	L108	CONFIRM	app/webfinger.py:108-127	
+app/webmentions.py	L56	CONFIRM	app/webmentions.py:50-63	
+app/webmentions.py	L61	REFUTE	app/webmentions.py:60-63,80-96; go url.Parse('http://example.com/a%zz') errors	The row maps urlparse(target)'s ValueError to Go's url.Parse error. urlparse raises only for things like a bad bracketed IPv6 host; Go's url.Parse also fails on bad escapes, so a target like https://host/a%zz gets 400 Invalid payload in Go but 400 Invalid target in Python (it passes check_url, then no object matches). Parse leniently and reserve Invalid payload for the cases where urlparse raises.
+app/webmentions.py	L63	CONFIRM	app/webmentions.py:61-63	
+app/webmentions.py	L86	REFUTE	app/webmentions.py:80-82; probe: urlparse('/articles/a/c%2Dd').path keeps '%2D'	The translation splits parsedTarget.Path. Go's URL.Path is percent-decoded, Python's urlparse().path is not, so Go would match a slug that Python's query cannot (c%2Dd vs c-d) and would split on a decoded %2F. Use the raw path (EscapedPath or the unparsed path text) for the startswith and split.
+app/webmentions.py	L96	CONFIRM	app/webmentions.py:89-96	
+app/webmentions.py	L101	CONFIRM	app/webmentions.py:98-107	
+app/webmentions.py	L103	CONFIRM	app/webmentions.py:99-104; app/utils/microformats.py:26-32	
+app/webmentions.py	L104	CONFIRM	app/webmentions.py:103-104	
+app/webmentions.py	L133	CONFIRM	app/webmentions.py:106-138	
+app/webmentions.py	L232	CONFIRM	app/webmentions.py:205-232; app/models.py:505-509,528	
+scripts/config_wizard.py	L94	REFUTE	scripts/config_wizard.py:36-39,50,88	Wrong lines: sys.exit(2) is L50 (not L49), and the key is written at L37 or L39 (not L41, which is config_file = Path(...)). Rest is right.
+tasks.py	L255	CONFIRM	tasks.py:232-257; app/webfinger.py:146-155	
+tasks.py	L287	CONFIRM	tasks.py:282-296	
+tasks.py	L382	CONFIRM	tasks.py:371-387; app/config.py:135-143	
+tests/test_process_outgoing_activities.py	L53	CONFIRM	tests/test_process_outgoing_activities.py:52-53; tests/factories.py:144-146	

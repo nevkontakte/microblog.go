@@ -1,0 +1,27 @@
+file	line	category	symbol	construct
+app/outgoing_activities.py	197	ORM_WRITE	process_next_outgoing_activity	next_activity.tries = next_activity.tries + 1
+app/outgoing_activities.py	198	ORM_WRITE	process_next_outgoing_activity	next_activity.last_try = now()
+app/outgoing_activities.py	241	ORM_WRITE	process_next_outgoing_activity	next_activity.last_status_code = http_error.response.status_code
+app/outgoing_activities.py	242	ORM_WRITE	process_next_outgoing_activity	next_activity.last_response = http_error.response.text
+app/outgoing_activities.py	243	ORM_WRITE	process_next_outgoing_activity	next_activity.error = traceback.format_exc()
+app/outgoing_activities.py	254	ORM_WRITE	process_next_outgoing_activity	next_activity.is_errored = True
+app/outgoing_activities.py	255	ORM_WRITE	process_next_outgoing_activity	next_activity.next_try = None
+app/outgoing_activities.py	260	ORM_WRITE	process_next_outgoing_activity	next_activity.error = traceback.format_exc()
+app/outgoing_activities.py	264	ORM_WRITE	process_next_outgoing_activity	next_activity.is_sent = True
+app/outgoing_activities.py	265	ORM_WRITE	process_next_outgoing_activity	next_activity.last_status_code = resp.status_code
+app/outgoing_activities.py	266	ORM_WRITE	process_next_outgoing_activity	next_activity.last_response = resp.text
+app/uploads.py	99	ORM_WRITE	save_upload	db_session.add(new_upload)
+app/utils/highlight.py	50	ORM_WRITE	highlight	code.name = 'div'
+app/webmentions.py	94	ORM_WRITE	webmention_endpoint	existing_webmention_in_db.is_deleted = True
+app/webmentions.py	114	ORM_WRITE	webmention_endpoint	existing_webmention_in_db.is_deleted = True
+app/webmentions.py	128	ORM_WRITE	webmention_endpoint	db_session.add(notif)
+app/webmentions.py	144	ORM_WRITE	webmention_endpoint	existing_webmention_in_db.is_deleted = False
+app/webmentions.py	145	ORM_WRITE	webmention_endpoint	existing_webmention_in_db.source_microformats = data
+app/webmentions.py	155	ORM_WRITE	webmention_endpoint	db_session.add(notif)
+app/webmentions.py	164	ORM_WRITE	webmention_endpoint	db_session.add(new_webmention)
+app/webmentions.py	174	ORM_WRITE	webmention_endpoint	db_session.add(notif)
+app/webmentions.py	195	ORM_WRITE	webmention_endpoint	webmention.webmention_type = webmention_type
+app/webmentions.py	212	ORM_WRITE	_handle_webmention_side_effects	mentioned_object.webmentions_count = await db_session.scalar(select(func.count(models.Webmention.id)).where(models.Webmention.is_deleted.is_(False), models.Webm
+app/webmentions.py	220	ORM_WRITE	_handle_webmention_side_effects	mentioned_object.likes_count = await _get_outbox_likes_count(db_session, mentioned_object)
+app/webmentions.py	224	ORM_WRITE	_handle_webmention_side_effects	mentioned_object.announces_count = await _get_outbox_announces_count(db_session, mentioned_object)
+app/webmentions.py	228	ORM_WRITE	_handle_webmention_side_effects	mentioned_object.replies_count = await _get_outbox_replies_count(db_session, mentioned_object)

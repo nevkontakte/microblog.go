@@ -1,0 +1,3 @@
+file	line	category	symbol	construct
+app/boxes.py	600	EXACT_OUTPUT	send_create	markdownify(db_session, source)
+app/boxes.py	847	EXACT_OUTPUT	send_update	markdownify(db_session, source)

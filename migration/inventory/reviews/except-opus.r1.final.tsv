@@ -1,0 +1,34 @@
+file	source_construct_key	verdict	cite	finding
+app/boxes.py	L123	CONFIRM	boxes.py:114-123; boxes.py:342-349	
+app/boxes.py	L177	CONFIRM	boxes.py:103-106,176-177	
+app/boxes.py	L217	CONFIRM	boxes.py:103-106,216-217	
+app/boxes.py	L277	CONFIRM	boxes.py:103-106,276-277	
+app/boxes.py	L304	CONFIRM	boxes.py:289-304	
+app/boxes.py	L323	CONFIRM	boxes.py:103-106,322-323	
+app/boxes.py	L355	CONFIRM	boxes.py:103-106,354-355	
+app/boxes.py	L393	CONFIRM	boxes.py:103-106,392-393	
+app/boxes.py	L400	CONFIRM	main.py:658-666; boxes.py:372,678-697,399-400	
+app/boxes.py	L418	CONFIRM	main.py:658-666; boxes.py:372,678-697,417-418	
+app/boxes.py	L433	CONFIRM	main.py:658-666; boxes.py:372,678-697,432-433	
+app/boxes.py	L449	CONFIRM	main.py:658-666; boxes.py:372,678-697,448-449	
+app/boxes.py	L508	CONFIRM	boxes.py:502-512; activitypub.py:181	
+app/boxes.py	L545	CONFIRM	boxes.py:103-106,544-545	
+app/boxes.py	L573	CONFIRM	boxes.py:103-106,572-573	
+app/boxes.py	L615	CONFIRM	boxes.py:499-500,610-616,1102	
+app/boxes.py	L654	CONFIRM	boxes.py:653-654; admin.py:1184	
+app/boxes.py	L706	CONFIRM	boxes.py:103-106,705-706	
+app/boxes.py	L815	CONFIRM	boxes.py:103-106,814-815	
+app/boxes.py	L1540	CONFIRM	boxes.py:1539-1540	
+app/boxes.py	L1584	CONFIRM	boxes.py:1583-1584	
+app/boxes.py	L1657	CONFIRM	boxes.py:2172-2175,2414,2561,2574; admin.py:179,1080	
+app/boxes.py	L1776	CONFIRM	boxes.py:1765,1770-1779	
+app/boxes.py	L2047	CONFIRM	boxes.py:661,2046-2047; admin.py:1144,1174-1175	
+app/boxes.py	L2294	CONFIRM	boxes.py:2292-2296; activitypub.py:200-201	
+app/boxes.py	L2311	CONFIRM	boxes.py:2309-2316; activitypub.py:200-201	
+app/boxes.py	L2314	CONFIRM	boxes.py:2314-2316; activitypub.py:181	
+app/boxes.py	L2356	CONFIRM	boxes.py:2354-2361	
+app/boxes.py	L2485	CONFIRM	boxes.py:2483-2486,2542	
+app/httpsig.py	L126	CONFIRM	httpsig.py:124-127; activitypub.py:198-199	
+app/httpsig.py	L225	CONFIRM	httpsig.py:204-226	
+app/httpsig.py	L268	CONFIRM	httpsig.py:144-148,262-269	
+app/httpsig.py	L306	CONFIRM	httpsig.py:194,239-245,300-306	

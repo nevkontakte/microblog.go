@@ -1,0 +1,41 @@
+file	line	category	symbol	construct
+app/main.py	1003	EXCEPT	outbox_activity_by_public_id	raise HTTPException(status_code=404)
+app/main.py	1029	EXCEPT	tag_by_name	raise HTTPException(status_code=404)
+app/main.py	1086	EXCEPT	emoji_by_name	except KeyError
+app/main.py	1087	EXCEPT	emoji_by_name	raise HTTPException(status_code=404)
+app/main.py	1203	EXCEPT	post_remote_follow	raise HTTPException(status_code=404)
+app/main.py	1223	EXCEPT	remote_interaction	raise HTTPException(status_code=404)
+app/main.py	1247	EXCEPT	post_remote_interaction	raise HTTPException(status_code=404)
+app/main.py	1265	EXCEPT	wellknown_webfinger	raise HTTPException(status_code=404)
+app/main.py	1442	EXCEPT	serve_proxy_media_resized	raise ValueError('Unsupported size')
+app/main.py	1494	EXCEPT	serve_proxy_media_resized	raise ValueError
+app/main.py	1501	EXCEPT	serve_proxy_media_resized	except Exception
+app/main.py	1522	EXCEPT	serve_proxy_media_resized	except ValueError
+app/main.py	1527	EXCEPT	serve_proxy_media_resized	except Exception
+app/main.py	1549	EXCEPT	serve_attachment	raise HTTPException(status_code=404)
+app/main.py	1573	EXCEPT	serve_attachment_thumbnail	raise HTTPException(status_code=404)
+app/main.py	1633	EXCEPT	json_feed	raise ValueError(f'{outbox_object} has no published date')
+app/main.py	1682	EXCEPT	_gen_rss_feed	raise ValueError(f'{outbox_object} has no published date')
+app/main.py	1686	EXCEPT	_gen_rss_feed	raise ValueError('Should never happen')
+app/media.py	28	EXCEPT	verify_proxied_media_sig	raise InvalidProxySignatureError('invalid or expired media')
+app/media.py	46	EXCEPT	resized_media_url	raise ValueError(f'Unsupported resize {size}')
+app/micropub.py	114	EXCEPT	post_micropub_endpoint	raise ValueError('Should never happen')
+app/outgoing_activities.py	108	EXCEPT	new_outgoing_activity	raise ValueError('Must reference at least one inbox/outbox activity')
+app/outgoing_activities.py	110	EXCEPT	new_outgoing_activity	raise ValueError('Webmentions must reference an outbox activity')
+app/outgoing_activities.py	112	EXCEPT	new_outgoing_activity	raise ValueError('Cannot reference both inbox/outbox activities')
+app/outgoing_activities.py	131	EXCEPT	_parse_retry_after	except ValueError
+app/outgoing_activities.py	152	EXCEPT	_set_next_try	raise ValueError('Should never happen')
+app/outgoing_activities.py	239	EXCEPT	process_next_outgoing_activity	except httpx.HTTPStatusError
+app/outgoing_activities.py	258	EXCEPT	process_next_outgoing_activity	except Exception
+app/source.py	112	EXCEPT	CustomRenderer.render_block_code	except ClassNotFound
+app/source.py	154	EXCEPT	_prefetch_mentioned_actors	except Exception
+app/templates.py	56	EXCEPT	_filter_domain	raise ValueError(f'No hostname for {text}')
+app/templates.py	75	EXCEPT	is_current_user_admin	except Exception
+app/templates.py	335	EXCEPT	_clean_html	except Exception
+app/templates.py	377	EXCEPT	_replace_custom_emojis	except KeyError
+app/uploads.py	76	EXCEPT	save_upload	except Exception
+app/utils/facepile.py	58	EXCEPT	Face.from_webmention	except Exception
+app/utils/facepile.py	78	EXCEPT	Face.from_webmention	except Exception
+app/utils/facepile.py	115	EXCEPT	_parse_face	except Exception
+app/utils/facepile.py	166	EXCEPT	WebmentionReply.from_webmention	except Exception
+app/utils/highlight.py	38	EXCEPT	highlight	except Exception

@@ -1,0 +1,88 @@
+file	source_construct_key	verdict	cite	finding
+app/boxes.py	L72	CONFIRM	app/boxes.py:72-103, :171, :543, :567, :1536, :1580, app/outgoing_activities.py:83	
+app/boxes.py	L582	CONFIRM	app/boxes.py:582-595, :604-606, :686-687, :716-720; app/main.py:658-667; app/admin.py:1188-1201	
+app/boxes.py	L977	CONFIRM	app/boxes.py:977-991, :547, :1440, :2014	
+app/boxes.py	L994	CONFIRM	app/boxes.py:994-1007, :1481-1485	
+app/boxes.py	L1010	CONFIRM	app/boxes.py:1010-1023; app/models.py:83; callers listed (all truthiness or pass-through)	
+app/boxes.py	L1026	CONFIRM	app/boxes.py:1026-1042, :1842-1856, :2398-2420 (Delete rows are stored before _handle_delete_activity runs)	
+app/boxes.py	L1045	CONFIRM	app/boxes.py:1045-1070; app/models.py:169; callers listed	
+app/boxes.py	L1073	CONFIRM	app/boxes.py:1073-1096; app/main.py:945-949; app/webmentions.py:80-88 (caller catches Exception)	
+app/boxes.py	L1099	CONFIRM	app/boxes.py:50, :1099-1105; app/admin.py:132-135, :173-187, :775-777	
+app/boxes.py	L1108	CONFIRM	app/boxes.py:1108-1119; app/admin.py:902-906	
+app/boxes.py	L1122	CONFIRM	app/boxes.py:1122-1238, :2333-2338, :2437-2443	
+app/boxes.py	L1327	CONFIRM	app/boxes.py:1327-1332, :1428-1439; app/admin.py:883-888	
+app/boxes.py	L1811	CONFIRM	app/boxes.py:1811-1832, :1858-1864, :2423-2429	
+app/boxes.py	L1896	CONFIRM	app/boxes.py:1896-1902, :2012-2013, :1858-1864, :1893	
+app/boxes.py	L2112	CONFIRM	app/boxes.py:2112-2211, :2523-2529	
+app/boxes.py	L2214	CONFIRM	app/boxes.py:2214-2240, :2515-2521	
+app/boxes.py	L2725	REFUTE	app/boxes.py:2722-2723, :2719	The None-group check and its raise are at :2722-2723, not :2721 (blank line); cite :2722. Also the row omits that a non-string inReplyTo (dict/list) is an unhashable key at :2719 (TypeError, 500 in Python): the Go index build needs a two-result type assertion that takes the same error path.
+app/httpsig.py	L36	CONFIRM	app/httpsig.py:36-66, :234, :239, :320-335	
+app/httpsig.py	L69	CONFIRM	app/httpsig.py:69-76, :173-175	
+app/httpsig.py	L315	CONFIRM	app/httpsig.py:315-348, :351-353; app/key.py:29, :36-39	
+app/indieauth.py	L191	CONFIRM	app/indieauth.py:191-227, :247-255, :283-296	
+app/indieauth.py	L353	CONFIRM	app/indieauth.py:353-379, :402, :414-418, :446-450; app/models.py:466-472	
+app/indieauth.py	L429	CONFIRM	app/indieauth.py:429-466, :471-475; app/main.py:468, :532, :597, :715	
+app/models.py	L53	CONFIRM	app/actor.py:28-34, :188-191, :219-224, :303, :422; alembic initial migration :28	
+app/models.py	L84	CONFIRM	app/ap_object.py:67-69; app/boxes.py:1941, :2404, :2595; app/admin.py:441, :450, :455	
+app/models.py	L89	CONFIRM	app/ap_object.py:205-210; app/boxes.py:1132, :1381, :1398, :1626, :1656, :2174; app/prune.py:95-96	
+app/models.py	L92	REFUTE	app/boxes.py:2398-2416, :2190-2205	"New rows always get a string" is false: save_to_inbox's InboxObject insert (:2398-2416) and the announced-object insert (:2190-2205) never set conversation, so every activity row and every object fetched through an Announce gets SQL NULL today, not only pre-9bc69ed947e2 rows. The *string translation stands; correct the rationale so nobody treats NULL as legacy-only.
+app/models.py	L99	CONFIRM	app/boxes.py:1946, :1960, :2160, :2207, :2408-2410; app/models.py:99-109, :139-145	
+app/models.py	L110	CONFIRM	app/boxes.py:1947, :1289, :1312, :2411-2413, :2601; app/models.py:110-119	
+app/models.py	L121	CONFIRM	app/boxes.py:1608; app/actor.py:377	
+app/models.py	L124	CONFIRM	app/boxes.py:279, :422; app/prune.py:80; app/templates/utils.html:749-750	
+app/models.py	L125	CONFIRM	app/boxes.py:325, :439; app/prune.py:82; app/templates/utils.html:766-767, :785	
+app/models.py	L126	CONFIRM	app/boxes.py:791; app/admin.py:1217-1222; templates/utils.html:597, :618	
+app/models.py	L136	REFUTE	app/boxes.py:2398-2416	"New rows store '[]' or a list, never NULL" is false: save_to_inbox's InboxObject insert (:2398-2416) omits og_meta, so every inbox activity row (Like, Follow, Announce, Create...) has SQL NULL. The nil-capable slice is right; fix the claim (NULL for activities, a list for objects inserted at :1949, :2200, :2603).
+app/models.py	L139	CONFIRM	app/models.py:139-145; templates/admin_inbox.html:23, :31; templates/utils.html:530-533	
+app/models.py	L166	CONFIRM	app/boxes.py:642, :674, :703, :1089; app/models.py:292-297; app/main.py:841-845; app/utils/text.py:5-8	
+app/models.py	L170	CONFIRM	app/boxes.py:90, :858-859; app/admin.py:465, :473, :478, :533	
+app/models.py	L173	REFUTE	app/boxes.py:448-450	The Block branch does not raise "Should never happen": it raises ValueError(f"Invalid block activity {ap_id}") at :449-450, an ordinary error, not the ASSERT mapping. Only the Follow (:399-400), Like (:415-416) and Announce (:430-431) branches are "Should never happen" panics; the Block one returns an error with that message.
+app/models.py	L176	CONFIRM	app/boxes.py:79, :99, :701, :838, :870; app/main.py:1639; app/micropub.py:51	
+app/models.py	L177	CONFIRM	app/boxes.py:834-871; probe probe_rev.py: JSON column mutated in place and reassigned over three sessions stays [0]	
+app/models.py	L181	CONFIRM	app/boxes.py:81, :101, :702, :2668, :2699-2700; app/prune.py:70-72	
+app/models.py	L191	CONFIRM	app/boxes.py:86-93 (only OutboxObject constructor); app/utils/opengraph.py:156-182	
+app/models.py	L201	REFUTE	app/boxes.py:1529-1538, :1573-1582, :697-703	Not "replies to inbox objects": the :1536 and :1580 callers are _send_accept/_send_reject (an Accept/Reject of a Follow), and send_create never sets relates_to_inbox_object_id for replies. Correct: set for Like, Announce, Accept and Reject; nil for Notes, including replies.
+app/models.py	L211	CONFIRM	app/boxes.py:77, :95, :210-214, :386-390; app/admin.py:647; app/models.py:211-221	
+app/models.py	L223	CONFIRM	app/boxes.py:351-352, :1194; app/admin.py:648, :668-673; templates/admin_outbox.html:22	
+app/models.py	L234	REFUTE	app/boxes.py:395	The write is at boxes.py:395 (outbox_object_to_undo.undone_by_outbox_object_id = outbox_object.id), not :394. The rest (actor.py:358 IS NULL) holds.
+app/models.py	L276	CONFIRM	app/models.py:276-282; app/main.py:314-319, :366-371; templates/index.html:35; app/admin.py:644-647	
+app/models.py	L293	REFUTE	app/main.py:1637, :1697-1703	The json feed reads outbox_object.url at main.py:1637, not :1638 (content_html). The caller list is also incomplete: the Atom/RSS feed uses it at :1697, :1701, :1703. The never-None conclusion holds.
+app/models.py	L339	CONFIRM	app/incoming_activities.py:40-44, :139; grep webmention_source: models.py only	
+app/models.py	L341	CONFIRM	app/incoming_activities.py:41, :103-106, :112, :119; app/httpsig.py:157, :271-275; app/main.py:1165-1173	
+app/models.py	L342	CONFIRM	app/incoming_activities.py:27-36, :42	
+app/models.py	L343	CONFIRM	app/incoming_activities.py:27-31, :43, :112	
+app/models.py	L346	CONFIRM	app/incoming_activities.py:56-67, :74, :92; app/models.py:346	
+app/models.py	L348	CONFIRM	app/incoming_activities.py:109; app/utils/stats.py:135	
+app/models.py	L352	CONFIRM	app/incoming_activities.py:127, :133	
+app/models.py	L363	REFUTE	app/utils/stats.py:132-133	stats.py joinedloads outbox_object at :133; :135 is the ORDER BY last_try. Correct the cite to stats.py:132-133. The translation (OutboxObjectID first, then InboxObjectID, models.py:384-391) holds.
+app/models.py	L367	CONFIRM	app/outgoing_activities.py:103-118; app/models.py:384-391	
+app/models.py	L371	CONFIRM	app/outgoing_activities.py:105, :109, :118, :203-206; app/boxes.py:741, :890	
+app/models.py	L374	CONFIRM	app/outgoing_activities.py:156, :158, :165, :187, :255; app/utils/stats.py:70	
+app/models.py	L376	CONFIRM	app/outgoing_activities.py:198; app/utils/stats.py:135, :187; probe: humanize.naturaltime(None) == 'None'	
+app/models.py	L377	CONFIRM	app/outgoing_activities.py:241, :258-261, :265; app/utils/stats.py:190; probe: tabulate prints None as an empty cell	
+app/models.py	L378	CONFIRM	app/outgoing_activities.py:242, :266	
+app/models.py	L382	CONFIRM	app/outgoing_activities.py:243, :260	
+app/models.py	L420	REFUTE	app/uploads.py:49	The image-but-not-GIF test is at uploads.py:49 (if f.content_type.startswith("image") and not ... "image/gif"), not :50 (Image.open). The translation holds; correct the cite.
+app/models.py	L421	CONFIRM	app/uploads.py:46, :70, :96, :116; app/models.py:259; templates/utils.html:438-439	
+app/models.py	L422	CONFIRM	app/uploads.py:47, :70, :97, :115; app/models.py:260; templates/utils.html:439	
+app/models.py	L435	CONFIRM	app/admin.py:1168; app/boxes.py:716-720; app/models.py:257	
+app/models.py	L453	CONFIRM	app/indieauth.py:108, :171, :179; templates/indieauth_flow.html:37	
+app/models.py	L454	CONFIRM	app/indieauth.py:109, :172, :180; templates/indieauth_flow.html:38	
+app/models.py	L468	CONFIRM	app/indieauth.py:321, :324-331, :414-418, :446-450, :522-526	
+app/models.py	L477	CONFIRM	app/indieauth.py:308, :333, :343; alembic a209f0333f5a:22, :24	
+app/models.py	L492	CONFIRM	app/indieauth.py:54, :70-72; grep redirect_uris: no reader	
+app/models.py	L495	REFUTE	app/indieauth.py:85	The registration response is built from register_client_request.dict() at indieauth.py:85, not :82 (a blank line). The translation holds; correct the cite.
+app/models.py	L496	CONFIRM	app/indieauth.py:57, :74, :122; templates/indieauth_flow.html:6-10	
+app/models.py	L497	CONFIRM	app/indieauth.py:58, :75, :85; grep OAuthClient.scope: no reader	
+app/models.py	L522	CONFIRM	app/webmentions.py:100-106, :145, :160; app/models.py:531-543; app/utils/facepile.py:36, :135	
+app/models.py	L528	CONFIRM	app/webmentions.py:140, :162, :194-195, :210-232; app/main.py:878-889, :900, :917; app/boxes.py:1275, :1298, :1321; alembic fadfd359ce78:22	
+app/models.py	L531	CONFIRM	app/models.py:530-543; app/utils/webmentions.py:67-92; templates/notifications.html:80, :90, :100; templates/utils.html:835	
+app/models.py	L622	CONFIRM	grep: 18 models.Notification( calls, 18 set notification_type; templates/notifications.html:26-109; app/templates.py:40-44	
+app/models.py	L625	CONFIRM	app/boxes.py: all 15 Notification creations set actor_id; app/webmentions.py:123-127, :150-154, :169-173; templates/notifications.html:8-16	
+app/models.py	L628	REFUTE	app/boxes.py:181-186, :465-468	"nil for ... block ... notifications" is wrong: the local BLOCK (:183-186) and UNBLOCK (:465-468) notifications set outbox_object_id, and the row itself cites :186 as a "set" example. Correct: nil for the follower and follow-request types, BLOCKED/UNBLOCKED (remote), MOVE and MENTION; set for BLOCK, UNBLOCK, LIKE, UNDO_LIKE, ANNOUNCE, UNDO_ANNOUNCE and the three webmention types.
+app/models.py	L631	CONFIRM	app/boxes.py:1336-1339, :1469, :1754, :2030; app/admin.py:712; templates/notifications.html:54-58, :74-76	
+app/models.py	L634	CONFIRM	app/webmentions.py:126, :153, :172; app/admin.py:720, :918-921	
+app/models.py	L639	CONFIRM	app/boxes.py:1505; templates/utils.html:355, :362	
+app/models.py	L640	CONFIRM	app/boxes.py:1562; templates/utils.html:355-366	
+app/models.py	L649	CONFIRM	app/models.py:643-656; app/database.py:27; grep fts over app/ and alembic/: models.py only	
+app/models.py	L650	CONFIRM	app/models.py:643-656; app/database.py:27	

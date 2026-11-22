@@ -1,0 +1,20 @@
+file	source_construct_key	verdict	cite	finding
+app/boxes.py	L72	CONFIRM	app/boxes.py:171, :210, :273, :319, :351, :386, :529-543 (send_move), :557-567 (send_self_destruct), :697-703, :811, :1536, :1580; app/outgoing_activities.py:83	
+app/boxes.py	L582	CONFIRM	app/boxes.py:604, :621-622, :646-676, :691-692; app/admin.py:1138-1145, :1188-1201; app/main.py:658-667	
+app/boxes.py	L1108	CONFIRM	app/admin.py:902-906	
+app/boxes.py	L1122	REFUTE	app/actor.py:270-291	The new claim "fetch_actor with save_if_not_found=False can return an actor that is not from the DB" is false: with save_if_not_found=False, fetch_actor returns only a DB actor (the existing_actor returns before :270) or raises ObjectNotFoundError at :291. Keep the :1144 test as a one-to-one translation, but drop that rationale: for an Actor, not is_from_db is never true.
+app/boxes.py	L2725	CONFIRM	app/boxes.py:2717-2723, :2725-2751; app/ap_object.py:213-214	
+app/httpsig.py	L36	CONFIRM	app/httpsig.py:44-66 (KeyError :48, :52, :62, :65; parse :52), :213-236 (try ends before :229), :239, :330, :332	
+app/models.py	L92	CONFIRM	app/boxes.py:1942, :2190-2204, :2398-2416, :2596, :2668; app/prune.py:89	
+app/models.py	L136	CONFIRM	app/boxes.py:1949, :2200, :2398-2416, :2603; app/utils/opengraph.py:156-182	
+app/models.py	L170	CONFIRM	app/boxes.py:90, :491-492, :608, :618-619, :781-784, :858-859; app/admin.py:465, :473, :478, :533	
+app/models.py	L173	CONFIRM	app/boxes.py:399-400, :416-418, :431-433, :447-450	
+app/models.py	L201	CONFIRM	app/boxes.py:273-274, :319-320, :1536-1537, :1580-1581, :697-703; app/admin.py:645-647	
+app/models.py	L211	CONFIRM	app/boxes.py:210-214, :386-390; app/admin.py:648	
+app/models.py	L223	CONFIRM	app/boxes.py:351-352, :1194; app/admin.py:649, :668-673	
+app/models.py	L234	CONFIRM	app/boxes.py:395; app/actor.py:358	
+app/models.py	L293	CONFIRM	app/models.py:292-297; app/ap_object.py:160-173; app/main.py:1637, :1697, :1701, :1703; app/boxes.py:860	
+app/models.py	L363	CONFIRM	app/outgoing_activities.py:107-118; app/models.py:384-391; app/utils/stats.py:105-107, :132-133	
+app/models.py	L420	CONFIRM	app/uploads.py:45, :49, :67, :95, :111-117	
+app/models.py	L495	CONFIRM	app/indieauth.py:56, :73, :85, :123; templates/indieauth_flow.html:13-17	
+app/models.py	L628	CONFIRM	app/boxes.py:183-186, :465-468, :1647-1650, :1672-1675, :2126-2129, :2234-2237 (set); :1466, :1544, :1588, :1619, :1681, :1751, :2027, :2258, :2467 (no outbox_object_id); app/webmentions.py:125, :152, :171	

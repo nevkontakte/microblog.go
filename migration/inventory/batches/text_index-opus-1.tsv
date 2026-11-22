@@ -1,0 +1,7 @@
+file	line	category	symbol	construct
+app/boxes.py	675	TEXT_INDEX	send_create	note_id[:7]
+app/boxes.py	711	TEXT_INDEX	send_create	tag['name'][1:]
+app/boxes.py	2552	TEXT_INDEX	_prefetch_actor_outbox	outbox[:20]
+app/httpsig.py	62	TEXT_INDEX	_build_signed_string	signed_header[1:len(signed_header) - 1]
+app/httpsig.py	75	TEXT_INDEX	_parse_sig_header	v[1:len(v) - 1]
+app/models.py	296	TEXT_INDEX	OutboxObject.url	self.public_id[:7]

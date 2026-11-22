@@ -1,0 +1,52 @@
+file	source_construct_key	verdict	cite	finding
+app/ap_object.py	L54	CONFIRM	app/ap_object.py:50-57; app/utils/datetime.py:7-8	
+app/ap_object.py	L56	CONFIRM	app/ap_object.py:55-56	
+app/ap_object.py	L250	CONFIRM	app/ap_object.py:246-252	
+app/micropub.py	L49	CONFIRM	app/micropub.py:33,48-50; app/models.py:179	
+app/templates.py	L361	CONFIRM	app/templates.py:360-361,425; app/templates/utils.html:558-559	
+app/utils/facepile.py	L149	CONFIRM	app/utils/facepile.py:147-152,166-172	
+app/utils/pagination.py	L12	CONFIRM	app/utils/pagination.py:7-12; app/main.py:408-410	
+app/utils/webmentions.py	L79	CONFIRM	app/utils/webmentions.py:79; app/models.py:530-543	
+app/utils/webmentions.py	L89	CONFIRM	app/utils/webmentions.py:89	
+tests/factories.py	L109	CONFIRM	tests/factories.py:109,120	
+tests/factories.py	L254	CONFIRM	tests/factories.py:252-254	
+app/admin.py	L219	CONFIRM	app/admin.py:218-221; app/utils/emoji.py:18-40	
+app/config.py	L235	CONFIRM	app/config.py:229-242; docs/adr/0004-drop-python-customization-hooks.md	
+app/customization.py	L111	CONFIRM	app/customization.py:105-119	
+app/main.py	L1365	CONFIRM	app/main.py:1360-1366; httpx/_models.py:139-151	
+app/main.py	L1370	CONFIRM	app/main.py:1369-1370,1515,1520	
+app/templates.py	L381	REFUTE	app/templates.py:371-387,335-336 (_clean_html re-raises)	The try at :375-379 catches only KeyError. A non-dict icon (string), an unhashable name or a non-dict tag raises TypeError/AttributeError that escapes _clean_html (it re-raises) and fails the render with a 500. Translation says to check the type and skip with the warning; it must skip only on missing keys and let a wrong type fail.
+app/utils/opengraph.py	L53	CONFIRM	app/utils/opengraph.py:53-56	
+app/utils/webmentions.py	L31	CONFIRM	app/utils/webmentions.py:31-33; httpx/_models.py:753-764; httpx/_utils.py:175-209	
+app/admin.py	L73	CONFIRM	app/admin.py:72-80; itsdangerous/timed.py:94-155	
+app/admin.py	L1281	CONFIRM	app/admin.py:1276-1282; itsdangerous/url_safe.py:50-62; starlette/responses.py:98-120	
+app/ap_object.py	L183	CONFIRM	app/ap_object.py:175-185; mistletoe/__init__.py:12-19	
+app/config.py	L192	CONFIRM	app/config.py:191-195	
+app/config.py	L267	CONFIRM	app/config.py:259-274	
+app/source.py	L169	CONFIRM	app/source.py:160-175; probe review-small-sonnet-r1/p.py (#a#b, URL #frag, heading, backticks)	
+app/source.py	L169	CONFIRM	app/source.py:75-105,169-175; app/activitypub.py:103-115,143	
+app/templates.py	L71	CONFIRM	app/templates.py:66-80	
+app/utils/highlight.py	L37	CONFIRM	app/utils/highlight.py:36-41; app/templates.py:321	
+tests/utils.py	L48	CONFIRM	tests/utils.py:47-48	
+app/database.py	L31	REFUTE	app/main.py:72 (new_ap_incoming_activity), app/incoming_activities.py:46, app/httpsig.py:148, app/uploads.py:100	The commit list is incomplete and 'main.py handlers only read' is false: the inbox POST handler saves an IncomingActivity and commits (incoming_activities.py:46), the httpsig dependency commits an actor update in the request session (httpsig.py:148), and uploads.py:100 commits. Correct the list to admin, boxes, indieauth, webmentions, incoming_activities, httpsig, uploads, and say the inbox and httpsig paths write.
+app/main.py	L237	CONFIRM	app/main.py:226-254; fastapi/applications.py:161-188	
+app/prune.py	L118	CONFIRM	app/prune.py:20-32,116-119	
+app/utils/stats.py	L124	CONFIRM	app/utils/stats.py:122-145,182-194	
+tasks.py	L284	CONFIRM	tasks.py:282-309; app/actor.py:226,307	
+tasks.py	L326	CONFIRM	tasks.py:322-329	
+tasks.py	L402	CONFIRM	tasks.py:400-421; app/boxes.py:339-359	
+tests/conftest.py	L17	CONFIRM	tests/conftest.py:15-22	
+tests/utils.py	L237	CONFIRM	tests/utils.py:235-240	
+app/actor.py	L47	CONFIRM	app/actor.py:34,47,65	
+app/ap_object.py	L275	CONFIRM	app/ap_object.py:273-283	
+app/ap_object.py	L275	CONFIRM	app/ap_object.py:274-275	
+app/main.py	L843	CONFIRM	app/main.py:815-845; app/boxes.py:64-65	
+app/source.py	L84	CONFIRM	app/source.py:80-85	
+app/source.py	L96	CONFIRM	app/source.py:95-97	
+app/source.py	L134	CONFIRM	app/source.py:128-134	
+app/templates.py	L395	CONFIRM	app/templates.py:394-396	
+app/utils/facepile.py	L88	CONFIRM	app/utils/facepile.py:87-92	
+app/utils/favicon.py	L15	CONFIRM	app/utils/favicon.py:7-15	
+app/utils/mastodon.py	L10	CONFIRM	app/utils/mastodon.py:8-15,18-30	
+app/webfinger.py	L80	CONFIRM	app/webfinger.py:76,80	
+app/webfinger.py	L82	CONFIRM	app/webfinger.py:76,82	

@@ -1,0 +1,34 @@
+file	line	category	symbol	construct
+app/boxes.py	1686	ORM_WRITE	_handle_undo_activity	db_session.add(notif)
+app/boxes.py	1756	ORM_WRITE	_handle_move_activity	db_session.add(notif)
+app/boxes.py	1804	ORM_WRITE	_handle_update_activity	existing_object.ap_object = wrapped_object
+app/boxes.py	1805	ORM_WRITE	_handle_update_activity	existing_object.updated_at = now()
+app/boxes.py	1854	ORM_WRITE	_handle_create_activity	create_activity.is_deleted = True
+app/boxes.py	1956	ORM_WRITE	_process_note_object	db_session.add(inbox_object)
+app/boxes.py	1960	ORM_WRITE	_process_note_object	parent_activity.relates_to_inbox_object_id = inbox_object.id
+app/boxes.py	2032	ORM_WRITE	_process_note_object	db_session.add(notif)
+app/boxes.py	2054	ORM_WRITE	_handle_vote_answer	answer.is_transient = True
+app/boxes.py	2062	ORM_WRITE	_handle_vote_answer	db_session.add(poll_answer)
+app/boxes.py	2100	ORM_WRITE	_handle_vote_answer	question.ap_object = question_ap_object
+app/boxes.py	2121	ORM_WRITE	_handle_announce_activity	relates_to_outbox_object.announces_count = models.OutboxObject.announces_count + 1
+app/boxes.py	2132	ORM_WRITE	_handle_announce_activity	db_session.add(notif)
+app/boxes.py	2168	ORM_WRITE	_handle_announce_activity	announce_activity.is_hidden_from_stream = True
+app/boxes.py	2170	ORM_WRITE	_handle_announce_activity	announce_activity.is_hidden_from_stream = not is_from_following
+app/boxes.py	2205	ORM_WRITE	_handle_announce_activity	db_session.add(announced_inbox_object)
+app/boxes.py	2207	ORM_WRITE	_handle_announce_activity	announce_activity.relates_to_inbox_object_id = announced_inbox_object.id
+app/boxes.py	2208	ORM_WRITE	_handle_announce_activity	announce_activity.is_hidden_from_stream = not is_from_following or announce_activity.actor.are_announces_hidden_from_stream
+app/boxes.py	2228	ORM_WRITE	_handle_like_activity	relates_to_outbox_object.likes_count = await _get_outbox_likes_count(db_session, relates_to_outbox_object)
+app/boxes.py	2240	ORM_WRITE	_handle_like_activity	db_session.add(notif)
+app/boxes.py	2263	ORM_WRITE	_handle_block_activity	db_session.add(notif)
+app/boxes.py	2299	ORM_WRITE	save_to_inbox	actor.ap_actor = updated_actor.ap_actor
+app/boxes.py	2418	ORM_WRITE	save_to_inbox	db_session.add(inbox_object)
+app/boxes.py	2472	ORM_WRITE	save_to_inbox	db_session.add(notif)
+app/boxes.py	2480	ORM_WRITE	save_to_inbox	db_session.add(following)
+app/boxes.py	2564	ORM_WRITE	_prefetch_actor_outbox	saved_inbox_object.is_hidden_from_stream = False
+app/boxes.py	2607	ORM_WRITE	save_object_to_inbox	db_session.add(inbox_object)
+app/indieauth.py	80	ORM_WRITE	oauth_registration_endpoint	db_session.add(client)
+app/indieauth.py	183	ORM_WRITE	indieauth_flow	db_session.add(auth_request)
+app/indieauth.py	224	ORM_WRITE	_check_auth_code	auth_code_req.is_used = True
+app/indieauth.py	325	ORM_WRITE	indieauth_token_endpoint	access_token.was_refreshed = True
+app/indieauth.py	337	ORM_WRITE	indieauth_token_endpoint	db_session.add(access_token)
+app/indieauth.py	491	ORM_WRITE	indieauth_revocation_endpoint	token_info.is_revoked = True

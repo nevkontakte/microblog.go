@@ -1,0 +1,68 @@
+file	source_construct_key	verdict	cite	finding
+app/boxes.py	L104	CONFIRM	app/boxes.py:86-106; app/models.py:160-198; app/boxes.py:744-766, :1256-1262	
+app/boxes.py	L133	CONFIRM	app/boxes.py:132-146; app/actor.py:241-268, :295-307	
+app/boxes.py	L188	CONFIRM	app/boxes.py:182-190; app/models.py:617-640	
+app/boxes.py	L219	CONFIRM	app/boxes.py:219-243, :1256-1262	
+app/boxes.py	L245	CONFIRM	app/boxes.py:230-249, :1099-1105	
+app/boxes.py	L279	CONFIRM	app/boxes.py:253-284; app/outgoing_activities.py:114-123	
+app/boxes.py	L325	CONFIRM	app/indieauth.py:302-338	
+app/boxes.py	L395	CONFIRM	app/boxes.py:367-420; callers :125, :146, :363, :1738	
+app/boxes.py	L396	CONFIRM	app/boxes.py:396, :136-146, :1727-1738	
+app/boxes.py	L422	CONFIRM	app/boxes.py:415-429, :1010-1023	
+app/boxes.py	L439	CONFIRM	app/boxes.py:430-446, :897-939	
+app/boxes.py	L456	CONFIRM	app/boxes.py:107-127, :447-462	
+app/boxes.py	L470	CONFIRM	app/boxes.py:464-470; app/models.py:617-640	
+app/boxes.py	L714	CONFIRM	app/boxes.py:708-714; app/source.py:95-104, :204-218; app/models.py:394-405	
+app/boxes.py	L723	CONFIRM	app/boxes.py:716-744; app/models.py:429-440; app/utils/opengraph.py:79-125	
+app/boxes.py	L791	CONFIRM	app/boxes.py:781-822; app/admin.py:1216-1222	
+app/boxes.py	L869	CONFIRM	app/boxes.py:830-893; app/utils/opengraph.py:79-125; grep: send_update defined only at app/boxes.py:825	
+app/boxes.py	L870	CONFIRM	app/boxes.py:870; app/models.py:176	
+app/boxes.py	L871	CONFIRM	app/boxes.py:834-844, :871; probe review-orm_write-opus-r1/probe1.py (None and [] emit UPDATE, a non-empty list emits none)	
+app/boxes.py	L1168	CONFIRM	app/boxes.py:1130-1131, :1162-1168, :1346-1415, :2393-2396, :2437-2443	
+app/boxes.py	L1204	CONFIRM	app/boxes.py:1190-1213, :1418-1424	
+app/boxes.py	L1218	CONFIRM	app/boxes.py:1136-1140, :1170, :1218-1229; app/actor.py:241-249	
+app/boxes.py	L1236	CONFIRM	app/boxes.py:1220-1236, :1243-1324, :2398-2420	
+app/boxes.py	L1471	CONFIRM	app/boxes.py:1465-1472, :53-58	
+app/boxes.py	L1505	CONFIRM	app/boxes.py:1494-1507, :1477-1491, :994-1007; app/models.py:639	
+app/boxes.py	L1522	CONFIRM	app/boxes.py:1516-1541; app/ap_object.py:317-337; probe review-orm_write-opus-r1/probe2.py (PendingRollbackError after a caught IntegrityError, also inside begin_nested)	
+app/boxes.py	L1548	CONFIRM	app/boxes.py:1543-1548; app/models.py:617-640	
+app/boxes.py	L1562	CONFIRM	app/boxes.py:1551-1563; app/models.py:640	
+app/boxes.py	L1592	CONFIRM	app/boxes.py:1587-1592, :159-160, :1559	
+app/boxes.py	L1623	CONFIRM	app/boxes.py:1611-1623	
+app/boxes.py	L1639	CONFIRM	app/boxes.py:1608-1609, :1625-1645, :1281-1301	
+app/boxes.py	L1653	CONFIRM	app/boxes.py:1646-1653	
+app/boxes.py	L1668	CONFIRM	app/boxes.py:1662-1678; probe review-orm_write-opus-r1/probe1.py (UPDATE o SET cnt=(o.cnt + ?), attribute expired)	
+app/boxes.py	L1678	CONFIRM	app/boxes.py:1671-1678	
+app/boxes.py	L1686	CONFIRM	app/boxes.py:1679-1686, :2542	
+app/boxes.py	L1756	CONFIRM	app/boxes.py:1714-1756	
+app/boxes.py	L1804	CONFIRM	app/boxes.py:1791-1805, :2393-2410; app/models.py:72	
+app/boxes.py	L1805	CONFIRM	app/boxes.py:1804-1805; app/models.py:72	
+app/boxes.py	L1854	CONFIRM	app/boxes.py:1846-1856, :2418-2428	
+app/boxes.py	L1956	CONFIRM	app/boxes.py:1935-1999, :1243-1278	
+app/boxes.py	L1960	CONFIRM	app/boxes.py:1858-1864, :1893, :1960-2024	
+app/boxes.py	L2032	CONFIRM	app/boxes.py:1915-1920, :2026-2032	
+app/boxes.py	L2054	CONFIRM	app/boxes.py:2054-2079	
+app/boxes.py	L2062	CONFIRM	app/boxes.py:1937, :2055-2097; app/models.py:546-564	
+app/boxes.py	L2100	CONFIRM	app/boxes.py:2084-2109	
+app/boxes.py	L2121	CONFIRM	app/boxes.py:2119-2132, :2388-2391; probe review-orm_write-opus-r1/probe1.py	
+app/boxes.py	L2132	CONFIRM	app/boxes.py:2125-2132	
+app/boxes.py	L2168	CONFIRM	app/boxes.py:2151-2168, :2415-2420	
+app/boxes.py	L2170	CONFIRM	app/boxes.py:2136-2139, :2169-2170, :2415	
+app/boxes.py	L2205	CONFIRM	app/boxes.py:2190-2207	
+app/boxes.py	L2207	CONFIRM	app/boxes.py:2137, :2205-2211, :2400	
+app/boxes.py	L2208	CONFIRM	app/boxes.py:2208-2211; app/models.py:58-60	
+app/boxes.py	L2228	CONFIRM	app/boxes.py:2228-2231, :1281-1301, :2411-2419	
+app/boxes.py	L2240	CONFIRM	app/boxes.py:2233-2240	
+app/boxes.py	L2263	CONFIRM	app/boxes.py:2257-2263	
+app/boxes.py	L2299	CONFIRM	app/boxes.py:2288-2301; app/actor.py:181-195	
+app/boxes.py	L2418	REFUTE	app/boxes.py:1462, :1220-1236, :2398-2420	The list of places that delete or change this row is incomplete: _handle_follow_follow_activity also deletes it (boxes.py:1462, a Follow for another actor). In the actor-Delete path, the query at boxes.py:1220-1229 loads this same Delete activity into a second struct, which is reverted and marked is_deleted (:1236). So 'pass this one struct' does not cover every path. Add :1462 to the deletions and refer to the L1236 row.
+app/boxes.py	L2472	CONFIRM	app/boxes.py:2460-2472	
+app/boxes.py	L2480	REFUTE	app/boxes.py:2474-2486, :2542, :2545-2559	An immediate return skips behavior that the source has. In the source, _prefetch_actor_outbox still runs and makes its outbound GETs (parse_collection, fetch, :2551-2554). It then fails at its first query and logs 'Failed to prefetch outbox'. Only after that does the commit fail. The rulebook allows no difference without approval. Keep the Insert error as the session's failure: later statements return it, as PendingRollbackError does. Let the prefetch run and log, and let the commit return the error. Mark it TODO(port) if the owner wants the shortcut.
+app/boxes.py	L2564	CONFIRM	app/boxes.py:2552-2566	
+app/boxes.py	L2607	CONFIRM	app/boxes.py:2589-2610, :261, :296, :2564; app/admin.py:179-183, :1080-1081	
+app/indieauth.py	L80	CONFIRM	app/indieauth.py:68-93; app/models.py:488; app/database.py:24	
+app/indieauth.py	L183	CONFIRM	app/indieauth.py:174-184, :198-204; app/models.py:447, :456	
+app/indieauth.py	L224	CONFIRM	app/indieauth.py:198-227, :289-296, :331, :335	
+app/indieauth.py	L325	CONFIRM	app/indieauth.py:302-338	
+app/indieauth.py	L337	CONFIRM	app/indieauth.py:330-349; app/models.py:459-481	
+app/indieauth.py	L491	CONFIRM	app/indieauth.py:353-379, :486-492	

@@ -1,0 +1,2 @@
+file	key	r1_verdict	r1_cite	r1_finding	r2_verdict	r2_cite	r2_finding
+app/templates.py	L381	REFUTE	app/templates.py:371-387,335-336 (_clean_html re-raises)	The try at :375-379 catches only KeyError. A non-dict icon (string), an unhashable name or a non-dict tag raises TypeError/AttributeError that escapes _clean_html (it re-raises) and fails the render with a 500. Translation says to check the type and skip with the warning; it must skip only on missing keys and let a wrong type fail.	CONFIRM	app/templates.py:371-387	

@@ -1,0 +1,10 @@
+file	line	category	symbol	construct
+app/database.py	31	SESSION	get_db_session	async with async_session() as session
+app/main.py	237	SESSION	custom_http_exception_handler	async with async_session() as db_session
+app/prune.py	118	SESSION	run_prune_old_data	async with async_session() as db_session
+app/utils/stats.py	124	SESSION	print_stats._get_stats	async with async_session() as db_session
+tasks.py	284	SESSION	move_to._send_move	async with async_session() as db_session
+tasks.py	326	SESSION	self_destruct._send_self_destruct	async with async_session() as db_session
+tasks.py	402	SESSION	import_mastodon_following_accounts._import_following	async with async_session() as db_session
+tests/conftest.py	17	SESSION	async_db_session	async with async_session() as session
+tests/utils.py	237	SESSION	run_async._func	async with async_session() as db

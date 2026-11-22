@@ -1,0 +1,64 @@
+file	source_construct_key	verdict	cite	finding
+app/admin.py	L92	CONFIRM	admin.py:92-158	
+app/admin.py	L161	CONFIRM	admin.py:161-224	
+app/admin.py	L227	CONFIRM	admin.py:227-267	
+app/admin.py	L270	CONFIRM	admin.py:270-338	
+app/admin.py	L341	CONFIRM	admin.py:341-426	
+app/admin.py	L429	CONFIRM	admin.py:429-614	
+app/admin.py	L617	CONFIRM	admin.py:617-687	
+app/admin.py	L690	CONFIRM	admin.py:690-767	
+app/admin.py	L770	CONFIRM	admin.py:770-791	
+app/admin.py	L794	CONFIRM	admin.py:794-867	
+app/admin.py	L871	CONFIRM	admin.py:871-891	
+app/admin.py	L895	CONFIRM	admin.py:895-927	
+app/admin.py	L931	CONFIRM	admin.py:931-940	
+app/admin.py	L944	CONFIRM	admin.py:944-952	
+app/admin.py	L956	CONFIRM	admin.py:956-965	
+app/admin.py	L969	CONFIRM	admin.py:969-979	
+app/admin.py	L983	CONFIRM	admin.py:983-993	
+app/admin.py	L997	CONFIRM	admin.py:997-1005	
+app/admin.py	L1009	CONFIRM	admin.py:1009-1017	
+app/admin.py	L1021	CONFIRM	admin.py:1021-1029	
+app/admin.py	L1033	CONFIRM	admin.py:1033-1041	
+app/admin.py	L1045	CONFIRM	admin.py:1045-1053	
+app/admin.py	L1057	CONFIRM	admin.py:1057-1065	
+app/admin.py	L1069	CONFIRM	admin.py:1069-1083	
+app/admin.py	L1087	CONFIRM	admin.py:1087-1099	
+app/admin.py	L1103	CONFIRM	admin.py:1103-1115	
+app/admin.py	L1119	CONFIRM	admin.py:1119-1131	
+app/admin.py	L1135	REFUTE	app/admin.py:1149-1160; /usr/local/go/src/mime/multipart/formdata.go:142; starlette/formparsers.py:216	Python counts the empty file part a browser sends (filename="") as one entry of files, so len(files)>=1 is true for a CW-only post with no real file and the swap (b) runs. Go's ReadForm stores a part with an empty filename in Value, not File: the Go code must count that part (File["files"] plus a Value["files"] part) or the swap and the 422 differ.
+app/admin.py	L1209	CONFIRM	admin.py:1209-1224	
+app/admin.py	L1228	REFUTE	starlette/datastructures.py ImmutableMultiDict.__getitem__; probe QueryParams('a=1&a=2').get('a') == '2'; admin.py:1233	request.query_params.get('redirect','') returns the LAST value of a repeated key, not the first. Correct the row to the last value.
+app/admin.py	L1277	REFUTE	app/admin.py:1277-1282	The first sentence ('Response is the template via render_template (200)') is wrong: logout renders no template and always answers 302 with the cookie. Drop it; the rest of the row is right.
+app/main.py	L286	CONFIRM	main.py:286-342	
+app/main.py	L345	CONFIRM	main.py:344-390	
+app/main.py	L459	REFUTE	app/main.py:257-258	Evidence cites main.py:118-119 for ActivityPubResponse; that range is the middleware. ActivityPubResponse is main.py:257-258 (JSONResponse render at starlette/responses.py:184-190). Behavior text is right.
+app/main.py	L523	CONFIRM	main.py:523-589	
+app/main.py	L592	REFUTE	app/main.py:257-258	Evidence cites main.py:118-119 for ActivityPubResponse; the class is at main.py:257-258.
+app/main.py	L636	REFUTE	app/main.py:643-669,257-258	Wrong lines: cites main.py:118-119 for ActivityPubResponse (it is :257-258), and payload is :643 (not :645), assert :647 (not :648), visibility :650-656, send_create :658-667. Behavior text is right.
+app/main.py	L679	REFUTE	app/main.py:257-258	Evidence cites main.py:118-119 for ActivityPubResponse; the class is at main.py:257-258.
+app/main.py	L809	REFUTE	app/main.py:257-258	Evidence cites main.py:118-119 for ActivityPubResponse; the class is at main.py:257-258.
+app/main.py	L938	CONFIRM	main.py:938-985	
+app/main.py	L988	REFUTE	app/main.py:257-258	Evidence cites main.py:118-119 for ActivityPubResponse; the class is at main.py:257-258.
+app/main.py	L1011	REFUTE	app/main.py:257-258	Evidence cites main.py:118-119 for ActivityPubResponse; the class is at main.py:257-258.
+app/main.py	L1083	REFUTE	app/main.py:257-258	Evidence cites main.py:118-119 for ActivityPubResponse; the class is at main.py:257-258.
+app/main.py	L1093	REFUTE	app/main.py:257-258	Evidence cites main.py:118-119 for ActivityPubResponse; the class is at main.py:257-258.
+app/main.py	L1178	CONFIRM	main.py:1178-1188	
+app/main.py	L1191	REFUTE	app/main.py:262-285 (Refresh header at :281)	Evidence cites main.py:122-143 and :142 for the Refresh header; those lines are the security-header middleware. The header is set in redirect_to_remote_instance, main.py:281.
+app/main.py	L1213	CONFIRM	main.py:1213-1231	
+app/main.py	L1234	CONFIRM	main.py:1234-1254	
+app/main.py	L1257	CONFIRM	main.py:1257-1289	
+app/main.py	L1292	CONFIRM	main.py:1292-1301	
+app/main.py	L1304	CONFIRM	main.py:1304-1329	
+app/main.py	L1378	CONFIRM	main.py:1332-1357	
+app/main.py	L1433	REFUTE	app/main.py:85,1451	Wrong line: _RESIZED_CACHE is main.py:85, not :79. Also the cache is read (_RESIZED_CACHE.get, which bumps cachetools LFU use count) on every request before the is_webp test, not 'only when is_webp'; the row's wording would change eviction order.
+app/main.py	L1536	CONFIRM	main.py:1536-1556	
+app/main.py	L1559	CONFIRM	main.py:1559-1589	
+app/main.py	L1592	CONFIRM	main.py:1591-1598	
+app/main.py	L1626	CONFIRM	main.py:1601-1662	
+app/main.py	L1712	CONFIRM	main.py:1665-1709	
+app/main.py	L1722	CONFIRM	main.py:1722-1729,	
+app/micropub.py	L23	CONFIRM	micropub.py:22-56	
+app/micropub.py	L68	CONFIRM	micropub.py:59-66	
+app/webmentions.py	L46	CONFIRM	webmentions.py:45-202	
+app/main.py	L1165	REFUTE	app/main.py:1171; app/incoming_activities.py:22-30	A JSON body that is not an object is not an error: a list or string payload has no 'id' (the in test is on a list/str) and no '@context', so new_ap_incoming_activity returns None and the route answers 202; only non-container JSON (null, number) raises = 500. The row says any decode problem or non-object is a 500; the Go code must not reject a valid non-object JSON body.

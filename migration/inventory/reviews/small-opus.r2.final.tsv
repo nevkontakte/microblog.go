@@ -1,0 +1,7 @@
+file	source_construct_key	verdict	cite	finding
+app/indieauth.py	L62	CONFIRM	fastapi/routing.py:188-218; probes: Early-Data + '{bad' gives 422, Early-Data + invalid UTF-8 gives 400, Early-Data + '{}', empty body or text/plain gives 425	
+tests/test_httpsig.py	L35	CONFIRM	httpsig.py:285-306 (403 Blocked, 202, 401 details :300-306); test_httpsig.py:43-55	
+app/boxes.py	L600	CONFIRM	boxes.py:683, :690, :708-714; source.py:95-105	
+app/boxes.py	L675	CONFIRM	boxes.py:64-65, :675, :689	
+app/boxes.py	L711	CONFIRM	source.py:24, :95-105; boxes.py:709-714	
+app/httpsig.py	L75	CONFIRM	httpsig.py:75, :179, :194, :230, :257, :266; starlette/datastructures.py:552-555	

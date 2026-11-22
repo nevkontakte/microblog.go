@@ -1,0 +1,11 @@
+file	line	category	symbol	construct
+app/indieauth.py	37	ROUTE	well_known_authorization_server	router.get('/.well-known/oauth-authorization-server')
+app/indieauth.py	62	ROUTE	oauth_registration_endpoint	router.post('/oauth/register')
+app/indieauth.py	97	ROUTE	indieauth_authorization_endpoint	router.get('/auth')
+app/indieauth.py	147	ROUTE	indieauth_flow	router.post('/admin/indieauth')
+app/indieauth.py	231	ROUTE	indieauth_reedem_auth_code	router.post('/auth')
+app/indieauth.py	271	ROUTE	indieauth_token_endpoint	router.post('/token')
+app/indieauth.py	480	ROUTE	indieauth_revocation_endpoint	router.post('/revoke_token')
+app/indieauth.py	501	ROUTE	oauth_introspection_endpoint	router.post('/token_introspection')
+tests/test_httpsig.py	28	ROUTE	get_httpsig_checker	_test_app.get('/httpsig_checker')
+tests/test_httpsig.py	35	ROUTE	post_enforce_httpsig	_test_app.post('/enforce_httpsig')
