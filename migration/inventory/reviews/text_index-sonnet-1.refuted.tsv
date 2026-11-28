@@ -1,0 +1,2 @@
+file	key	r1_verdict	r1_cite	r1_finding	r2_verdict	r2_cite	r2_finding
+app/webfinger.py	L80	CONFIRM	app/webfinger.py:76,80		REFUTE	app/webfinger.py:79-83; tasks.py:276-286; app/lookup.py:15	Evidence says tasks.py:286 passes handles with no leading '@', but tasks.py:276-277 forces a leading '@' on moved_to; mastodon.py's call is at :23 not :22; lookup.py:15 (the user's lookup query, which can carry 'acct:') is not listed. The translation itself is right.

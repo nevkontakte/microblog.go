@@ -1,0 +1,2 @@
+file	key	r1_verdict	r1_cite	r1_finding	r2_verdict	r2_cite	r2_finding
+app/templates.py	L361	CONFIRM	app/templates.py:360-361,425; app/templates/utils.html:558-559		REFUTE	app/templates.py:409-410; migration/inventory/sites.tsv (no row for templates.py:410)	Evidence says the dateutil parse is 'another row', but no row exists for _parse_datetime (templates.py:410, dateutil parse on Event startTime/endTime). Add the parse caller's accepted forms and its error path (Jinja filter raises, 500) here or flag TODO(port).

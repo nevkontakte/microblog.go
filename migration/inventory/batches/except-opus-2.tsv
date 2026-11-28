@@ -1,0 +1,45 @@
+file	line	category	symbol	construct
+app/boxes.py	1657	EXCEPT	_handle_undo_activity	raise ValueError('Announce witout object')
+app/boxes.py	1776	EXCEPT	_handle_update_activity	raise ValueError(f'Invalid Update activity {from_actor.ap_actor}/{updated_actor.ap_actor}')
+app/boxes.py	1836	EXCEPT	_handle_create_activity	raise ValueError('Object actor does not match activity')
+app/boxes.py	1904	EXCEPT	_process_note_object	raise ValueError(f'Unexpected parent activity {parent_activity.ap_id}')
+app/boxes.py	2047	EXCEPT	_handle_vote_answer	raise ValueError('Should never happen')
+app/boxes.py	2175	EXCEPT	_handle_announce_activity	raise ValueError('Should never happen')
+app/boxes.py	2294	EXCEPT	save_to_inbox	except ap.ObjectNotFoundError
+app/boxes.py	2311	EXCEPT	save_to_inbox	except ap.ObjectNotFoundError
+app/boxes.py	2314	EXCEPT	save_to_inbox	except ap.FetchError
+app/boxes.py	2345	EXCEPT	save_to_inbox	except Exception
+app/boxes.py	2356	EXCEPT	save_to_inbox	except Exception
+app/boxes.py	2357	EXCEPT	save_to_inbox	raise fastapi.HTTPException(status_code=401, detail='Invalid LD sig')
+app/boxes.py	2485	EXCEPT	save_to_inbox	except Exception
+app/boxes.py	2638	EXCEPT	fetch_actor_collection	raise ValueError(f'internal collection for {url}) not supported')
+app/boxes.py	2658	EXCEPT	ReplyTreeNode.published_at	raise ValueError(f'Should never happen: {self}')
+app/boxes.py	2723	EXCEPT	get_replies_tree	raise ValueError(f'Invalid replies tree: {[n.ap_object for n in tree_nodes]}')
+app/httpsig.py	126	EXCEPT	_get_public_key	except ap.ObjectUnavailableError
+app/httpsig.py	140	EXCEPT	_get_public_key	raise ValueError(f"failed to fetch requested key {key_id}: got {actor['publicKey']}")
+app/httpsig.py	180	EXCEPT	httpsig_checker	except KeyError
+app/httpsig.py	222	EXCEPT	httpsig_checker	raise fastapi.HTTPException(status_code=202)
+app/httpsig.py	223	EXCEPT	httpsig_checker	except fastapi.HTTPException
+app/httpsig.py	224	EXCEPT	httpsig_checker	raise http_exc
+app/httpsig.py	225	EXCEPT	httpsig_checker	except Exception
+app/httpsig.py	249	EXCEPT	httpsig_checker	except (ap.ObjectIsGoneError, ap.ObjectNotFoundError)
+app/httpsig.py	252	EXCEPT	httpsig_checker	except Exception
+app/httpsig.py	268	EXCEPT	httpsig_checker	except Exception
+app/httpsig.py	287	EXCEPT	enforce_httpsig	raise fastapi.HTTPException(status_code=403, detail='Blocked')
+app/httpsig.py	298	EXCEPT	enforce_httpsig	raise fastapi.HTTPException(status_code=202)
+app/httpsig.py	306	EXCEPT	enforce_httpsig	raise fastapi.HTTPException(status_code=401, detail=detail)
+app/httpsig.py	338	EXCEPT	HTTPXSigAuth.auth_flow	raise ValueError('Should never happen')
+app/indieauth.py	239	EXCEPT	indieauth_reedem_auth_code	raise ValueError(f'Invalid grant_type {grant_type}')
+app/indieauth.py	279	EXCEPT	indieauth_token_endpoint	raise ValueError(f'Invalid grant_type {grant_type}')
+app/indieauth.py	319	EXCEPT	indieauth_token_endpoint	raise ValueError('invalid refresh token')
+app/indieauth.py	322	EXCEPT	indieauth_token_endpoint	raise ValueError('invalid client ID')
+app/indieauth.py	328	EXCEPT	indieauth_token_endpoint	raise ValueError('Should never happen')
+app/indieauth.py	404	EXCEPT	verify_access_token	raise HTTPException(detail='Invalid access token', status_code=401)
+app/indieauth.py	410	EXCEPT	verify_access_token	raise ValueError('Should never happen')
+app/indieauth.py	442	EXCEPT	check_access_token	raise ValueError('Should never happen')
+app/indieauth.py	474	EXCEPT	enforce_access_token	raise HTTPException(status_code=401, detail='access token required')
+app/indieauth.py	489	EXCEPT	indieauth_revocation_endpoint	raise ValueError('Should never happen')
+app/indieauth.py	516	EXCEPT	oauth_introspection_endpoint	raise HTTPException(status_code=401, detail='unauthenticated')
+app/ldsig.py	92	EXCEPT	generate_signature	raise ValueError(f'missing privkey on key {key!r}')
+app/models.py	391	EXCEPT	OutgoingActivity.anybox_object	raise ValueError('Should never happen')
+app/models.py	538	EXCEPT	Webmention.as_facepile_item	except Exception

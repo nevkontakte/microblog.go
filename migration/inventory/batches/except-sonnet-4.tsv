@@ -1,0 +1,41 @@
+file	line	category	symbol	construct
+app/utils/mastodon.py	24	EXCEPT	get_actor_urls_from_following_accounts_csv_file	except Exception
+app/utils/microformats.py	24	EXCEPT	fetch_and_parse	raise URLNotFoundOrGone
+app/utils/microformats.py	28	EXCEPT	fetch_and_parse	except httpx.HTTPStatusError
+app/utils/opengraph.py	93	EXCEPT	external_urls	except (ap.FetchError, ap.NotAnObjectError)
+app/utils/opengraph.py	124	EXCEPT	external_urls	except Exception
+app/utils/opengraph.py	148	EXCEPT	_og_meta_from_url	except TimeoutError
+app/utils/opengraph.py	151	EXCEPT	_og_meta_from_url	except Exception
+app/utils/opengraph.py	172	EXCEPT	og_meta_from_note	except asyncio.TimeoutError
+app/utils/opengraph.py	174	EXCEPT	og_meta_from_note	except Exception
+app/utils/opengraph.py	179	EXCEPT	og_meta_from_note	except httpx.HTTPError
+app/utils/privacy_replace.py	31	EXCEPT	replace_url	raise ValueError('Missing hostname')
+app/utils/privacy_replace.py	32	EXCEPT	replace_url	except Exception
+app/utils/url.py	27	EXCEPT	must_make_abs	raise ValueError('missing URL')
+app/utils/url.py	39	EXCEPT	_getaddrinfo	except ValueError
+app/utils/url.py	43	EXCEPT	_getaddrinfo	except socket.gaierror
+app/utils/url.py	88	EXCEPT	check_url	raise InvalidURLError(f'"{url}" is invalid')
+app/utils/version.py	11	EXCEPT	get_version_commit	except Exception
+app/utils/webmentions.py	27	EXCEPT	_discover_webmention_endoint	except Exception
+app/utils/workers.py	20	EXCEPT	Worker.process_message	raise NotImplementedError
+app/utils/workers.py	23	EXCEPT	Worker.get_next_message	raise NotImplementedError
+app/utils/workers.py	66	EXCEPT	Worker.run_forever	except asyncio.TimeoutError
+app/webfinger.py	29	EXCEPT	get_webfinger_via_host_meta	except httpx.HTTPStatusError
+app/webfinger.py	35	EXCEPT	get_webfinger_via_host_meta	except httpx.HTTPError
+app/webfinger.py	102	EXCEPT	webfinger	except httpx.HTTPStatusError
+app/webfinger.py	108	EXCEPT	webfinger	except httpx.HTTPError
+app/webmentions.py	56	EXCEPT	webmention_endpoint	raise ValueError('source URL is the same as target')
+app/webmentions.py	61	EXCEPT	webmention_endpoint	except Exception
+app/webmentions.py	63	EXCEPT	webmention_endpoint	raise HTTPException(status_code=400, detail='Invalid payload')
+app/webmentions.py	86	EXCEPT	webmention_endpoint	except Exception
+app/webmentions.py	96	EXCEPT	webmention_endpoint	raise HTTPException(status_code=400, detail='Invalid target')
+app/webmentions.py	101	EXCEPT	webmention_endpoint	except microformats.URLNotFoundOrGone
+app/webmentions.py	103	EXCEPT	webmention_endpoint	except httpx.HTTPError
+app/webmentions.py	104	EXCEPT	webmention_endpoint	raise HTTPException(status_code=500, detail=f'Fetch to process {source}')
+app/webmentions.py	133	EXCEPT	webmention_endpoint	raise HTTPException(status_code=400, detail='target not found in source')
+app/webmentions.py	232	EXCEPT	_handle_webmention_side_effects	raise ValueError(f'Unhandled {webmention.webmention_type} webmention')
+scripts/config_wizard.py	94	EXCEPT	<module>	except KeyboardInterrupt
+tasks.py	255	EXCEPT	webfinger	except Exception
+tasks.py	287	EXCEPT	move_to._send_move	except Exception
+tasks.py	382	EXCEPT	check_config	except Exception
+tests/test_process_outgoing_activities.py	53	EXCEPT	test_new_outgoing_activity	raise ValueError('Should never happen')

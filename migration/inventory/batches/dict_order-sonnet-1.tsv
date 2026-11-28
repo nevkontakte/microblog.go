@@ -1,0 +1,9 @@
+file	line	category	symbol	construct
+app/admin.py	219	DICT_ORDER	admin_new	EMOJIS_BY_NAME.items()
+app/config.py	235	DICT_ORDER	load_custom_routes	_CUSTOM_ROUTES.items()
+app/customization.py	111	DICT_ORDER	get_custom_router	_CUSTOM_ROUTES.items()
+app/main.py	1365	DICT_ORDER	_filter_proxy_resp_headers	proxy_resp.headers.items()
+app/main.py	1370	DICT_ORDER	_strip_content_type	headers.items()
+app/templates.py	381	DICT_ORDER	_replace_custom_emojis	idx.items()
+app/utils/opengraph.py	53	DICT_ORDER	_scrap_og_meta	OpenGraphMeta.__fields__.keys()
+app/utils/webmentions.py	31	DICT_ORDER	_discover_webmention_endoint	resp.links.items()

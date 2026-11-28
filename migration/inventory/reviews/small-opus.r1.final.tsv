@@ -1,0 +1,7 @@
+file	source_construct_key	verdict	cite	finding
+app/indieauth.py	L62	CONFIRM	fastapi/routing.py:188-218; probe: invalid UTF-8 JSON gives 400 {"detail":"There was an error parsing the body"}, invalid JSON with Early-Data: 1 gives 422, a valid object missing a field with Early-Data: 1 gives 425	
+tests/test_httpsig.py	L35	CONFIRM	app/httpsig.py:285-306; tests/test_httpsig.py:34-89	
+app/boxes.py	L600	CONFIRM	app/boxes.py:683, :690, :708-714, :624-640; app/source.py:95-105, :178-204	
+app/boxes.py	L675	CONFIRM	app/boxes.py:64-65, :596, :675, :689; app/models.py:296; app/main.py:843	
+app/boxes.py	L711	CONFIRM	app/source.py:24, :95-105, :204; app/boxes.py:708-714	
+app/httpsig.py	L75	CONFIRM	app/httpsig.py:72-75, :173, :179, :194, :230, :257, :266; starlette/datastructures.py:551-556	

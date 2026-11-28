@@ -1,0 +1,18 @@
+file	source_construct_key	verdict	cite	finding
+app/admin.py	L92	CONFIRM	app/admin.py:101-112	
+app/admin.py	L429	CONFIRM	app/admin.py:590-600	
+app/admin.py	L1135	CONFIRM	app/admin.py:1149-1160	
+app/admin.py	L1228	CONFIRM	starlette/datastructures.py (probe QueryParams last value)	
+app/admin.py	L1277	CONFIRM	app/admin.py:1277-1282	
+app/main.py	L459	CONFIRM	app/main.py:257-258	
+app/main.py	L592	CONFIRM	app/main.py:257-258	
+app/main.py	L636	CONFIRM	app/main.py:643-675	
+app/main.py	L679	CONFIRM	app/main.py:257-258	
+app/main.py	L809	CONFIRM	app/main.py:257-258	
+app/main.py	L988	CONFIRM	app/main.py:257-258	
+app/main.py	L1011	CONFIRM	app/main.py:257-258	
+app/main.py	L1083	CONFIRM	app/main.py:257-258	
+app/main.py	L1093	CONFIRM	app/main.py:257-258	
+app/main.py	L1191	CONFIRM	app/main.py:281	
+app/main.py	L1433	CONFIRM	app/main.py:85,1451,1491	
+app/main.py	L1165	CONFIRM	app/incoming_activities.py:22-30	

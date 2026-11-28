@@ -1,0 +1,81 @@
+file	source_construct_key	verdict	cite	finding
+app/main.py	L1003	CONFIRM	main.py:1002-1003	
+app/main.py	L1029	CONFIRM	main.py:1027-1029	
+app/main.py	L1086	CONFIRM	main.py:1083-1087	
+app/main.py	L1087	CONFIRM	main.py:1085-1087	
+app/main.py	L1203	CONFIRM	main.py:1195-1203; webfinger.py:130-137	
+app/main.py	L1223	CONFIRM	main.py:1214-1223	
+app/main.py	L1247	CONFIRM	main.py:1236-1247	
+app/main.py	L1265	CONFIRM	main.py:1257-1265	
+app/main.py	L1442	CONFIRM	main.py:1441-1444	
+app/main.py	L1494	CONFIRM	main.py:1493-1494, :1522	
+app/main.py	L1501	REFUTE	main.py:1497-1509	Wrong lines: the mimetype choice is main.py:1507-1509 (L1514-1516 is the cache store), the inner try and fallback save are 1497-1504, not 1498-1512. Fix the evidence and the L1514-1516 reference in the translation.
+app/main.py	L1522	CONFIRM	main.py:1522-1526	
+app/main.py	L1527	REFUTE	main.py:1490-1532	Wrong lines: the try body is main.py:1490-1521 and the handler 1527-1532. L1473-1475 is the early return for status >= 300, outside any try. Fix the evidence range and the 'L1473-1521' text.
+app/main.py	L1549	CONFIRM	main.py:1541-1549; models.py:415	
+app/main.py	L1573	CONFIRM	main.py:1565-1575	
+app/main.py	L1633	CONFIRM	main.py:1631-1633; models.py:179	
+app/main.py	L1682	CONFIRM	main.py:1680-1682; models.py:179	
+app/main.py	L1686	CONFIRM	main.py:1684-1686; ap_object.py:176-179	
+app/media.py	L28	CONFIRM	media.py:23-28; main.py:1387-1388, :1448-1449	
+app/media.py	L46	CONFIRM	media.py:44-49	
+app/micropub.py	L114	REFUTE	micropub.py:83-84, :97, :104, :113-114	Wrong lines: the outer action test is micropub.py:83-84 (not 82), the delete branch is 97 (not 98), the update branch 104 (not 106). L114 is right.
+app/outgoing_activities.py	L108	CONFIRM	outgoing_activities.py:107-108	
+app/outgoing_activities.py	L110	CONFIRM	outgoing_activities.py:109-110	
+app/outgoing_activities.py	L112	CONFIRM	outgoing_activities.py:111-112	
+app/outgoing_activities.py	L131	CONFIRM	outgoing_activities.py:127-139	
+app/outgoing_activities.py	L152	CONFIRM	outgoing_activities.py:151-152, :197	
+app/outgoing_activities.py	L239	CONFIRM	outgoing_activities.py:239-268; activitypub.py:393-408	
+app/outgoing_activities.py	L258	CONFIRM	outgoing_activities.py:202-266	
+app/source.py	L112	CONFIRM	source.py:107-114; pygments/lexers/__init__.py:108-131	
+app/source.py	L154	CONFIRM	source.py:127-157; webfinger.py:140-155	
+app/templates.py	L56	CONFIRM	templates.py:53-57, :420	
+app/templates.py	L75	CONFIRM	templates.py:66-80	
+app/templates.py	L335	CONFIRM	templates.py:312-336	
+app/templates.py	L377	CONFIRM	templates.py:371-387	
+app/uploads.py	L76	CONFIRM	uploads.py:69-84, :91-98	
+app/utils/facepile.py	L58	REFUTE	utils/facepile.py:35-84	Wrong lines: Face.from_webmention is facepile.py:35-84; the h-card try is 39-62 (not 50-76), and the item["type"][0] test outside the try is L38 (L63 for the elif), not L53. Fix the evidence and the L53 reference.
+app/utils/facepile.py	L78	REFUTE	utils/facepile.py:63-82	Wrong lines: the h-entry branch is facepile.py:63-82 (not 71-100); the author lookup outside the try is L64 (not L72). Fix both references.
+app/utils/facepile.py	L115	REFUTE	utils/facepile.py:95-121	Wrong lines: _parse_face is facepile.py:95-121 (not 109-131); the item["type"][0] test is L97 (not L112); the author shapes are at facepile.py:64-77 (not 71-84).
+app/utils/facepile.py	L166	REFUTE	utils/facepile.py:133-170	Wrong lines: _parse_face is facepile.py:95-121 (not 109-131) and the item["type"][0] test outside the try is L137 (not L136).
+app/utils/highlight.py	L38	CONFIRM	utils/highlight.py:35-39; pygments/lexers/__init__.py:303-339	
+app/utils/mastodon.py	L24	CONFIRM	utils/mastodon.py:10-11, :21-30; webfinger.py:76, :91, :107, :125, :149	
+app/utils/microformats.py	L24	CONFIRM	utils/microformats.py:10-24; utils/indieauth.py:34; indieauth.py:126	
+app/utils/microformats.py	L28	CONFIRM	utils/microformats.py:26-32; httpx/_models.py:701-736	
+app/utils/opengraph.py	L93	CONFIRM	utils/opengraph.py:86-98; activitypub.py:56-76	
+app/utils/opengraph.py	L124	CONFIRM	utils/opengraph.py:104-126; utils/url.py:50-81	
+app/utils/opengraph.py	L148	CONFIRM	utils/opengraph.py:5, :35-36, :75-76, :146-150	
+app/utils/opengraph.py	L151	REFUTE	utils/opengraph.py:43, :45, :48, :51, :58, :72	Wrong lines: head lookup is opengraph.py:43 (not 41), the title lookup is 48 (not 44), the FIXME is 45 (not 43), site_name is 51 (not 48), parse_obj is 72 (not 71), the dead 'title' test is 58 (not 53); evidence 35-71 leaves out L72. Also add that is_url_valid (L65) in the child can raise a DNS error that takes the same path.
+app/utils/opengraph.py	L172	CONFIRM	utils/opengraph.py:165-175	
+app/utils/opengraph.py	L174	CONFIRM	utils/opengraph.py:165-178	
+app/utils/opengraph.py	L179	CONFIRM	utils/opengraph.py:165-180	
+app/utils/privacy_replace.py	L31	CONFIRM	utils/privacy_replace.py:28-34	
+app/utils/privacy_replace.py	L32	CONFIRM	utils/privacy_replace.py:28-39	
+app/utils/url.py	L27	CONFIRM	utils/url.py:12-28	
+app/utils/url.py	L39	CONFIRM	utils/url.py:35-47	
+app/utils/url.py	L43	CONFIRM	utils/url.py:40-45	
+app/utils/url.py	L88	CONFIRM	utils/url.py:84-90	
+app/utils/version.py	L11	CONFIRM	utils/version.py:4-12; config.py:28-33	
+app/utils/webmentions.py	L27	CONFIRM	utils/webmentions.py:16-29, :50-53	
+app/utils/workers.py	L20	CONFIRM	utils/workers.py:14-26	
+app/utils/workers.py	L23	CONFIRM	utils/workers.py:22-23	
+app/utils/workers.py	L66	CONFIRM	utils/workers.py:59-69	
+app/webfinger.py	L29	CONFIRM	webfinger.py:12-43, :75	
+app/webfinger.py	L35	CONFIRM	webfinger.py:35-53	
+app/webfinger.py	L102	CONFIRM	webfinger.py:56-127	
+app/webfinger.py	L108	CONFIRM	webfinger.py:88-113, :124-127	
+app/webmentions.py	L56	CONFIRM	webmentions.py:55-56	
+app/webmentions.py	L61	CONFIRM	webmentions.py:50-63	
+app/webmentions.py	L63	CONFIRM	webmentions.py:61-63	
+app/webmentions.py	L86	CONFIRM	webmentions.py:78-96	
+app/webmentions.py	L96	CONFIRM	webmentions.py:65-96	
+app/webmentions.py	L101	CONFIRM	webmentions.py:98-107, :110-138	
+app/webmentions.py	L103	CONFIRM	webmentions.py:99-104	
+app/webmentions.py	L104	CONFIRM	webmentions.py:103-104	
+app/webmentions.py	L133	CONFIRM	webmentions.py:106-138	
+app/webmentions.py	L232	CONFIRM	webmentions.py:205-232; models.py:505-509, :528	
+scripts/config_wizard.py	L94	CONFIRM	scripts/config_wizard.py:91-96	
+tasks.py	L255	CONFIRM	tasks.py:249-257	
+tasks.py	L287	CONFIRM	tasks.py:285-296	
+tasks.py	L382	CONFIRM	tasks.py:380-387; config.py:135-143	
+tests/test_process_outgoing_activities.py	L53	CONFIRM	tests/test_process_outgoing_activities.py:52-53; tests/factories.py:146	

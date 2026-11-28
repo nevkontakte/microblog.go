@@ -1,0 +1,54 @@
+file	source_construct_key	verdict	cite	finding
+app/actor.py	L225	CONFIRM	row built actor.py:218-223, added :225, flushed and refreshed :226-227, returned :228	
+app/actor.py	L302	CONFIRM	branch actor.py:299-304	
+app/actor.py	L303	CONFIRM	branch actor.py:299-304	
+app/actor.py	L304	CONFIRM	branch actor.py:299-304	
+app/actor.py	L306	REFUTE	app/actor.py:251	Evidence cites the 24-hour test at actor.py:249, but that line is the ObjectNotFoundError raise; the updated_at test is at actor.py:251. Fix the cite.
+app/admin.py	L763	CONFIRM	template rendered admin.py:749-756 before the loop	
+app/admin.py	L889	CONFIRM	load admin.py:878 (boxes.py:1010-1023)	
+app/admin.py	L910	REFUTE	app/admin.py:926	Evidence says commit :925; line 925 closes the logger call and the commit is admin.py:926.
+app/admin.py	L977	CONFIRM	actor from fetch_actor admin.py:976 (actor.py:231-290)	
+app/admin.py	L991	CONFIRM	actor from fetch_actor admin.py:990 (actor.py:231-290)	
+app/admin.py	L1081	CONFIRM	object loaded :1076 or saved by save_object_to_inbox :1079	
+app/admin.py	L1097	CONFIRM	object loaded :1094	
+app/admin.py	L1113	CONFIRM	object loaded admin.py:1110	
+app/admin.py	L1129	CONFIRM	object loaded admin.py:1126	
+app/incoming_activities.py	L45	CONFIRM	row built incoming_activities.py:40-44, added :45, committed :46, refreshed :47, returned :48	
+app/incoming_activities.py	L64	REFUTE	app/incoming_activities.py:141	Evidence says the commit is at L140; L140 is blank and the commit is incoming_activities.py:141. Fix the commit cite in evidence and target.
+app/incoming_activities.py	L65	REFUTE	app/incoming_activities.py:141	Evidence says the commit is at L140; L140 is blank and the commit is incoming_activities.py:141. Fix the commit cite in evidence and target.
+app/incoming_activities.py	L67	REFUTE	app/incoming_activities.py:141	Evidence says the commit is at L140; L140 is blank and the commit is incoming_activities.py:141. Fix the commit cite in evidence and target.
+app/incoming_activities.py	L108	CONFIRM	written incoming_activities.py:108-109	
+app/incoming_activities.py	L109	CONFIRM	written incoming_activities.py:109	
+app/incoming_activities.py	L127	REFUTE	app/incoming_activities.py:141	Two defects: commit is at :141, not :140; and classification UNKNOWN is wrong because the owner already decided a Go error or trace may replace the Python traceback in stored error text. Classify ORM_WRITE_THROUGH, store err.Error(), drop the TODO(port) question (no reader of the column exists).
+app/incoming_activities.py	L133	REFUTE	app/incoming_activities.py:141	Two defects: commit is at :141, not :140; and classification UNKNOWN is wrong because the owner already decided a Go error or trace may replace the Python traceback in stored error text. Classify ORM_WRITE_THROUGH, store err.Error(), drop the TODO(port) question (no reader of the column exists).
+app/incoming_activities.py	L137	REFUTE	app/incoming_activities.py:141	Evidence says the commit is at L140; L140 is blank and the commit is incoming_activities.py:141. Fix the commit cite in evidence and target.
+app/outgoing_activities.py	L121	CONFIRM	row built outgoing_activities.py:113-119, added :121, flushed and refreshed :122-123, returned :124	
+app/outgoing_activities.py	L155	REFUTE	app/outgoing_activities.py:268	Evidence and target say the commit is at L267; L267 is blank and the commit is outgoing_activities.py:268.
+app/outgoing_activities.py	L156	REFUTE	app/outgoing_activities.py:268	Evidence and target say the commit is at L267; L267 is blank and the commit is outgoing_activities.py:268.
+app/outgoing_activities.py	L158	REFUTE	app/outgoing_activities.py:268	Evidence and target say the commit is at L267; L267 is blank and the commit is outgoing_activities.py:268.
+app/outgoing_activities.py	L197	CONFIRM	outgoing_activities.py:197-198 (two writes in a row), no database read between this write and the commit at outgoing_act	
+app/outgoing_activities.py	L198	CONFIRM	outgoing_activities.py:198	
+app/outgoing_activities.py	L241	CONFIRM	outgoing_activities.py:240-257 (except httpx.HTTPStatusError), commit outgoing_activities.py:268	
+app/outgoing_activities.py	L242	CONFIRM	outgoing_activities.py:242	
+app/outgoing_activities.py	L243	REFUTE	app/outgoing_activities.py:243	Target claims the error column is read by the admin outbox page; grep of app/ and templates finds no reader of OutgoingActivity.error. Also the TODO(port) is moot: the owner allows a Go error text. Classify plainly, store err.Error(), no TODO.
+app/outgoing_activities.py	L254	REFUTE	app/outgoing_activities.py:155	Target says setNextTry sets IsErrored at outgoing_activities.py:151; it is at :155 (151 is the tries check).
+app/outgoing_activities.py	L255	REFUTE	app/outgoing_activities.py:156	Evidence cites _set_next_try at :152 and the fetch filter at :163; correct lines are :156 and :165 (next_try <= now()).
+app/outgoing_activities.py	L260	CONFIRM	outgoing_activities.py:258-261 (except Exception)	
+app/outgoing_activities.py	L264	REFUTE	app/outgoing_activities.py:167	Evidence cites the is_sent fetch filter at :165; that is the next_try filter. The is_sent filter is :167.
+app/outgoing_activities.py	L265	REFUTE	app/outgoing_activities.py:238	Evidence cites ap.post at :236, which is a logger.info line; ap.post is :238 and client.post starts :211.
+app/outgoing_activities.py	L266	REFUTE	probe: httpx 0.23 Response.text (httpx/_models.py:555-562, _decoders.py:248)	strings.ToValidUTF8 collapses a run of bad bytes into one U+FFFD, but httpx decodes with errors=replace giving one U+FFFD per bad sequence (probe: b"a\xff\xfeb" -> 2 replacements). httpx also decodes by the Content-Type charset (latin-1 probe gave "caf\xe9"). Go must decode by charset, then replace per invalid sequence (range over string yields one U+FFFD per bad byte; check Python parity for truncated sequences).
+app/uploads.py	L99	CONFIRM	uploads.py:92-100 (constructor, add, commit), return :102	
+app/utils/highlight.py	L50	REFUTE	app/utils/highlight.py:25	Evidence cites the pre-parent condition at :27-30; the check is highlight.py:25-26 (27-30 is the br replacement and code_content). Fix cite.
+app/webmentions.py	L94	CONFIRM	webmentions.py:89-96 (the target is not an outbox object)	
+app/webmentions.py	L114	REFUTE	app/webmentions.py:130	Evidence says the commit follows at :132; it is webmentions.py:130 (132 is the not-found raise check).
+app/webmentions.py	L128	CONFIRM	webmentions.py:122-130 (condition is_notification_enabled(DELETED_WEBMENTION), add, commit)	
+app/webmentions.py	L144	CONFIRM	webmentions.py:142-147 (undelete, set microformats, flush, webmention = existing)	
+app/webmentions.py	L145	CONFIRM	webmentions.py:145-147	
+app/webmentions.py	L155	REFUTE	app/webmentions.py:200	Evidence says commit at :198; line 198 is a comment, the commit is webmentions.py:200.
+app/webmentions.py	L164	CONFIRM	webmentions.py:157-167 (constructor with webmention_type=UNKNOWN set at :135, add, flush, webmention = new_webmention)	
+app/webmentions.py	L174	REFUTE	app/webmentions.py:200	Evidence says commit :198; the commit is webmentions.py:200.
+app/webmentions.py	L195	REFUTE	app/webmentions.py:199	Evidence says side effects at :200; the call is :199 and :200 is the commit.
+app/webmentions.py	L212	REFUTE	app/webmentions.py:130, :200	Evidence and target say the caller commits at :132 or :201; the commits are webmentions.py:130 and :200.
+app/webmentions.py	L220	REFUTE	app/webmentions.py:130, :200	Evidence and target say the caller commits at :132 or :201; the commits are webmentions.py:130 and :200.
+app/webmentions.py	L224	REFUTE	app/webmentions.py:130, :200	Evidence and target say the caller commits at :132 or :201; the commits are webmentions.py:130 and :200.
+app/webmentions.py	L228	REFUTE	app/webmentions.py:130, :200	Evidence and target say the caller commits at :132 or :201; the commits are webmentions.py:130 and :200.

@@ -1,0 +1,90 @@
+file	source_construct_key	verdict	cite	finding
+app/boxes.py	L123	REFUTE	boxes.py:114-121	The query matches any live outbox object whose activity_object_ap_id is the actor (a live Follow too, boxes.py:342-349), not only a Block: for a followed, unblocked actor the route sends an Undo of the Follow and gives 302, and with a live Follow and a live Block one_or_none raises MultipleResultsFound (500). Correct the BUG(port) text: the 500 comes when no live outbox activity has activity_object_ap_id == actor.ap_id.
+app/boxes.py	L177	CONFIRM	boxes.py:103-106,176-177	
+app/boxes.py	L196	CONFIRM	boxes.py:194-196; micropub.py:85-101	
+app/boxes.py	L217	CONFIRM	boxes.py:103-106,216-217	
+app/boxes.py	L263	CONFIRM	boxes.py:255-263,2594	
+app/boxes.py	L277	CONFIRM	boxes.py:103-106,276-277	
+app/boxes.py	L298	CONFIRM	boxes.py:290-298	
+app/boxes.py	L304	CONFIRM	boxes.py:300-304	
+app/boxes.py	L323	CONFIRM	boxes.py:322-323	
+app/boxes.py	L355	CONFIRM	boxes.py:354-355; tasks.py:416	
+app/boxes.py	L370	CONFIRM	boxes.py:368-370; admin.py:1043-1053	
+app/boxes.py	L373	CONFIRM	boxes.py:372-375	
+app/boxes.py	L393	CONFIRM	boxes.py:392-393	
+app/boxes.py	L400	REFUTE	main.py:658-666; boxes.py:678-697	C2S POST /outbox stores an outbox row of any client type with no "object" key (main.py:658-666 passes ap_type=obj["type"]; send_create builds obj with "type": ap_type and no "object", boxes.py:678-697; save_outbox_object stores ro.ap_type, boxes.py:83-96), so the claim that outbox Follow rows come only from boxes.py:342-349 is false. POST /admin/actions/undo with that row's ap_id passes the type check at boxes.py:372 and reaches this raise: classify BUG_CRASH, return errors.New("Should never happen") (500 through the handler wrapper) with BUG(port), not a panic.
+app/boxes.py	L418	REFUTE	main.py:658-666; boxes.py:678-697	C2S POST /outbox stores an outbox row of any client type with no "object" key (main.py:658-666 passes ap_type=obj["type"]; send_create builds obj with "type": ap_type and no "object", boxes.py:678-697; save_outbox_object stores ro.ap_type, boxes.py:83-96), so the claim that outbox Like rows come only from boxes.py:266-272 is false. POST /admin/actions/undo with that row's ap_id passes the type check at boxes.py:372 and reaches this raise: classify BUG_CRASH, return errors.New("Should never happen") (500 through the handler wrapper) with BUG(port), not a panic.
+app/boxes.py	L421	CONFIRM	boxes.py:419-422; prune.py:75-82	
+app/boxes.py	L433	REFUTE	main.py:658-666; boxes.py:678-697	C2S POST /outbox stores an outbox row of any client type with no "object" key (main.py:658-666 passes ap_type=obj["type"]; send_create builds obj with "type": ap_type and no "object", boxes.py:678-697; save_outbox_object stores ro.ap_type, boxes.py:83-96), so the claim that outbox Announce rows come only from boxes.py:307-318 is false. POST /admin/actions/undo with that row's ap_id passes the type check at boxes.py:372 and reaches this raise: classify BUG_CRASH, return errors.New("Should never happen") (500 through the handler wrapper) with BUG(port), not a panic.
+app/boxes.py	L438	CONFIRM	boxes.py:434-439	
+app/boxes.py	L449	REFUTE	main.py:658-666; boxes.py:678-697	C2S POST /outbox stores an outbox row of any client type with no "object" key (main.py:658-666 passes ap_type=obj["type"]; send_create builds obj with "type": ap_type and no "object", boxes.py:678-697; save_outbox_object stores ro.ap_type, boxes.py:83-96), so the claim that outbox Block rows come only from boxes.py:164-170 is false. POST /admin/actions/undo with that row's ap_id passes the type check at boxes.py:372 and reaches this raise: classify BUG_CRASH, return fmt.Errorf("Invalid block activity %s", outboxObjectToUndo.APID) (500 through the handler wrapper) with BUG(port), not a panic. It is not unreachable.
+app/boxes.py	L473	CONFIRM	boxes.py:372-375,472-473	
+app/boxes.py	L508	REFUTE	activitypub.py:181	Wrong line: check_url is called at activitypub.py:181; line 183 is the httpx.AsyncClient block. The translation is correct.
+app/boxes.py	L515	CONFIRM	activitypub.py:196-206	
+app/boxes.py	L545	CONFIRM	boxes.py:544-545; tasks.py:305	
+app/boxes.py	L573	CONFIRM	boxes.py:572-573; tasks.py:327	
+app/boxes.py	L607	CONFIRM	boxes.py:605-607	
+app/boxes.py	L615	CONFIRM	boxes.py:608-616	
+app/boxes.py	L640	CONFIRM	boxes.py:627-640; admin.py:1193	
+app/boxes.py	L648	CONFIRM	boxes.py:646-648; main.py:658-666	
+app/boxes.py	L651	CONFIRM	boxes.py:650-651; admin.py:1174-1175	
+app/boxes.py	L654	CONFIRM	boxes.py:653-654; admin.py:1183	
+app/boxes.py	L672	CONFIRM	boxes.py:670-672; main.py:658-666	
+app/boxes.py	L706	CONFIRM	boxes.py:705-706	
+app/boxes.py	L783	CONFIRM	boxes.py:781-783	
+app/boxes.py	L785	CONFIRM	boxes.py:784-785; ap_object.py:68-69	
+app/boxes.py	L815	CONFIRM	boxes.py:814-815	
+app/boxes.py	L832	CONFIRM	boxes.py:825-832 (grep: no caller)	
+app/boxes.py	L1141	CONFIRM	boxes.py:1135-1142; actor.py:249,292	
+app/boxes.py	L1238	CONFIRM	boxes.py:1131-1149,1236-1238	
+app/boxes.py	L1483	CONFIRM	boxes.py:1481-1483	
+app/boxes.py	L1486	CONFIRM	boxes.py:1485-1486,1543-1547; models.py:631-632	
+app/boxes.py	L1489	CONFIRM	boxes.py:1488-1489	
+app/boxes.py	L1524	CONFIRM	boxes.py:1521-1525; probe (scratchpad probe_ie.py: PendingRollbackError after caught IntegrityError, also in begin_nested)	
+app/boxes.py	L1540	CONFIRM	boxes.py:1539-1540	
+app/boxes.py	L1584	CONFIRM	boxes.py:1583-1584	
+app/boxes.py	L1627	CONFIRM	boxes.py:1626-1627; incoming_activities.py:129-134	
+app/boxes.py	L1657	REFUTE	boxes.py:2172-2175; boxes.py:2414	An Announce without "object" never stays stored through save_to_inbox: _handle_announce_activity raises at boxes.py:2174-2175 and the worker rolls back. Such a row is stored only by save_object_to_inbox (boxes.py:2573-2606, from send_like/send_announce of a fetched Announce). activity_object_ap_id is stored at boxes.py:2414, not 2415. The translation (return error) is correct.
+app/boxes.py	L1776	REFUTE	boxes.py:1765; boxes.py:1770-1779	Wrong lines: ap.get_object is at boxes.py:1765 (1764 is the log line), the check is at 1770-1775 and the raise at 1776-1779. The translation is correct.
+app/boxes.py	L1836	CONFIRM	boxes.py:1834-1836,2382; activitypub.py:370-380	
+app/boxes.py	L1904	CONFIRM	boxes.py:1903-1904,2422-2431	
+app/boxes.py	L2047	REFUTE	admin.py:1144,1174-1175; boxes.py:661	poll_type is an unvalidated admin form field used as the key of the answer list (boxes.py:661), so an outbox Question with poll_type other than oneOf/anyOf has poll_items None; a remote vote then reaches this raise in the incoming worker. Python stores the error and retries (incoming_activities.py:129-134), so classify ERROR_TYPE: return errors.New("Should never happen"), not a panic (a panic marks the message failed at once).
+app/boxes.py	L2175	CONFIRM	boxes.py:2172-2175,2386-2396	
+app/boxes.py	L2294	REFUTE	boxes.py:2292-2296; activitypub.py:200-201	Wrong lines: the try block is boxes.py:2292-2296 (2290 builds RemoteActor), and ap.fetch raises ObjectNotFoundError at activitypub.py:200-201 (202-203 is the blank line and the raise_for_status try). The translation is correct.
+app/boxes.py	L2311	REFUTE	activitypub.py:200-201	Wrong line: ap.fetch raises ObjectNotFoundError at activitypub.py:200-201, not 202-203 (the raise_for_status try). The translation is correct.
+app/boxes.py	L2314	REFUTE	activitypub.py:181	Wrong line: check_url is called at activitypub.py:181; line 180 is the log line. The translation is correct.
+app/boxes.py	L2345	CONFIRM	boxes.py:2343-2346; ldsig.py:65-80	
+app/boxes.py	L2356	REFUTE	boxes.py:2361	Wrong line: raw_object["id"] is read at boxes.py:2361; line 2360 is a comment. The translation is correct.
+app/boxes.py	L2357	CONFIRM	boxes.py:2354-2357; incoming_activities.py:113-134	
+app/boxes.py	L2485	REFUTE	boxes.py:2542	Wrong line: save_to_inbox commits at boxes.py:2542; line 2531 is a comment in the View branch. Correct both references (target_translation and evidence); the rest is correct.
+app/boxes.py	L2638	CONFIRM	boxes.py:2622-2638	
+app/boxes.py	L2658	CONFIRM	boxes.py:2651-2658; main.py:919-926	
+app/boxes.py	L2723	CONFIRM	boxes.py:2717-2723	
+app/httpsig.py	L126	REFUTE	activitypub.py:75,198-199	Wrong lines: ObjectUnavailableError is defined at activitypub.py:75 and raised at 198-199 (401/403); lines 200-201 raise ObjectNotFoundError. The translation is correct.
+app/httpsig.py	L140	CONFIRM	httpsig.py:129-142	
+app/httpsig.py	L180	CONFIRM	httpsig.py:178-184	
+app/httpsig.py	L222	CONFIRM	httpsig.py:204-222; starlette/exceptions.py:18-19	
+app/httpsig.py	L223	CONFIRM	httpsig.py:204-226	
+app/httpsig.py	L224	CONFIRM	httpsig.py:222-224	
+app/httpsig.py	L225	CONFIRM	httpsig.py:204-226	
+app/httpsig.py	L249	CONFIRM	httpsig.py:247-251	
+app/httpsig.py	L252	CONFIRM	httpsig.py:252-254	
+app/httpsig.py	L268	CONFIRM	httpsig.py:261-269	
+app/httpsig.py	L287	CONFIRM	httpsig.py:285-287; main.py:226-254	
+app/httpsig.py	L298	CONFIRM	httpsig.py:296-298; main.py:232-236	
+app/httpsig.py	L306	CONFIRM	httpsig.py:194,300-306	
+app/httpsig.py	L338	CONFIRM	httpsig.py:337-338,351-353	
+app/indieauth.py	L239	CONFIRM	indieauth.py:237-239	
+app/indieauth.py	L279	CONFIRM	indieauth.py:277-279	
+app/indieauth.py	L319	CONFIRM	indieauth.py:303-319	
+app/indieauth.py	L322	CONFIRM	indieauth.py:321-325	
+app/indieauth.py	L328	CONFIRM	indieauth.py:224-227,296-300,327-328	
+app/indieauth.py	L404	CONFIRM	indieauth.py:394-407	
+app/indieauth.py	L410	CONFIRM	indieauth.py:409-410; models.py:479	
+app/indieauth.py	L442	CONFIRM	indieauth.py:441-442	
+app/indieauth.py	L474	CONFIRM	indieauth.py:472-474	
+app/indieauth.py	L489	CONFIRM	indieauth.py:486-489	
+app/indieauth.py	L516	CONFIRM	indieauth.py:503-516	
+app/ldsig.py	L92	CONFIRM	ldsig.py:83-92; outgoing_activities.py:34-35	
+app/models.py	L391	CONFIRM	models.py:384-391; outgoing_activities.py:106-111	
+app/models.py	L538	CONFIRM	models.py:530-543; utils/webmentions.py:67-92	

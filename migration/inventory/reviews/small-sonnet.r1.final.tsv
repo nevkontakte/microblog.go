@@ -1,0 +1,6 @@
+file	source_construct_key	verdict	cite	finding
+app/templates.py	L361	CONFIRM	app/templates.py:409-410,425; app/templates/utils.html:558-559	
+app/templates.py	L381	CONFIRM	app/templates.py:375-379,335-336	
+app/database.py	L31	CONFIRM	app/main.py:1173; app/incoming_activities.py:46; app/httpsig.py:147-148; app/uploads.py:100	
+tasks.py	L284	CONFIRM	tasks.py:286-290; docs/adr/0023-store-go-error-text-instead-of-tracebacks.md:9-12	
+app/webfinger.py	L80	REFUTE	app/lookup.py:14-15; tasks.py:242-243	Evidence is false: no caller can pass an acct: prefix. lookup.py:14 needs a leading @ or a match of "@"+query (the colon fails the regex), and tasks.py:242-243 force a leading @. The strip never fires; say so and keep it as faithful dead code.

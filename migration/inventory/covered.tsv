@@ -1,0 +1,28 @@
+file	line	category	symbol	construct
+app/activitypub.py	197	EXCEPT	fetch	raise ObjectIsGoneError(url, resp)
+app/activitypub.py	199	EXCEPT	fetch	raise ObjectUnavailableError(url, resp)
+app/activitypub.py	201	EXCEPT	fetch	raise ObjectNotFoundError(url, resp)
+app/activitypub.py	206	EXCEPT	fetch	raise FetchError(url, resp)
+app/admin.py	521	DICT_ORDER	admin_direct_messages	convos.items()
+app/admin.py	1247	NONE	login_validation	login_validation(redirect, csrf_check)
+app/admin.py	1247	ROUTE	login_validation	unauthenticated_router.post('/login')
+app/admin.py	1271	EXACT_OUTPUT	login_validation	session_serializer.dumps({'is_logged_in': True})
+app/boxes.py	597	DATETIME_FORMAT	send_create	now().replace(microsecond=0).isoformat()
+app/boxes.py	658	DATETIME_FORMAT	send_create	(now() + timedelta(minutes=poll_duration_in_minutes)).isoformat()
+app/boxes.py	1608	ORM_WRITE	_handle_undo_activity	ap_activity_to_undo.undone_by_inbox_object_id = undo_activity.id
+app/boxes.py	1609	ORM_WRITE	_handle_undo_activity	ap_activity_to_undo.is_deleted = True
+app/config.py	256	EXACT_OUTPUT	generate_csrf_token	csrf_serializer.dumps(secrets.token_hex(16))
+app/config.py	278	EXACT_OUTPUT	hmac_sha256	hmac.new(CONFIG.secret.encode(), digestmod=hashlib.sha256)
+app/httpsig.py	326	DATETIME_FORMAT	HTTPXSigAuth.auth_flow	datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
+app/ldsig.py	87	DATETIME_FORMAT	generate_signature	datetime.utcnow().replace(microsecond=0).isoformat()
+app/main.py	1640	DATETIME_FORMAT	json_feed	outbox_object.ap_published_at.isoformat()
+app/main.py	1669	EXACT_OUTPUT	_gen_rss_feed	FeedGenerator()
+app/media.py	17	EXACT_OUTPUT	proxied_media_sig	hmac_sha256()
+app/source.py	110	EXACT_OUTPUT	CustomRenderer.render_block_code	get_lexer(token.language)
+app/source.py	198	EXACT_OUTPUT	markdownify	Document(content)
+app/source.py	198	EXACT_OUTPUT	markdownify	renderer.render(Document(content))
+app/source.py	204	DICT_ORDER	markdownify	mentioned_actors.values()
+app/uploads.py	67	EXACT_OUTPUT	save_upload	blurhash.encode(dest_f, x_components=4, y_components=3)
+app/utils/datetime.py	8	DATETIME_FORMAT	parse_isoformat	isoparse(isodate)
+app/utils/pagination.py	8	DATETIME_FORMAT	encode_cursor	val.isoformat()
+app/utils/workers.py	48	SESSION	Worker.run_forever	async with async_session() as db_session

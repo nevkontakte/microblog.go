@@ -1,0 +1,68 @@
+file	source_construct_key	verdict	cite	finding
+app/boxes.py	L104	CONFIRM	boxes.py:86-106; boxes.py:744-766 with :1243-1263	
+app/boxes.py	L133	CONFIRM	boxes.py:132-146; boxes.py:401-403; actor.py:295-307	
+app/boxes.py	L188	CONFIRM	boxes.py:182-190; models.py:621-623	
+app/boxes.py	L219	CONFIRM	boxes.py:219-220, :230-243; boxes.py:1257-1261 (OutboxObject.is_deleted IS false)	
+app/boxes.py	L245	CONFIRM	boxes.py:231-245; boxes.py:1099-1105	
+app/boxes.py	L279	CONFIRM	boxes.py:253-284; outgoing_activities.py:100-119; templates/utils.html:749-750 (undo button feeds this ap_id back to send_undo)	
+app/boxes.py	L325	CONFIRM	boxes.py:325-331; boxes.py:897-939, :2622-2638	
+app/boxes.py	L395	CONFIRM	boxes.py:386-396; callers boxes.py:125, :146, :363, :1738 (grep)	
+app/boxes.py	L396	CONFIRM	boxes.py:113-125, :136-146, :1727-1738	
+app/boxes.py	L422	CONFIRM	boxes.py:419-429; boxes.py:1010-1023	
+app/boxes.py	L439	CONFIRM	boxes.py:434-446; boxes.py:897-939	
+app/boxes.py	L456	CONFIRM	boxes.py:112-127, :164-175, :452-462	
+app/boxes.py	L470	CONFIRM	boxes.py:464-470; models.py:621-623	
+app/boxes.py	L714	CONFIRM	boxes.py:708-714; source.py:96-104, :204, :207-218	
+app/boxes.py	L723	CONFIRM	boxes.py:716-731; opengraph.py:79-123; main.py:671	
+app/boxes.py	L791	CONFIRM	boxes.py:791-822; admin.py:1216-1222	
+app/boxes.py	L869	CONFIRM	boxes.py:830-893; opengraph.py:79-104; grep: send_update has no caller	
+app/boxes.py	L870	CONFIRM	boxes.py:870; models.py:176	
+app/boxes.py	L871	CONFIRM	boxes.py:834-844, :871; probe review-orm_write-opus-r2/p2.py: NULL -> [{"b": 2}] stored, [{"a": 1}] stays [{"a": 1}]	
+app/boxes.py	L1168	CONFIRM	boxes.py:1130-1168; boxes.py:1357-1414 (counts minus 1)	
+app/boxes.py	L1204	CONFIRM	boxes.py:1190-1213; boxes.py:1418-1424	
+app/boxes.py	L1218	CONFIRM	boxes.py:1136-1140, :1170, :1218-1227; boxes.py:977-991, :1437-1442	
+app/boxes.py	L1236	CONFIRM	boxes.py:1220-1236; boxes.py:1243-1324; boxes.py:2398-2420	
+app/boxes.py	L1471	CONFIRM	boxes.py:1465-1472 (no is_notification_enabled call); models.py:621-623	
+app/boxes.py	L1505	CONFIRM	boxes.py:1498-1507; boxes.py:994-1007	
+app/boxes.py	L1522	CONFIRM	boxes.py:1516-1541; ap_object.py:317-337 and opengraph.py:156-161 (no side effect for the Accept); probe review-orm_write-opus-r2/p1.py scenario B: PendingRollbackError at the next flush inside begin_nested	
+app/boxes.py	L1548	CONFIRM	boxes.py:1543-1548; boxes.py:1507, :2542	
+app/boxes.py	L1562	CONFIRM	boxes.py:1555-1563; models.py:640	
+app/boxes.py	L1592	CONFIRM	boxes.py:1587-1592; boxes.py:159-160, :1559	
+app/boxes.py	L1623	CONFIRM	boxes.py:1613-1623	
+app/boxes.py	L1639	CONFIRM	boxes.py:1608-1609, :1628-1645; boxes.py:1281-1301; inventory.tsv:6 (the BUG(port) row)	
+app/boxes.py	L1653	CONFIRM	boxes.py:1646-1653	
+app/boxes.py	L1668	CONFIRM	boxes.py:1662-1678; models.py:184	
+app/boxes.py	L1678	CONFIRM	boxes.py:1671-1678	
+app/boxes.py	L1686	CONFIRM	boxes.py:1679-1690	
+app/boxes.py	L1756	CONFIRM	boxes.py:1715, :1738-1756; boxes.py:339-359, :367-475 (no commit)	
+app/boxes.py	L1804	CONFIRM	boxes.py:1791-1805; boxes.py:2393-2396, :2408-2410, :2432-2433, :2542	
+app/boxes.py	L1805	CONFIRM	boxes.py:1804-1805; models.py:72	
+app/boxes.py	L1854	CONFIRM	boxes.py:1854-1856; boxes.py:2418-2428	
+app/boxes.py	L1956	CONFIRM	boxes.py:1935-1958; boxes.py:1977-1991 with :1243-1278	
+app/boxes.py	L1960	CONFIRM	boxes.py:1960-2024; boxes.py:1858-1864, :1893	
+app/boxes.py	L2032	CONFIRM	boxes.py:1918-1920, :2026-2032	
+app/boxes.py	L2054	CONFIRM	boxes.py:2054-2109; boxes.py:1971-1975	
+app/boxes.py	L2062	CONFIRM	boxes.py:2055-2097; boxes.py:1937; models.py:546-564	
+app/boxes.py	L2100	CONFIRM	boxes.py:2084-2109	
+app/boxes.py	L2121	CONFIRM	boxes.py:2119-2132; boxes.py:2542; models.py:184	
+app/boxes.py	L2132	CONFIRM	boxes.py:2125-2132	
+app/boxes.py	L2168	CONFIRM	boxes.py:2151-2168; boxes.py:2415-2420	
+app/boxes.py	L2170	CONFIRM	boxes.py:2137-2170; boxes.py:2415	
+app/boxes.py	L2205	CONFIRM	boxes.py:2190-2207; models.py:71-72, :128-134	
+app/boxes.py	L2207	CONFIRM	boxes.py:2207-2211; boxes.py:2400, :2418-2420	
+app/boxes.py	L2208	CONFIRM	boxes.py:2207-2211; boxes.py:2400; models.py:58-60	
+app/boxes.py	L2228	CONFIRM	boxes.py:2228-2231; boxes.py:1281-1301; boxes.py:2411-2419	
+app/boxes.py	L2240	CONFIRM	boxes.py:2233-2240	
+app/boxes.py	L2263	CONFIRM	boxes.py:2257-2263	
+app/boxes.py	L2299	CONFIRM	boxes.py:2290-2300; actor.py:241-268, :295-307	
+app/boxes.py	L2418	CONFIRM	boxes.py:2398-2420; boxes.py:1827, :1854, :1960, :2168-2170, :2207-2208, :2226, :2228-2231, :2253, :2510, :2532	
+app/boxes.py	L2472	CONFIRM	boxes.py:2460-2472	
+app/boxes.py	L2480	REFUTE	boxes.py:2475-2486, :2551-2557; probe review-orm_write-opus-r2/p1.py scenario A (IntegrityError caught in prefetch, then PendingRollbackError at commit)	"Return the Insert error at once" skips what the source still does before it fails: the prefetch's outbound GETs (parse_collection, ap.fetch, ap.get_object at :2551-2556) and the logger.exception line at :2486; rulebook §0 forbids such a difference without owner approval. Keep the source order (Insert, then _prefetch_actor_outbox, whose first DB call fails and is logged, then Commit fails), or mark it TODO(port) and queue it for the owner.
+app/boxes.py	L2564	CONFIRM	boxes.py:2557-2564; boxes.py:1010-1023	
+app/boxes.py	L2607	CONFIRM	boxes.py:2589-2610; boxes.py:257-261, :292-296; admin.py:179-183, :1080-1081	
+app/indieauth.py	L80	CONFIRM	indieauth.py:67-91; models.py:488; database.py:24	
+app/indieauth.py	L183	CONFIRM	indieauth.py:174-184, :198-204; models.py:447, :456	
+app/indieauth.py	L224	CONFIRM	indieauth.py:198-227, :289-296, :330-335	
+app/indieauth.py	L325	CONFIRM	indieauth.py:304-338	
+app/indieauth.py	L337	CONFIRM	indieauth.py:330-349; models.py:463-481	
+app/indieauth.py	L491	CONFIRM	indieauth.py:353-380, :486-492	

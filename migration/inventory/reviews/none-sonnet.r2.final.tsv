@@ -1,0 +1,40 @@
+file	source_construct_key	verdict	cite	finding
+app/actor.py	L78	CONFIRM	actor.py:78-80 (`.get("name")`)	
+app/actor.py	L82	CONFIRM	actor.py:82-84	
+app/admin.py	L161	CONFIRM	admin.py:161-168	
+app/admin.py	L1135	REFUTE	app/boxes.py:589	Evidence cites boxes.py:587,590 for sendCreate's parameters; content_warning is boxes.py:589 and :590 is is_sensitive. Fix the cite.
+app/ap_object.py	L51	CONFIRM	ap_object.py:51-57 returns None only when neither key exists	
+app/ap_object.py	L161	CONFIRM	ap_object.py:161-173: the final `return self.ap_id` at :173 and the other returns give strings	
+app/ap_object.py	L176	CONFIRM	ap_object.py:176-186 returns None on falsy content (:178-179)	
+app/ap_object.py	L188	CONFIRM	ap_object.py:188-190 `.get("summary")`, no falsy check	
+app/ap_object.py	L213	CONFIRM	ap_object.py:213-215 `.get("inReplyTo")`	
+app/ap_object.py	L226	CONFIRM	ap_object.py:226-231 (None when in_reply_to falsy)	
+app/ap_object.py	L255	CONFIRM	ap_object.py:255-270	
+app/ap_object.py	L317	CONFIRM	ap_object.py:317-338 (`actor: Actor | None = None`	
+app/config.py	L259	CONFIRM	config.py:259-262 (`str | None = Form(None)`), use config.py:263-264 only as truth test (`if redirect_url:`)	
+app/incoming_activities.py	L56	CONFIRM	incoming_activities.py:56-66 (`next_try or _exp_backoff(...)`)	
+app/incoming_activities.py	L70	CONFIRM	incoming_activities.py:70-95: None returned at :83-85 (`if not q_count`)	
+app/key.py	L25	CONFIRM	key.py:25-31 (`id_: str | None = None`, pem and key attributes set to None)	
+app/main.py	L286	CONFIRM	main.py:286-291 (`page: int | None = None`), :295 (`page = page or 1`), :307 page_offset and :325 .offset(page_offset), 	
+app/main.py	L389	CONFIRM	main.py:389-395 (params, no defaults: :393-394)	
+app/main.py	L459	CONFIRM	main.py:459-466 (defaults None: page :461, next_cursor :462, prev_cursor :463)	
+app/main.py	L1093	CONFIRM	main.py:1093-1102 (defaults None: page :1099, next_cursor :1100)	
+app/outgoing_activities.py	L100	CONFIRM	outgoing_activities.py:100-106 (signature)	
+app/templates.py	L60	CONFIRM	templates.py:60-63 (`if not url`)	
+app/templates.py	L83	CONFIRM	templates.py:83-91 (defaults)	
+app/utils/facepile.py	L35	CONFIRM	facepile.py:35-84 (None returned :84	
+app/utils/facepile.py	L95	CONFIRM	facepile.py:95-121 (item type :97, try :98, except :115, break :119, final None :121)	
+app/utils/facepile.py	L134	CONFIRM	facepile.py:134-172 (item type :137	
+app/utils/indieauth.py	L25	REFUTE	app/utils/indieauth.py:16-22	Evidence cites _get_prop at indieauth.py:14-20; it is at :16-22. Fix the cite.
+app/utils/opengraph.py	L36	CONFIRM	opengraph.py:36-72 (raw dict :46-52 with title :48, dead check :58-59, is_url_valid :65, parse_obj :72)	
+app/utils/opengraph.py	L131	CONFIRM	opengraph.py:131-153 (None returns :144, :150, :153	
+app/utils/url.py	L24	CONFIRM	url.py:24-28 (`if not abs_url: raise ValueError`)	
+app/utils/webmentions.py	L68	CONFIRM	app/utils/webmentions.py:70-92 (first match returns, final `return None` L92)	
+app/utils/workers.py	L22	CONFIRM	app/utils/workers.py:22-23 base raises NotImplementedError	
+app/webfinger.py	L12	CONFIRM	app/webfinger.py:12-53 (L14 is_404, L29-40 except branches, L42-43 `if is_404: return None`, L46-53 (template return L51	
+app/webfinger.py	L56	REFUTE	app/webfinger.py:147-148	Evidence says the data-is-None callers test at :132 and :148; the second test is `if data is None` at :147 (:148 is the return). Fix the cite.
+app/webfinger.py	L140	CONFIRM	app/webfinger.py:140-155 (L149 data["links"])	
+tasks.py	L203	REFUTE	migration/inventory/GUIDE.md UNKNOWN; docs/adr/0016-define-the-port-scope-and-layout.md:45-49	The row says ADR 0016 decides (out of scope, translate nothing) yet keeps UNKNOWN. GUIDE reserves UNKNOWN for what the source and rulebook do not decide; this is decided, so the classification should not be UNKNOWN.
+tests/factories.py	L57	CONFIRM	tests/factories.py:57-69	
+tests/factories.py	L100	CONFIRM	tests/factories.py:100-128 (L111 `or`, L127 "inReplyTo": in_reply_to)	
+tests/factories.py	L245	CONFIRM	tests/factories.py:245-270 (L249-250 defaults, L265-266 pass-through to cls(...))	

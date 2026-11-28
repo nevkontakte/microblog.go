@@ -1,0 +1,40 @@
+file	source_construct_key	verdict	cite	finding
+app/actor.py	L78	CONFIRM	actor.py:78-80	
+app/actor.py	L82	CONFIRM	actor.py:82-84	
+app/admin.py	L161	CONFIRM	admin.py:161-168	
+app/admin.py	L1135	REFUTE	boxes.py:587-589	Cite boxes.py:587,590 for sendCreate taking None is wrong at :590: that line is is_sensitive; content_warning is :589 (in_reply_to :587).
+app/ap_object.py	L51	CONFIRM	ap_object.py:51-57	
+app/ap_object.py	L161	CONFIRM	ap_object.py:161-173:	
+app/ap_object.py	L176	CONFIRM	ap_object.py:176-186	
+app/ap_object.py	L188	CONFIRM	ap_object.py:188-190	
+app/ap_object.py	L213	CONFIRM	ap_object.py:213-215	
+app/ap_object.py	L226	CONFIRM	ap_object.py:226-231	
+app/ap_object.py	L255	CONFIRM	ap_object.py:255-270	
+app/ap_object.py	L317	CONFIRM	ap_object.py:317-338	
+app/config.py	L259	CONFIRM	config.py:259-262	
+app/incoming_activities.py	L56	CONFIRM	incoming_activities.py:56-66	
+app/incoming_activities.py	L70	CONFIRM	incoming_activities.py:70-95:	
+app/key.py	L25	CONFIRM	key.py:25-31	
+app/main.py	L286	CONFIRM	main.py:286-291	
+app/main.py	L389	CONFIRM	main.py:389-395	
+app/main.py	L459	CONFIRM	main.py:459-466	
+app/main.py	L1093	CONFIRM	main.py:1093-1102	
+app/outgoing_activities.py	L100	CONFIRM	outgoing_activities.py:100-106	
+app/templates.py	L60	CONFIRM	templates.py:60-63	
+app/templates.py	L83	CONFIRM	templates.py:83-91	
+app/utils/facepile.py	L35	CONFIRM	facepile.py:35-84	
+app/utils/facepile.py	L95	CONFIRM	facepile.py:95-121	
+app/utils/facepile.py	L134	CONFIRM	facepile.py:134-172	
+app/utils/indieauth.py	L25	CONFIRM	indieauth.py:10-13	
+app/utils/opengraph.py	L36	REFUTE	opengraph.py:45	The FIXME about a missing <title> is at opengraph.py:45, not :47 (:47 is the "url" key of the raw dict).
+app/utils/opengraph.py	L131	CONFIRM	opengraph.py:131-153	
+app/utils/url.py	L24	CONFIRM	url.py:24-28	
+app/utils/webmentions.py	L68	CONFIRM	app/utils/webmentions.py:70-92	
+app/utils/workers.py	L22	CONFIRM	app/utils/workers.py:22-23	
+app/webfinger.py	L12	CONFIRM	app/webfinger.py:12-53	
+app/webfinger.py	L56	REFUTE	webfinger.py:147	The `data is None` test in get_actor_url is webfinger.py:147 (:148 is the return); callers cite :132 and :147.
+app/webfinger.py	L140	CONFIRM	app/webfinger.py:140-155	
+tasks.py	L203	CONFIRM	tasks.py:202-214	
+tests/factories.py	L57	CONFIRM	tests/factories.py:57-69	
+tests/factories.py	L100	CONFIRM	tests/factories.py:100-128	
+tests/factories.py	L245	CONFIRM	tests/factories.py:245-270	

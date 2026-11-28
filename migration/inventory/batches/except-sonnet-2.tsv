@@ -1,0 +1,41 @@
+file	line	category	symbol	construct
+app/admin.py	880	EXCEPT	admin_actions_force_delete	raise ValueError(f'Cannot find {ap_object_id}')
+app/admin.py	904	EXCEPT	admin_actions_force_delete_webmention	raise ValueError(f'Cannot find {webmention_id}')
+app/admin.py	906	EXCEPT	admin_actions_force_delete_webmention	raise ValueError(f'Missing related outbox object for {webmention_id}')
+app/admin.py	1096	EXCEPT	admin_actions_unbookmark	raise ValueError('Should never happen')
+app/admin.py	1112	EXCEPT	admin_actions_pin	raise ValueError('Should never happen')
+app/admin.py	1128	EXCEPT	admin_actions_unpin	raise ValueError('Should never happen')
+app/admin.py	1150	EXCEPT	admin_actions_new	raise HTTPException(status_code=422, detail='Error: object must have a content')
+app/admin.py	1160	EXCEPT	admin_actions_new	raise HTTPException(status_code=422, detail='Error: objec must have a content')
+app/admin.py	1182	EXCEPT	admin_actions_new	raise ValueError('Question must have at least 2 answers')
+app/ap_object.py	40	EXCEPT	Object.ap_object	raise NotImplementedError
+app/ap_object.py	61	EXCEPT	Object.actor	raise NotImplementedError()
+app/ap_object.py	314	EXCEPT	RemoteObject.__init__	raise ValueError(f'Invalid actor {self._actor.ap_id}')
+app/ap_object.py	328	EXCEPT	RemoteObject.from_raw_object	raise ValueError(f'Invalid actor, got {actor.ap_id}, expected {actor_id}')
+app/config.py	32	EXCEPT	<module>	except ImportError
+app/config.py	40	EXCEPT	<module>	except FileNotFoundError
+app/config.py	55	EXCEPT	<module>	except FileNotFoundError
+app/config.py	140	EXCEPT	load_config	except FileNotFoundError
+app/config.py	141	EXCEPT	load_config	raise ValueError(f'Please run the configuration wizard, {_CONFIG_FILE} is missing')
+app/config.py	232	EXCEPT	load_custom_routes	except ImportError
+app/config.py	268	EXCEPT	verify_csrf_token	except (itsdangerous.BadData, itsdangerous.SignatureExpired)
+app/config.py	270	EXCEPT	verify_csrf_token	raise HTTPException(status_code=403, detail=f'The security token has expired, {please_try_again}')
+app/config.py	288	EXCEPT	<module>	except ImportError
+app/customization.py	56	EXCEPT	register_html_page	raise ValueError(f'{path} is already registered')
+app/customization.py	69	EXCEPT	register_raw_handler	raise ValueError(f'{path} is already registered')
+app/incoming_activities.py	61	EXCEPT	_set_next_try	raise ValueError('Should never happen')
+app/incoming_activities.py	123	EXCEPT	process_next_incoming_activity	except asyncio.exceptions.TimeoutError
+app/incoming_activities.py	129	EXCEPT	process_next_incoming_activity	except Exception
+app/key.py	11	EXCEPT	generate_key	raise ValueError(f'Key at {key_path} already exists')
+app/key.py	64	EXCEPT	Key.from_dict	except KeyError
+app/key.py	65	EXCEPT	Key.from_dict	raise ValueError(f'bad key data {data!r}')
+app/lookup.py	18	EXCEPT	lookup	raise ap.NotAnObjectError(query)
+app/lookup.py	22	EXCEPT	lookup	except ap.NotAnObjectError
+app/lookup.py	25	EXCEPT	lookup	raise ap.NotAnObjectError(query)
+app/main.py	190	EXCEPT	_check_0rtt_early_data	raise fastapi.HTTPException(status_code=425, detail='Too early')
+app/main.py	493	EXCEPT	followers	raise HTTPException(status_code=404)
+app/main.py	557	EXCEPT	following	raise HTTPException(status_code=404)
+app/main.py	669	EXCEPT	post_outbox	raise ValueError('TODO')
+app/main.py	743	EXCEPT	_check_outbox_object_acl	raise HTTPException(status_code=404)
+app/main.py	834	EXCEPT	outbox_by_public_id	raise HTTPException(status_code=404)
+app/main.py	949	EXCEPT	article_by_slug	raise HTTPException(status_code=404)

@@ -1,0 +1,25 @@
+file	source_construct_key	verdict	cite	finding
+app/main.py	L1003	CONFIRM	main.py:1003; models.py:165	
+app/main.py	L1501	CONFIRM	main.py:1497-1509, :1522	
+app/main.py	L1527	CONFIRM	main.py:1490-1532	
+app/micropub.py	L114	CONFIRM	micropub.py:83-84, :97, :104, :113-114	
+app/outgoing_activities.py	L131	CONFIRM	outgoing_activities.py:127-139; utils/workers.py:28-35, :53-69	
+app/outgoing_activities.py	L239	CONFIRM	outgoing_activities.py:239-268	
+app/outgoing_activities.py	L258	CONFIRM	outgoing_activities.py:202-266	
+app/templates.py	L56	CONFIRM	templates.py:53-57, :420	
+app/uploads.py	L76	CONFIRM	uploads.py:70-84	
+app/utils/facepile.py	L58	CONFIRM	facepile.py:38-62	
+app/utils/facepile.py	L78	CONFIRM	facepile.py:63-82	
+app/utils/facepile.py	L115	CONFIRM	facepile.py:95-121	
+app/utils/facepile.py	L166	CONFIRM	facepile.py:133-172	
+app/utils/opengraph.py	L93	CONFIRM	opengraph.py:86-98; activitypub.py:196-201; actor.py:236-292	
+app/utils/opengraph.py	L124	CONFIRM	opengraph.py:104-126	
+app/utils/opengraph.py	L148	CONFIRM	opengraph.py:5, :35-36, :75-76	
+app/utils/opengraph.py	L151	CONFIRM	opengraph.py:43-72	
+app/utils/privacy_replace.py	L31	CONFIRM	privacy_replace.py:28-37	
+app/utils/privacy_replace.py	L32	CONFIRM	privacy_replace.py:28-39	
+app/utils/url.py	L43	CONFIRM	url.py:40-45; main.py:1387	
+app/utils/url.py	L88	CONFIRM	url.py:84-90; outgoing_activities.py:258	
+app/webmentions.py	L61	CONFIRM	webmentions.py:50-63, :80-96	
+app/webmentions.py	L86	CONFIRM	webmentions.py:80-96	
+scripts/config_wizard.py	L94	CONFIRM	config_wizard.py:37, :39, :50, :88, :91-96	

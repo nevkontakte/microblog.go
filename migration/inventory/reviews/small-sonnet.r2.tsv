@@ -1,0 +1,52 @@
+file	source_construct_key	verdict	cite	finding
+app/ap_object.py	L54	CONFIRM	app/ap_object.py:50-57; app/boxes.py:2197	
+app/ap_object.py	L56	CONFIRM	app/ap_object.py:55-56; tests/factories.py (no writer of created)	
+app/ap_object.py	L250	CONFIRM	app/ap_object.py:246-252; app/templates/utils.html:678-682	
+app/micropub.py	L49	CONFIRM	app/micropub.py:33,48-50; app/models.py:179	
+app/templates.py	L361	REFUTE	app/templates.py:409-410; migration/inventory/sites.tsv (no row for templates.py:410)	Evidence says the dateutil parse is 'another row', but no row exists for _parse_datetime (templates.py:410, dateutil parse on Event startTime/endTime). Add the parse caller's accepted forms and its error path (Jinja filter raises, 500) here or flag TODO(port).
+app/utils/facepile.py	L149	CONFIRM	app/utils/facepile.py:147-152,166-172	
+app/utils/pagination.py	L12	CONFIRM	app/utils/pagination.py:7-12; app/admin.py:281,697; app/main.py:410	
+app/utils/webmentions.py	L79	CONFIRM	app/utils/webmentions.py:79; grep received_at (unread)	
+app/utils/webmentions.py	L89	CONFIRM	app/utils/webmentions.py:89; grep received_at (unread)	
+tests/factories.py	L109	CONFIRM	tests/factories.py:109; app/boxes.py:597	
+tests/factories.py	L254	CONFIRM	tests/factories.py:252-254; grep published in tests/	
+app/admin.py	L219	CONFIRM	app/admin.py:218-221; app/utils/emoji.py:40	
+app/config.py	L235	CONFIRM	app/config.py:229-242; app/customization.py:48-71; docs/adr/0004	
+app/customization.py	L111	CONFIRM	app/customization.py:105-119; app/main.py:208	
+app/main.py	L1365	CONFIRM	app/main.py:1360-1366; httpx/_models.py:139-151	
+app/main.py	L1370	CONFIRM	app/main.py:1369-1370,1515-1520	
+app/templates.py	L381	CONFIRM	app/templates.py:371-387	
+app/utils/opengraph.py	L53	CONFIRM	app/utils/opengraph.py:53-56	
+app/utils/webmentions.py	L31	CONFIRM	httpx/_models.py:753-764; httpx/_utils.py:175-209; app/utils/webmentions.py:31-33	
+app/admin.py	L73	CONFIRM	app/admin.py:72-80; itsdangerous/timed.py; url_safe.py:27-62	
+app/admin.py	L1281	CONFIRM	probe: dumps+set_cookie gives 'session=...; Path=/; SameSite=lax'; itsdangerous/url_safe.py:50-62	
+app/ap_object.py	L183	CONFIRM	app/ap_object.py:175-185; mistletoe/__init__.py:12-19	
+app/config.py	L192	CONFIRM	app/config.py:191-195; app/templates/layout.html:48-49	
+app/config.py	L267	CONFIRM	app/config.py:259-274	
+app/source.py	L169	CONFIRM	probe of mistletoe with AutoLink+Hashtag tokens; app/source.py:160-175	
+app/source.py	L169	CONFIRM	probe: '<p>..</p>\n' output; app/source.py:75-105,169-175	
+app/templates.py	L71	CONFIRM	app/templates.py:66-80	
+app/utils/highlight.py	L37	CONFIRM	app/utils/highlight.py:36-41; probe guess_lexer('zzz qqq') returns TextLexer	
+tests/utils.py	L48	CONFIRM	tests/utils.py:47-48	
+app/database.py	L31	CONFIRM	app/database.py:22-35; fastapi/applications.py:161-188	
+app/main.py	L237	CONFIRM	app/main.py:226-254; fastapi/applications.py:161-188	
+app/prune.py	L118	CONFIRM	app/prune.py:20-32,116-119	
+app/utils/stats.py	L124	CONFIRM	app/utils/stats.py:122-145,182-194	
+tasks.py	L284	REFUTE	tasks.py:284-306; docs/adr/0023-store-go-error-text-instead-of-tracebacks.md	Evidence says storing Go error text instead of the traceback 'is allowed', but ADR 0023 covers only the four worker sites that write an activity's error column. The traceback printed to stdout at tasks.py:290 is not covered; state that the printed text must match or needs its own ADR (TODO(port)).
+tasks.py	L326	CONFIRM	tasks.py:322-329; app/boxes.py:557-579	
+tasks.py	L402	CONFIRM	tasks.py:400-421; app/boxes.py:339-359,953-962	
+tests/conftest.py	L17	CONFIRM	tests/conftest.py:15-22	
+tests/utils.py	L237	CONFIRM	tests/utils.py:235-240	
+app/actor.py	L47	CONFIRM	app/actor.py:34,47	
+app/ap_object.py	L275	CONFIRM	app/ap_object.py:273-283; grep BaseModel in app/	
+app/ap_object.py	L275	CONFIRM	app/ap_object.py:273-283	
+app/main.py	L843	CONFIRM	app/main.py:824-843; app/boxes.py:64-65	
+app/source.py	L84	CONFIRM	app/source.py:80-93	
+app/source.py	L96	CONFIRM	app/source.py:95-105	
+app/source.py	L134	CONFIRM	app/source.py:128-134	
+app/templates.py	L395	CONFIRM	app/templates.py:394-396	
+app/utils/facepile.py	L88	CONFIRM	app/utils/facepile.py:87-92; app/main.py:893-907	
+app/utils/favicon.py	L15	CONFIRM	probe: sass.compile of main.scss gives '#1d781d'; app/scss/main.scss:5	
+app/utils/mastodon.py	L10	CONFIRM	app/utils/mastodon.py:8-15,23	
+app/webfinger.py	L80	REFUTE	app/webfinger.py:79-83; tasks.py:276-286; app/lookup.py:15	Evidence says tasks.py:286 passes handles with no leading '@', but tasks.py:276-277 forces a leading '@' on moved_to; mastodon.py's call is at :23 not :22; lookup.py:15 (the user's lookup query, which can carry 'acct:') is not listed. The translation itself is right.
+app/webfinger.py	L82	CONFIRM	app/webfinger.py:76,79-83; app/source.py:147	

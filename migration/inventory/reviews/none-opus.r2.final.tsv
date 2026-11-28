@@ -1,0 +1,20 @@
+file	source_construct_key	verdict	cite	finding
+app/boxes.py	L72	CONFIRM	app/boxes.py:130, :171, :210, :273, :319, :351, :386, :529, :543, :557, :567, :697-703, :811, :1536, :1580; app/outgoing_activities.py:83	
+app/boxes.py	L582	CONFIRM	app/boxes.py:621-622, :647-654, :656-669, :671-676, :691, :692	
+app/boxes.py	L1108	CONFIRM	app/admin.py:902-906	
+app/boxes.py	L1122	CONFIRM	app/boxes.py:1144, :1151, :1169, :2333, :2340; app/actor.py:247-268, :291-292	
+app/boxes.py	L2725	CONFIRM	app/boxes.py:2717-2723, :2730, :2740-2746	
+app/httpsig.py	L36	CONFIRM	app/httpsig.py:48, :52, :62, :65, :229-236, :330, :332	
+app/models.py	L92	CONFIRM	app/boxes.py:1942, :2190-2204, :2398-2416, :2596, :2668; app/prune.py:89	
+app/models.py	L136	CONFIRM	app/boxes.py:1949, :2200, :2398-2416, :2603; app/utils/opengraph.py:156-182	
+app/models.py	L170	CONFIRM	app/boxes.py:491-492, :608, :618-619, :781-784, :858-859	
+app/models.py	L173	CONFIRM	app/boxes.py:399-400, :417-418, :432-433, :448-449	
+app/models.py	L201	CONFIRM	app/boxes.py:274, :320, :1528-1537, :1572-1581, :697-703; app/admin.py:645-646	
+app/models.py	L211	CONFIRM	app/admin.py:648; app/boxes.py:214, :390	
+app/models.py	L223	CONFIRM	app/admin.py:649, :668-673; app/boxes.py:351-352	
+app/models.py	L234	CONFIRM	app/boxes.py:395; app/actor.py:358	
+app/models.py	L293	CONFIRM	app/main.py:1637, :1697, :1701, :1703; app/models.py:292-297	
+app/models.py	L363	CONFIRM	app/utils/stats.py:105-107, :132-133; app/models.py:384-391	
+app/models.py	L420	CONFIRM	app/uploads.py:45, :49, :67, :95, :111-117	
+app/models.py	L495	CONFIRM	app/indieauth.py:56, :73, :85, :123; app/templates/indieauth_flow.html:13-17	
+app/models.py	L628	CONFIRM	app/boxes.py:184-186, :466-468, :1466-1469, :1545-1546, :1589-1590, :1620-1621, :1648-1650, :1673-1675, :1682-1684, :1752-1754, :2028-2030, :2127-2129, :2235-2237, :2259-2261, :2462-2470; app/webmentions.py:124-125, :151-152, :170-171	

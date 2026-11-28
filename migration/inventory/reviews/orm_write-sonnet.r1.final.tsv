@@ -1,0 +1,31 @@
+file	source_construct_key	verdict	cite	finding
+app/actor.py	L306	CONFIRM	actor.py:251
+app/admin.py	L910	CONFIRM	admin.py:910-926
+app/admin.py	L1081	CONFIRM	admin.py:1079-1082
+app/incoming_activities.py	L64	CONFIRM	incoming_activities.py:141
+app/incoming_activities.py	L65	CONFIRM	incoming_activities.py:141
+app/incoming_activities.py	L67	CONFIRM	incoming_activities.py:51-53,141
+app/incoming_activities.py	L108	CONFIRM	utils/workers.py:48,28-32
+app/incoming_activities.py	L127	CONFIRM	incoming_activities.py:125-141; docs/adr/0023
+app/incoming_activities.py	L133	CONFIRM	incoming_activities.py:131-141; docs/adr/0023
+app/incoming_activities.py	L137	CONFIRM	incoming_activities.py:137,141
+app/outgoing_activities.py	L155	CONFIRM	outgoing_activities.py:155,268; models.py:374
+app/outgoing_activities.py	L156	CONFIRM	outgoing_activities.py:156,268; models.py:374
+app/outgoing_activities.py	L158	CONFIRM	outgoing_activities.py:127-139,158,268
+app/outgoing_activities.py	L243	CONFIRM	outgoing_activities.py:243,268; docs/adr/0023
+app/outgoing_activities.py	L254	CONFIRM	outgoing_activities.py:155,252-255
+app/outgoing_activities.py	L255	CONFIRM	outgoing_activities.py:156,165,255
+app/outgoing_activities.py	L260	CONFIRM	outgoing_activities.py:258-261; docs/adr/0023
+app/outgoing_activities.py	L264	CONFIRM	outgoing_activities.py:167,264
+app/outgoing_activities.py	L265	CONFIRM	outgoing_activities.py:211,238,265
+app/outgoing_activities.py	L266	CONFIRM	httpx/_models.py:555-563,592-604; httpx/_decoders.py:247-248
+app/utils/highlight.py	L50	CONFIRM	utils/highlight.py:25-26,35,50-51
+app/webmentions.py	L114	CONFIRM	webmentions.py:67-74,114-120,130
+app/webmentions.py	L155	CONFIRM	webmentions.py:149-155,200
+app/webmentions.py	L164	CONFIRM	webmentions.py:140,157-172
+app/webmentions.py	L174	CONFIRM	webmentions.py:168-174,200
+app/webmentions.py	L195	CONFIRM	webmentions.py:194-200
+app/webmentions.py	L212	CONFIRM	webmentions.py:210-217,130,200
+app/webmentions.py	L220	CONFIRM	webmentions.py:219-221; boxes.py:1281-1301
+app/webmentions.py	L224	CONFIRM	webmentions.py:222-226; boxes.py:1304-1324
+app/webmentions.py	L228	CONFIRM	webmentions.py:226-230; boxes.py:1266-1278

@@ -1,0 +1,11 @@
+file	line	category	symbol	construct
+app/admin.py	73	EXACT_OUTPUT	user_session_or_redirect	session_serializer.loads(session, max_age=SESSION_TIMEOUT)
+app/admin.py	1281	EXACT_OUTPUT	logout	session_serializer.dumps({'is_logged_in': False})
+app/ap_object.py	183	EXACT_OUTPUT	Object.content	markdown(content)
+app/config.py	192	EXACT_OUTPUT	<module>	markdown(CONFIG.custom_footer.replace('{version}', VERSION))
+app/config.py	267	EXACT_OUTPUT	verify_csrf_token	csrf_serializer.loads(csrf_token, max_age=CONFIG.csrf_token_exp)
+app/source.py	169	EXACT_OUTPUT	hashtagify	Document(content)
+app/source.py	169	EXACT_OUTPUT	hashtagify	renderer.render(Document(content))
+app/templates.py	71	EXACT_OUTPUT	is_current_user_admin	session_serializer.loads(session_cookie, max_age=SESSION_TIMEOUT)
+app/utils/highlight.py	37	EXACT_OUTPUT	highlight	get_lexer_by_name(code.attrs['data-microblogpub-lexer'])
+tests/utils.py	48	EXACT_OUTPUT	generate_admin_session_cookies	session_serializer.dumps({'is_logged_in': True})

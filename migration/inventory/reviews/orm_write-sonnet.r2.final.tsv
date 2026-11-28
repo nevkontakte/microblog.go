@@ -1,0 +1,31 @@
+file	source_construct_key	verdict	cite	finding
+app/actor.py	L306	CONFIRM	written actor.py:306 on both paths	
+app/admin.py	L910	CONFIRM	load with joinedload outbox_object boxes.py:1108-1119	
+app/admin.py	L1081	CONFIRM	object loaded :1076 or saved by save_object_to_inbox :1080 (ap.fetch :1079)	
+app/incoming_activities.py	L64	CONFIRM	branch incoming_activities.py:63-67	
+app/incoming_activities.py	L65	CONFIRM	branch incoming_activities.py:63-67	
+app/incoming_activities.py	L67	CONFIRM	incoming_activities.py:67	
+app/incoming_activities.py	L108	CONFIRM	written incoming_activities.py:108-109	
+app/incoming_activities.py	L127	CONFIRM	written incoming_activities.py:127	
+app/incoming_activities.py	L133	CONFIRM	written incoming_activities.py:133	
+app/incoming_activities.py	L137	CONFIRM	written incoming_activities.py:137 in the else branch of the try :112-137	
+app/outgoing_activities.py	L155	CONFIRM	branch outgoing_activities.py:154-158	
+app/outgoing_activities.py	L156	CONFIRM	branch outgoing_activities.py:154-158	
+app/outgoing_activities.py	L158	CONFIRM	outgoing_activities.py:158	
+app/outgoing_activities.py	L243	CONFIRM	outgoing_activities.py:243 and :260 (the same column in the catch-all branch)	
+app/outgoing_activities.py	L254	CONFIRM	outgoing_activities.py:252-255 (400 <= status < 500, after the 429/503 and 401 branches at :245-251)	
+app/outgoing_activities.py	L255	CONFIRM	outgoing_activities.py:255 and :156 (_set_next_try)	
+app/outgoing_activities.py	L260	CONFIRM	outgoing_activities.py:258-261 (except Exception)	
+app/outgoing_activities.py	L264	CONFIRM	outgoing_activities.py:262-266 (else of try), commit :268	
+app/outgoing_activities.py	L265	CONFIRM	outgoing_activities.py:265	
+app/outgoing_activities.py	L266	CONFIRM	outgoing_activities.py:266	
+app/utils/highlight.py	L50	CONFIRM	highlight.py:23-25 (soup built by BeautifulSoup(html, "html5lib"), loop over find_all("code")), :50-51 (rename and class	
+app/webmentions.py	L114	CONFIRM	webmentions.py:113-115 (write, flush), :118-120 (same object passed to _handle_webmention_side_effects)	
+app/webmentions.py	L155	CONFIRM	webmentions.py:149-155 (condition is_notification_enabled(UPDATED_WEBMENTION))	
+app/webmentions.py	L164	REFUTE	app/webmentions.py:172	Target says L173 uses the new ID; the ID is used at webmentions.py:172 (173 is the closing paren), as the row own evidence says. Write L172.
+app/webmentions.py	L174	CONFIRM	webmentions.py:169-174 (condition is_notification_enabled(NEW_WEBMENTION), the ID comes from the flushed insert at :164-	
+app/webmentions.py	L195	CONFIRM	webmentions.py:177-197 (type chosen by the loop, written and flushed only when not UNKNOWN), :199 (side effects with the	
+app/webmentions.py	L212	CONFIRM	webmentions.py:210-217	
+app/webmentions.py	L220	CONFIRM	webmentions.py:218-222	
+app/webmentions.py	L224	CONFIRM	webmentions.py:222-226	
+app/webmentions.py	L228	CONFIRM	webmentions.py:226-230	

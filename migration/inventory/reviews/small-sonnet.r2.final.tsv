@@ -1,0 +1,6 @@
+file	source_construct_key	verdict	cite	finding
+app/templates.py	L361	REFUTE	app/templates.py:409-410; migration/inventory/sites.tsv (no row for templates.py:410)	Evidence still ends with the stale clause 'the parse itself is another row', which contradicts the translation ('no row of its own'): no row exists for the parse at templates.py:410. Delete the clause; the rest is right.
+app/templates.py	L381	CONFIRM	app/templates.py:371-387,335-336	
+app/database.py	L31	CONFIRM	app/incoming_activities.py:46; app/uploads.py:100; app/httpsig.py:147-148; app/main.py:1173	
+tasks.py	L284	CONFIRM	tasks.py:286-290; docs/adr/0023-store-go-error-text-instead-of-tracebacks.md	
+app/webfinger.py	L80	REFUTE	app/lookup.py:14-15; app/utils/url.py/_MENTION_REGEX (app/source.py:25)	Evidence says lookup.py:15's query 'may start with acct:', but lookup.py:14 only passes queries that start with '@' or whose '@'+query matches the mention regex, and 'acct:' fails that regex (':' is not allowed). tasks.py:250 also requires a leading '@'. No caller can send 'acct:', so the strip is effectively unreachable (still port it); fix the caller list.

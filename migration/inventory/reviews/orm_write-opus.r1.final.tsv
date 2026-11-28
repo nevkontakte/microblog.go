@@ -1,0 +1,3 @@
+file	source_construct_key	verdict	cite	finding
+app/boxes.py	L2418	CONFIRM	app/boxes.py:1462, :1827, :2226, :2253, :2510, :2532 (all deletes of the inserted row, grep db_session.delete), :1220-1236, :2398-2420	
+app/boxes.py	L2480	CONFIRM	app/boxes.py:2474-2486, :2542, :2551-2557; probe review-orm_write-opus-r1/probe2.py (after a caught IntegrityError, the next statement raises PendingRollbackError, also inside begin_nested)	

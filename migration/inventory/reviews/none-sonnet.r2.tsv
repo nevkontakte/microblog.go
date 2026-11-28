@@ -1,0 +1,88 @@
+file	source_construct_key	verdict	cite	finding
+app/activitypub.py	L57	CONFIRM	app/activitypub.py:57-63,197-206	
+app/activitypub.py	L168	CONFIRM	app/activitypub.py:168-172; app/lookup.py:18-29	
+app/activitypub.py	L175	CONFIRM	app/activitypub.py:175-190	
+app/activitypub.py	L214	CONFIRM	app/activitypub.py:214-228; boxes.py:935,2551,2640	
+app/actor.py	L78	REFUTE	app/activitypub.py:128	Evidence cites activitypub.py:122 for the local name; line 122 is the 'following' key. ME['name'] is at activitypub.py:128. Classification and translation are right; fix the cite.
+app/actor.py	L82	REFUTE	app/activitypub.py:129	Evidence cites activitypub.py:123 for the local summary; line 123 is the 'followers' key. ME['summary'] is at activitypub.py:129 (the value is built at :103). Fix the cite.
+app/actor.py	L86	CONFIRM	app/actor.py:86-88; templates/utils.html:301,374	
+app/actor.py	L120	CONFIRM	app/actor.py:120-124; templates/header.html:4	
+app/actor.py	L126	CONFIRM	app/actor.py:126-130	
+app/actor.py	L132	CONFIRM	app/actor.py:132-136,438-439	
+app/actor.py	L164	CONFIRM	app/actor.py:164-166; app/activitypub.py:302	
+app/actor.py	L172	CONFIRM	app/actor.py:172-174,388,452; templates/utils.html:330,341	
+app/actor.py	L181	CONFIRM	app/actor.py:181-189,210	
+app/admin.py	L48	CONFIRM	app/admin.py:48-50,68-73	
+app/admin.py	L92	CONFIRM	app/admin.py:94,100,152; templates/lookup.html:13	
+app/admin.py	L161	REFUTE	app/admin.py:172	Evidence says in_reply_to tests truth at admin.py:176; the `if in_reply_to:` is at admin.py:172 (:176 is inside the branch). Fix the cite; the translation is right.
+app/admin.py	L270	CONFIRM	app/admin.py:273,279-281,312-314	
+app/admin.py	L341	CONFIRM	app/admin.py:344-345,365-369; templates/admin_inbox.html:42	
+app/admin.py	L429	CONFIRM	app/admin.py:432 (cursor appears nowhere else in 429-524)	
+app/admin.py	L617	CONFIRM	app/admin.py:620-632	
+app/admin.py	L690	CONFIRM	app/admin.py:693,696-698	
+app/admin.py	L794	CONFIRM	app/admin.py:797,818-820	
+app/admin.py	L1135	CONFIRM	app/admin.py:1139-1200; app/boxes.py:604,650,671	
+app/ap_object.py	L51	REFUTE	app/ap_object.py:51-57; app/boxes.py:2197	Evidence cites admin.py:313 as a use of Object.ap_published_at, but that line reads the model column (inbox[-1] is an InboxObject row), not this property. The property's real consumer is boxes.py:2197 (RemoteObject value into the NOT NULL column; None would raise IntegrityError). Translation (time.Time, bool) is right; fix the evidence.
+app/ap_object.py	L68	CONFIRM	app/ap_object.py:68-69; app/admin.py:450,473; app/models.py:84,170	
+app/ap_object.py	L161	REFUTE	app/ap_object.py:170	Evidence puts the KeyError on u['mediaType'] at :171; it is at ap_object.py:170 (the final return is :173). Fix the cite; the rest is right.
+app/ap_object.py	L176	REFUTE	app/main.py:1638,1684-1686	Claim 'all uses test truthiness only' is false and utils.html:593 is an output, not a test. outbox_object.content feeds JSON feed content_html (main.py:1638, null when None) and main.py:1684-1686 raises ValueError when it is None. *string stays right, but cite those uses.
+app/ap_object.py	L188	REFUTE	app/boxes.py:862	Claim 'used only as if object.summary' is false: boxes.py:862 puts outbox_object.summary into the federated Create/Update object (null when absent), admin.py:199 and templates/object.html:9 also read it. That wire use is the real reason for *string; cite it.
+app/ap_object.py	L192	CONFIRM	app/ap_object.py:192-194; app/main.py:1698; templates/utils.html:553	
+app/ap_object.py	L206	CONFIRM	app/ap_object.py:206-211; app/boxes.py:97,399; app/models.py:89,173	
+app/ap_object.py	L213	REFUTE	app/ap_object.py:222	Evidence cites startswith at ap_object.py:223; it is at :222 (and :230). Fix the cite; translation is right.
+app/ap_object.py	L226	REFUTE	app/ap_object.py:226-231; migration/inventory/GUIDE.md ZERO_VALUE	Classification POINTER contradicts the translation, which is a plain bool (the only use, templates/utils.html:547, is a truth test). Correct classification: ZERO_VALUE.
+app/ap_object.py	L243	CONFIRM	app/ap_object.py:243-245; app/boxes.py:2046,2050,2096; templates/utils.html:605-609	
+app/ap_object.py	L247	CONFIRM	app/ap_object.py:247-253; templates/utils.html:678-682	
+app/ap_object.py	L255	REFUTE	app/templates/utils.html:678-687	Claim that nil is reachable only from other callers is false: utils.html:687 prints object.poll_voters_count inside `if object.ap_type == 'Question'` (:678), not under the `if object.poll_items` guard (:605). A Question with no oneOf/anyOf gives None there (Jinja prints 'None'). Note this reach.
+app/ap_object.py	L317	REFUTE	app/ap_object.py:317-338; app/lookup.py:46; app/boxes.py:84	Claim that other callers pass an actor is false: grep finds only boxes.py:84 and lookup.py:46 (the latter is missing from the evidence), and neither passes an actor. Every caller passes nil.
+app/ap_object.py	L340	CONFIRM	app/ap_object.py:340-342; app/models.py:136,191	
+app/config.py	L61	CONFIRM	app/config.py:61-65,217; app/activitypub.py:156-157	
+app/config.py	L259	REFUTE	app/config.py:272	Evidence says the redirect_url is placed in the 403 detail at config.py:269; the detail= line is config.py:272 (:269 is logger.exception). Fix the cite.
+app/customization.py	L105	CONFIRM	app/customization.py:105-108; app/main.py:208-209	
+app/database.py	L30	CONFIRM	app/database.py:24,30-35	
+app/incoming_activities.py	L22	CONFIRM	app/incoming_activities.py:22-48; app/main.py:1173	
+app/incoming_activities.py	L56	REFUTE	app/models.py:346	Evidence cites models.py:374 for the nullable next_try; that is OutgoingActivity. IncomingActivity.next_try is models.py:346. Fix the cite.
+app/incoming_activities.py	L70	REFUTE	app/incoming_activities.py:83-85,94	Wrong lines: the None return is at incoming_activities.py:83-85 (not :82-84) and .scalar_one() is at :94 (not :90).
+app/incoming_activities.py	L153	CONFIRM	app/incoming_activities.py:153-158; app/utils/workers.py:28-35	
+app/key.py	L25	CONFIRM	app/key.py:25-31,48-49; app/httpsig.py:111,131,134,351	
+app/main.py	L286	REFUTE	app/main.py:295,307,325,339	Wrong lines: `page = page or 1` is main.py:295 (not :301), the offset is :307 and :325, has_previous_page is :339 (not :347-352). Also wrong behavior: for a negative page has_previous_page is `page > 1`, so it is False, not true as the row says.
+app/main.py	L345	CONFIRM	app/main.py:345-349 (page unused in 345-386)	
+app/main.py	L389	REFUTE	app/main.py:398,408,415,425,438,483-489	Wrong lines: the test is main.py:398 (not :397), `if next_cursor` is :408 and :438 (not :407, :433), the reassignments are :415 and :425 (not :417, :427), and the followers call is :483-489 (not :476-482).
+app/main.py	L459	REFUTE	app/main.py:487-488	Wrong lines: page and next_cursor are forwarded at main.py:487-488 (not :479-480).
+app/main.py	L523	CONFIRM	app/main.py:523-530,547-552	
+app/main.py	L1093	REFUTE	app/main.py:1111,1127,1135	Wrong lines: `not page and not next_cursor` is main.py:1111 (not :1112), `if next_cursor` is :1127 (not :1118-1119), reassigned at :1135 (not :1136).
+app/outgoing_activities.py	L100	REFUTE	app/boxes.py:1449,2023	Callers claim is wrong: the inbox-ID-only callers are boxes.py:1449 and boxes.py:2023; boxes.py:1469 and :1518 do not call new_outgoing_activity.
+app/outgoing_activities.py	L127	CONFIRM	app/outgoing_activities.py:127-139,246-249	
+app/outgoing_activities.py	L147	CONFIRM	app/outgoing_activities.py:147-158,249,251,257,261	
+app/outgoing_activities.py	L161	CONFIRM	app/outgoing_activities.py:161-190; app/utils/workers.py:28-31	
+app/outgoing_activities.py	L280	CONFIRM	app/outgoing_activities.py:280-284; app/utils/workers.py:22-23	
+app/templates.py	L60	REFUTE	app/utils/opengraph.py:30; app/utils/indieauth.py:11	Wrong lines: og_meta.image's `str | None` is opengraph.py:30 (not :31), and IndieAuthClient.logo is indieauth.py:11 (:9 is @dataclass; logo is set to None at :29,:44,:50).
+app/templates.py	L83	REFUTE	app/templates.py:91-92	Wrong line: `if template_args is None: template_args = {}` is templates.py:91-92 (not :92-93).
+app/uploads.py	L105	CONFIRM	app/uploads.py:105-122; app/boxes.py:621-622; app/admin.py:1168	
+app/utils/facepile.py	L35	REFUTE	app/utils/facepile.py:38,64,84; app/webmentions.py:180,185,190	Wrong evidence: the callers at 180/185/190 are in app/webmentions.py, not app/utils/webmentions.py. Lines are off too: None is returned at facepile.py:84 (not :85), the tries are :39-62 and :65-82, the breaks :62 and :82.
+app/utils/facepile.py	L95	REFUTE	app/utils/facepile.py:97,121,139-140	Two defects. (1) The only caller (facepile.py:139) sits inside the try at :138-170 with `except Exception`, so a KeyError/IndexError/TypeError at :97 is caught there and gives the log-and-break path, not a crash in Python; the BUG(port) claim is wrong. (2) Lines: final None is :121 (not :120), caller is :139 and `if not face` :140.
+app/utils/facepile.py	L134	REFUTE	app/utils/facepile.py:137-172; app/webmentions.py:180	Wrong evidence: the caller at :180 is app/webmentions.py, not app/utils/webmentions.py. Lines: the try is facepile.py:138-170 (not :139-173) and the final None is :172 (not :176); the _parse_face break is :140-145.
+app/utils/indieauth.py	L25	REFUTE	app/utils/indieauth.py:43-47,49-53	Wrong lines: the returns are indieauth.py:28-32, :43-47 and :49-53 (not :44-48, :50-54).
+app/utils/opengraph.py	L36	REFUTE	app/utils/opengraph.py:46-59,146-153	Wrong lines: raw dict is opengraph.py:46-52 (not :48-54), title is :48 (not :50), the dead `title not in raw` check is :58-59 (not :65-66), and the caller's catch is :146-153.
+app/utils/opengraph.py	L75	CONFIRM	app/utils/opengraph.py:35,75-76,146-153	
+app/utils/opengraph.py	L131	REFUTE	app/utils/opengraph.py:144,150,153,168-175	Wrong lines: the None returns are opengraph.py:144, :150 and :153 (not :143, :148-153), wait_for is :168-171 (not :166-170). Also the caller's inner `except Exception` (:174-175) catches GET errors and logs them with logger.exception, so the outer `except httpx.HTTPError` (:179-180) is dead code, not where the error is swallowed.
+app/utils/url.py	L12	CONFIRM	app/utils/url.py:12-28; app/utils/webmentions.py:33,39,74,84	
+app/utils/url.py	L24	REFUTE	app/utils/facepile.py:138-170	Wrong lines: the enclosing try for the :159 call is facepile.py:138-170 (not :139-173). The callers at :43,:51,:71 are in the try at :39-62/:65-82, :102,:108 in the try at :98-118.
+app/utils/webmentions.py	L16	CONFIRM	app/utils/webmentions.py:16-41,53-54	
+app/utils/webmentions.py	L44	CONFIRM	app/utils/webmentions.py:50-57; app/boxes.py:734-736,883-886	
+app/utils/webmentions.py	L68	REFUTE	app/models.py:532-543	Wrong line: the guard for empty source_microformats is models.py:532-533 (not :533-534); the try/except is :534-543.
+app/utils/workers.py	L22	REFUTE	app/outgoing_activities.py:174-176	Wrong lines: the outgoing None return is outgoing_activities.py:174-176 (not :171-173). The incoming one is :83-85 (right).
+app/webfinger.py	L12	REFUTE	app/webfinger.py:29-40,51	Wrong lines: the except branches are webfinger.py:29-40 (not :24-34), and a Link without a template returns None at :51 (not :53, which is the final return).
+app/webfinger.py	L56	CONFIRM	app/webfinger.py:56-127,65,85,105,115-125	
+app/webfinger.py	L130	CONFIRM	app/webfinger.py:130-137; app/main.py:1200-1202,1244-1246	
+app/webfinger.py	L140	REFUTE	app/source.py:136,154	Wrong lines: the try/except Exception around the source.py call is source.py:136 and :154 (not :151-152). mastodon.py:22-25 is right.
+tasks.py	L203	REFUTE	migration/RULEBOOK.md:34-36; docs/adr/0016-define-the-port-scope-and-layout.md:45-49	The rulebook (section 0) and ADR 0016 already decide this: developer-only inv tasks have no Go counterpart, and embed_version is used only by build_docs (tasks.py:145) and build_docker_image (:219). It is not UNKNOWN and needs no TODO(port) or owner question; record it as out of scope with no translation.
+tests/factories.py	L25	CONFIRM	tests/factories.py:25-36; tests/utils.py:86,110,136,155	
+tests/factories.py	L39	CONFIRM	tests/factories.py:39-54; tests/test_remote_actor_deletion.py:33,71	
+tests/factories.py	L57	REFUTE	tests/factories.py:65	Wrong line: the uuid branch is factories.py:65 (not :63).
+tests/factories.py	L71	CONFIRM	tests/factories.py:71-82; tests/test_inbox.py:441	
+tests/factories.py	L85	CONFIRM	tests/factories.py:85-97; tests/test_inbox.py:372	
+tests/factories.py	L100	REFUTE	tests/factories.py:111	Wrong line: `note_id = outbox_public_id or uuid4().hex` is factories.py:111 (not :113).
+tests/factories.py	L245	REFUTE	tests/utils.py:216; tests/factories.py:245-270	Wrong callers: tests/utils.py:192 and tests/test_inbox.py:158 call OutboxObjectFactory.from_remote_object, not the InboxObjectFactory one. The Inbox callers are utils.py:90,159,216,229. The conclusion (no caller passes the ids) holds.
+tests/utils.py	L172	CONFIRM	tests/utils.py:172-192; tests/test_outbox.py:85-93	
+tests/utils.py	L195	CONFIRM	tests/utils.py:195-216; tests/factories.py:127,269	

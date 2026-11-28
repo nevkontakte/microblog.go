@@ -1,0 +1,28 @@
+file	line	category	symbol	construct
+app/actor.py	225	ORM_WRITE	save_actor	db_session.add(actor)
+app/actor.py	302	ORM_WRITE	update_actor_if_needed	actor_in_db.ap_actor = ra.ap_actor
+app/actor.py	303	ORM_WRITE	update_actor_if_needed	actor_in_db.handle = ra.handle
+app/actor.py	304	ORM_WRITE	update_actor_if_needed	actor_in_db.ap_type = ra.ap_type
+app/actor.py	306	ORM_WRITE	update_actor_if_needed	actor_in_db.updated_at = now()
+app/admin.py	763	ORM_WRITE	get_notifications	notif.is_new = False
+app/admin.py	889	ORM_WRITE	admin_actions_force_delete	ap_object_to_delete.is_deleted = True
+app/admin.py	910	ORM_WRITE	admin_actions_force_delete_webmention	webmention.is_deleted = True
+app/admin.py	977	ORM_WRITE	admin_actions_hide_announces	actor.are_announces_hidden_from_stream = True
+app/admin.py	991	ORM_WRITE	admin_actions_show_announces	actor.are_announces_hidden_from_stream = False
+app/admin.py	1081	ORM_WRITE	admin_actions_bookmark	inbox_object.is_bookmarked = True
+app/admin.py	1097	ORM_WRITE	admin_actions_unbookmark	inbox_object.is_bookmarked = False
+app/admin.py	1113	ORM_WRITE	admin_actions_pin	outbox_object.is_pinned = True
+app/admin.py	1129	ORM_WRITE	admin_actions_unpin	outbox_object.is_pinned = False
+app/incoming_activities.py	45	ORM_WRITE	new_ap_incoming_activity	db_session.add(incoming_activity)
+app/incoming_activities.py	64	ORM_WRITE	_set_next_try	outgoing_activity.is_errored = True
+app/incoming_activities.py	65	ORM_WRITE	_set_next_try	outgoing_activity.next_try = None
+app/incoming_activities.py	67	ORM_WRITE	_set_next_try	outgoing_activity.next_try = next_try or _exp_backoff(outgoing_activity.tries)
+app/incoming_activities.py	108	ORM_WRITE	process_next_incoming_activity	next_activity.tries = next_activity.tries + 1
+app/incoming_activities.py	109	ORM_WRITE	process_next_incoming_activity	next_activity.last_try = now()
+app/incoming_activities.py	127	ORM_WRITE	process_next_incoming_activity	next_activity.error = traceback.format_exc()
+app/incoming_activities.py	133	ORM_WRITE	process_next_incoming_activity	next_activity.error = traceback.format_exc()
+app/incoming_activities.py	137	ORM_WRITE	process_next_incoming_activity	next_activity.is_processed = True
+app/outgoing_activities.py	121	ORM_WRITE	new_outgoing_activity	db_session.add(outgoing_activity)
+app/outgoing_activities.py	155	ORM_WRITE	_set_next_try	outgoing_activity.is_errored = True
+app/outgoing_activities.py	156	ORM_WRITE	_set_next_try	outgoing_activity.next_try = None
+app/outgoing_activities.py	158	ORM_WRITE	_set_next_try	outgoing_activity.next_try = next_try or _exp_backoff(outgoing_activity.tries)
